@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "contracts/mailbox",
+    "contracts/igp",
+    "contracts/interfaces",
+    "contracts/merkle",
+]
+
+[dependencies]
+sway_libs = { git = "https://github.com/fuellabs/sway-libs", tag = "v0.21.0" }
