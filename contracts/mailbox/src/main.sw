@@ -20,6 +20,7 @@ use std::{
     storage::storage_map::*,
 };
 use merkle::*;
+// use message::{EncodedMessage, Message};
 
 configurable {
     /// The domain of the local chain.
