@@ -1,10 +1,9 @@
 contract;
 
 mod merkle_test_abi;
-mod storage_merkle_tree;
 
-use storage_merkle_tree::*;
-use merkle_test_abi::TestStorageMerkleTree;
+use merkle::*;
+use merkle_test_abi::*;
 
 storage {
     tree: StorageMerkleTree = StorageMerkleTree {},

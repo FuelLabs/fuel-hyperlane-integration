@@ -19,6 +19,7 @@ use std::{
     hash::*,
     storage::storage_map::*,
 };
+use merkle::*;
 
 configurable {
     /// The domain of the local chain.
@@ -29,7 +30,7 @@ configurable {
 storage {
     delivered: StorageMap<b256, bool> = StorageMap::<b256, bool> {},
     /// A merkle tree that includes outbound message IDs as leaves.
-    // merkle_tree: StorageMerkleTree = StorageMerkleTree {},
+    merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     default_ism: ContractId = ContractId::from(ZERO_B256),
     default_hook: ContractId = ContractId::from(ZERO_B256),
     required_hook: ContractId = ContractId::from(ZERO_B256),

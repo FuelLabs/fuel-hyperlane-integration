@@ -7,15 +7,18 @@ use std::{
         keccak256,
         sha256,
     },
-    storage::storage_api::{
-        read,
-        write,
+    option::Option::{
+        self,
+        *,
+    },
+    storage::{
+        storage_api::{
+            read,
+            write,
+        },
+        storage_key::*,
     },
 };
-
-use std::option::Option::{self, *};
-use std::storage::storage_api::*;
-use std::storage::storage_key::*;
 
 // The depth of the merkle tree.
 const TREE_DEPTH: u64 = 32;
@@ -89,7 +92,8 @@ impl StorageKey<StorageMerkleTree> {
     // Reads an element of `branch` from storage.
     #[storage(read)]
     pub fn get_branch(self, index: u64) -> b256 {
-        let res = read::<b256>(self.get_branch_storage_key(index), 0);
+        let res = read::<b256>(sha256((index, self.field_id())), 0);
+        // let res = read::<b256>(self.get_branch_storage_key(index), 0);
         match res {
             Some(value) => value,
             None => ZERO_B256,
@@ -98,8 +102,6 @@ impl StorageKey<StorageMerkleTree> {
 
     #[storage(write)]
     fn store_branch(self, index: u64, value: b256) {
-        // read::<b256>(StorageMerkleTree::get_branch_storage_key(index), index).unwrap()
-        // write(StorageMerkleTree::get_branch_storage_key(index), value)
         write(self.get_branch_storage_key(index), 0, value)
     }
 
