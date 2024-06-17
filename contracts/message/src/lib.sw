@@ -141,18 +141,6 @@ impl From<Message> for EncodedMessage {
                 .body,
         )
     }
-
-    // fn into(self) -> Message {
-    //     Message {
-    //         version: self.version(),
-    //         nonce: self.nonce(),
-    //         origin: self.origin(),
-    //         sender: self.sender(),
-    //         destination: self.destination(),
-    //         recipient: self.recipient(),
-    //         body: self.body(),
-    //     }
-    // }
 }
 
 impl Into<Message> for EncodedMessage {

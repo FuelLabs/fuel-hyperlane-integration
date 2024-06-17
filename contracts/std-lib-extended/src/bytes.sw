@@ -1,6 +1,15 @@
 library;
 
-use std::{b512::B512, bytes::Bytes, constants::ZERO_B256, vm::evm::evm_address::EvmAddress};
+use std::{
+    b512::B512,
+    bytes::Bytes,
+    constants::ZERO_B256,
+    hash::{
+        Hash,
+        keccak256,
+    },
+    vm::evm::evm_address::EvmAddress,
+};
 use ::mem::*;
 
 /// The number of bytes in a b256.
@@ -313,6 +322,10 @@ impl Bytes {
         asm(ptr: self.ptr(), bytes: self.len(), log_id: log_id) {
             logd zero log_id ptr bytes;
         };
+    }
+
+    pub fn keccak256(self) -> b256 {
+        keccak256(self)
     }
 }
 // TODO check if needed

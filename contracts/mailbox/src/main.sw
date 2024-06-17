@@ -20,7 +20,7 @@ use std::{
     storage::storage_map::*,
 };
 use merkle::*;
-// use message::{EncodedMessage, Message};
+use message::{EncodedMessage, Message};
 
 configurable {
     /// The domain of the local chain.
@@ -71,20 +71,33 @@ impl Mailbox for Contract {
         storage.default_ism.read()
     }
 
-    fn set_default_hook(module: ContractId) {}
+    /// Sets the default hook used for message processing.
+    #[storage(write)]
+    fn set_default_hook(module: ContractId) {
+        storage.default_hook.write(module);
+    }
 
+    /// Gets the default hook used for message processing.
+    #[storage(read)]
     fn default_hook() -> ContractId {
-        ContractId::from(ZERO_B256)
+        storage.default_hook.read()
     }
 
-    fn set_required_hook(module: ContractId) {}
+    /// Sets the required hook used for message processing.
+    #[storage(write)]
+    fn set_required_hook(module: ContractId) {
+        storage.required_hook.write(module);
+    }
 
+    /// Gets the required hook used for message processing.
+    #[storage(read)]
     fn required_hook() -> ContractId {
-        ContractId::from(ZERO_B256)
+        storage.required_hook.read()
     }
 
+    #[storage(read)]
     fn latest_dispatched_id() -> b256 {
-        ZERO_B256
+        storage.latest_dispatched_id.read()
     }
 
     /// Dispatches a message to the destination domain and recipient.
@@ -101,7 +114,21 @@ impl Mailbox for Contract {
         destination_domain: u32,
         recipient: b256,
         message_body: Bytes,
+        metadata: Bytes,
+        hook: ContractId,
     ) -> b256 {
+        // ref mut hook in the function params does not work 
+        let mut hook = hook;
+        if hook == ContractId::from(ZERO_B256) {
+            hook = storage.default_hook.read();
+        }
+
+        // let message = self.build_message(destination_domain, recipient, message_body);
+
+        // let message = EncodedMessage
+        //            destinationDomain,
+        // recipientAddress,
+        // messageBody
         ZERO_B256
     }
 
@@ -141,6 +168,23 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
         (ZERO_B256, 0)
+    }
+
+    #[storage(read)]
+    fn _build_message(
+        destination_domain: u32,
+        recipient: b256,
+        message_body: Bytes,
+    ) -> EncodedMessage {
+        EncodedMessage::new(
+            0,
+            0,
+            0,
+            ZERO_B256,
+            destination_domain,
+            recipient,
+            message_body,
+        )
     }
 }
 

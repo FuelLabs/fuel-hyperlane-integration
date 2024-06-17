@@ -2,7 +2,6 @@ library;
 
 use sway_libs::ownership::*;
 
-
 abi Ownable {
     /// Returns the owner of the contract.
     #[storage(read)]
@@ -16,7 +15,6 @@ abi Ownable {
     #[storage(write)]
     fn transfer_ownership(new_owner: Address);
 
-
     /// Sets the owner of the contract.
     ///
     /// ### Arguments
@@ -24,5 +22,4 @@ abi Ownable {
     /// * `new_owner` - The address of the new owner.
     #[storage(write)]
     fn set_owner(new_owner: Address);
-    
 }

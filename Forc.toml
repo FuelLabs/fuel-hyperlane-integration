@@ -6,9 +6,6 @@ members = [
     "contracts/interfaces",
     "contracts/merkle",
     # "contracts/merkle-test",
-    # "contracts/message",
+    "contracts/message",
     "contracts/std-lib-extended",
 ]
-
-# [dependencies]
-# sway_libs = { git = "https://github.com/fuellabs/sway-libs", tag = "v0.21.0" }

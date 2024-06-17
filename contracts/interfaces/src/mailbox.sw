@@ -1,6 +1,7 @@
 library;
 
-use std::bytes::Bytes;
+use std::{bytes::Bytes, storage::*};
+use message::EncodedMessage;
 
 abi Mailbox {
     /// Returns the domain of the chain where the contract is deployed.
@@ -27,14 +28,20 @@ abi Mailbox {
     #[storage(read)]
     fn default_ism() -> ContractId;
 
+    #[storage(write)]
     fn set_default_hook(module: ContractId);
 
+    #[storage(read)]
     fn default_hook() -> ContractId;
 
+    #[storage(write)]
     fn set_required_hook(module: ContractId);
 
+    #[storage(read)]
     fn required_hook() -> ContractId;
 
+    /// Returns the ID of the last dispatched message.
+    #[storage(read)]
     fn latest_dispatched_id() -> b256;
 
     /// Dispatches a message to the destination domain and recipient.
@@ -51,6 +58,8 @@ abi Mailbox {
         destination_domain: u32,
         recipient: b256,
         message_body: Bytes,
+        metadata: Bytes,
+        hook: ContractId,
     ) -> b256;
 
     // TODO #[payable]
@@ -82,4 +91,11 @@ abi Mailbox {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32);
+
+    #[storage(read)]
+    fn _build_message(
+        destination_domain: u32,
+        recipient: b256,
+        message_body: Bytes,
+    ) -> EncodedMessage;
 }
