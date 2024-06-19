@@ -30,7 +30,7 @@ pub struct Message {
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Message.sol
 /// for the reference implementation.
 pub struct EncodedMessage {
-    bytes: Bytes,
+    pub bytes: Bytes,
 }
 
 // Byte offets of Message properties in an EncodedMessage.

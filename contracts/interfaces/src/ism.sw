@@ -1,5 +1,6 @@
 library;
 
+use std::bytes::Bytes;
 
 pub enum ModuleType {
     UNUSED_0: (),
