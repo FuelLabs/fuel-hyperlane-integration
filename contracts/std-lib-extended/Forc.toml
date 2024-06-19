@@ -1,0 +1,5 @@
+[project]
+authors = ["Mantas Miklasevicius"]
+entry = "lib.sw"
+license = "Apache-2.0"
+name = "std_lib_extended"

@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "contracts/mailbox",
+    "contracts/igp",
+    "contracts/interfaces",
+    "contracts/merkle",
+    # "contracts/merkle-test",
+    "contracts/message",
+    "contracts/std-lib-extended",
+]
