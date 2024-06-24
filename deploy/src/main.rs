@@ -1,5 +1,5 @@
 use rand::{thread_rng, Rng};
-use std::str::FromStr;
+use std::{io::Read, str::FromStr};
 
 use fuels::{
     crypto::SecretKey,
@@ -10,10 +10,16 @@ use fuels::{
 // const LOCAL_NODE: &str = "127.0.0.1:4000"; // For local deplyments use latest version of fuels
 const TESTNET_NODE: &str = "testnet.fuel.network"; // For testnet deployments use fuels 0.55.0
 
-abigen!(Contract(
-    name = "Mailbox",
-    abi = "../contracts/mailbox/out/debug/mailbox-abi.json",
-));
+abigen!(
+    Contract(
+        name = "Mailbox",
+        abi = "../contracts/mailbox/out/debug/mailbox-abi.json",
+    ),
+    Contract(
+        name = "PostDispatch",
+        abi = "../contracts/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
+    )
+);
 
 // Random accounts to use
 // PrivateKey(0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c), Address(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e [bech32: fuel1dd3cqn8mlxzku689kmn6au3cmjp3rmz4hmqymam5qqaze9hqgx8qtjpwn9]), Balance(10000000)
@@ -24,32 +30,75 @@ abigen!(Contract(
 
 #[tokio::main]
 async fn main() {
+    // Wallet Initialization
+
     let provider = Provider::connect(TESTNET_NODE).await.unwrap();
     let private_key =
         SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
             .unwrap();
-
     let wallet = WalletUnlocked::new_from_private_key(private_key, Some(provider));
+    println!("Deployer: {}", wallet.address());
+
+    // Mailbox Contract Deployment
 
     let binary_filepath = "../contracts/mailbox/out/debug/mailbox.bin";
 
     let config = get_deployment_config();
-    let contract = Contract::load_from(binary_filepath, config).unwrap();
+    let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
 
-    let contract_id = contract
+    let mailbox_contract_id = contract
         .deploy(&wallet, TxPolicies::default())
         .await
         .unwrap();
 
-    println!("Contract deployed with ID: {}", contract_id);
-    println!("From: {}", wallet.address());
+    println!("Contract deployed with ID: {}", mailbox_contract_id);
 
-    // Example
+    // Post Dispatch Mock Deployment
 
-    let mailbox = Mailbox::new(contract_id, wallet);
+    let binary_filepath = "../contracts/mock-post-dispatch/out/debug/mock-post-dispatch.bin";
+    let contract = Contract::load_from(binary_filepath, config).unwrap();
+    let post_dispatch_contract_id = contract
+        .deploy(&wallet, TxPolicies::default())
+        .await
+        .unwrap();
+
+    println!(
+        "Post Dispatch Contract deployed with ID: {}",
+        post_dispatch_contract_id
+    );
+
+    // Instantiate Contracts
+
+    let post_dispatch = PostDispatch::new(post_dispatch_contract_id, wallet.clone());
+    let mailbox = Mailbox::new(mailbox_contract_id, wallet.clone());
+
+    // XXX cleanup
+    // let acc = mailbox.account().address();
+    // let bytes: fuels::types::Bytes32 = acc.hash();
+    // let smtn: &[u8] = bytes.as_slice();
+    // let smtn: [u8; 32] = bytes.as_slice().try_into().unwrap();
+
+    // Initalize Mailbox Contract
+
+    let wallet_address = Bits256(Address::from(wallet.address()).into());
+    let post_dispatch_address = Bits256(ContractId::from(post_dispatch.id()).into());
+
+    let init_res = mailbox
+        .methods()
+        .initialize(
+            wallet_address,
+            post_dispatch_address,
+            post_dispatch_address,
+            post_dispatch_address,
+        )
+        .call()
+        .await;
+    assert!(init_res.is_ok(), "Failed to initialize Mailbox.");
 
     let paused = mailbox.methods().is_paused().call().await.unwrap();
     println!("Paused: {}", paused.value);
+
+    // Example Dispatch
 
     let destination_domain = 0x01;
     let recipient_address = Bits256::zeroed();
@@ -68,6 +117,7 @@ async fn main() {
             metadata,
             hook,
         )
+        .with_contract_ids(&[Bech32ContractId::from(post_dispatch.contract_id())])
         .call()
         .await;
 

@@ -43,6 +43,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mock-post-dispatch"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
+]
+
+[[package]]
+name = "msg-recipient-test"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
+]
+
+[[package]]
 name = "standards"
 source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.4.3#6f63eb7dff2458a7d976184e565b5cbf26f61da2"
 dependencies = ["std"]

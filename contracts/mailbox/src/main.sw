@@ -1,7 +1,7 @@
 contract;
 
-use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*, reentrancy::reentrancy_guard,};
+use standards::src5::State;
 
 use interfaces::{
     events::*,
@@ -26,6 +26,20 @@ use message::{EncodedMessage, Message};
 /// Hyperlane Protocol Version.
 const VERSION = 3;
 
+/// The max bytes in a message body. Equal to 2 KiB, or 2 * (2 ** 10).
+const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
+
+enum MailboxError {
+    InvalidISMAddress: (),
+    InvalidHookAddress: (),
+    InvalidProtocolVersion: u8,
+    InvalidMessageOrigin: u32,
+    MessageAlreadyDelivered: (),
+    MessageVerificationFailed: (),
+    AlreadyInitialized: (),
+    MessageTooLarge: u64,
+}
+
 configurable {
     /// The domain of the local chain.
     /// Defaults to `fuel` (0x6675656c).
@@ -44,6 +58,26 @@ storage {
 }
 
 impl Mailbox for Contract {
+    /// Initializes the contract.
+    /// TODO - Possibly add an init guard so that contract functions can only be called after initialization.
+    #[storage(write)]
+    fn initialize(
+        owner: b256,
+        default_ism: b256,
+        default_hook: b256,
+        required_hook: b256,
+    ) {
+        require(
+            _owner() == State::Uninitialized,
+            MailboxError::AlreadyInitialized,
+        );
+
+        initialize_ownership(Identity::Address(Address::from(owner)));
+        storage.default_ism.write(ContractId::from(default_ism));
+        storage.default_hook.write(ContractId::from(default_hook));
+        storage.required_hook.write(ContractId::from(required_hook));
+    }
+
     /// Returns the domain of the chain where the contract is deployed.
     #[storage(read)]
     fn local_domain() -> u32 {
@@ -68,7 +102,7 @@ impl Mailbox for Contract {
     #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
         only_owner();
-        require(!module.is_zero(), "Invalid ISM address");
+        require(!module.is_zero(), MailboxError::InvalidISMAddress);
         storage.default_ism.write(module);
     }
 
@@ -82,7 +116,7 @@ impl Mailbox for Contract {
     #[storage(write)]
     fn set_default_hook(module: ContractId) {
         only_owner();
-        require(!module.is_zero(), "Invalid hook address");
+        require(!module.is_zero(), MailboxError::InvalidHookAddress);
         storage.default_hook.write(module);
     }
 
@@ -96,7 +130,7 @@ impl Mailbox for Contract {
     #[storage(write)]
     fn set_required_hook(module: ContractId) {
         only_owner();
-        require(!module.is_zero(), "Invalid hook address");
+        require(!module.is_zero(), MailboxError::InvalidHookAddress);
         storage.required_hook.write(module);
     }
 
@@ -131,6 +165,12 @@ impl Mailbox for Contract {
         reentrancy_guard();
         require_not_paused();
 
+        require(
+            message_body
+                .len() <= MAX_MESSAGE_BODY_BYTES,
+            MailboxError::MessageTooLarge(message_body.len()),
+        );
+
         // ref mut hook in the function params does not work 
         let mut hook = hook;
         if hook == ContractId::from(ZERO_B256) {
@@ -154,24 +194,24 @@ impl Mailbox for Contract {
         });
         log(DispatchIdEvent { message_id: id });
 
-        // let hook = abi(PostDispatchHook, b256::from(hook));
-        // let required_hook = abi(PostDispatchHook, b256::from(storage.required_hook.read()));
-        // let mut required_value = required_hook.quote_dispatch(metadata, message_body);
-        // if (msg_amount() < required_value) {
-        //     required_value = msg_amount()
-        // }
-        // let base = AssetId::base();
+        let hook = abi(PostDispatchHook, b256::from(hook));
+        let required_hook = abi(PostDispatchHook, b256::from(storage.required_hook.read()));
+        let mut required_value = required_hook.quote_dispatch(metadata, message_body);
+        if (msg_amount() < required_value) {
+            required_value = msg_amount()
+        }
+        let base = AssetId::base();
 
-        // required_hook
-        //     .post_dispatch {
-        //         asset_id: b256::from(base),
-        //         coins: required_value,
-        //     }(metadata, message.bytes);
-        // hook
-        //     .post_dispatch {
-        //         asset_id: b256::from(base),
-        //         coins: msg_amount() - required_value,
-        //     }(metadata, message.bytes);
+        required_hook
+            .post_dispatch {
+                asset_id: b256::from(base),
+                coins: required_value,
+            }(metadata, message.bytes);
+        hook
+            .post_dispatch {
+                asset_id: b256::from(base),
+                coins: msg_amount() - required_value,
+            }(metadata, message.bytes);
 
         id
     }
@@ -217,14 +257,18 @@ impl Mailbox for Contract {
 
         let message = EncodedMessage { bytes: message };
 
-        require(message.version() == VERSION, "Invalid message version");
+        require(
+            message
+                .version() == VERSION,
+            MailboxError::InvalidProtocolVersion(message.version()),
+        );
         require(
             message
                 .origin() == LOCAL_DOMAIN,
-            "Message origin does not match local domain",
+            MailboxError::InvalidMessageOrigin(message.origin()),
         );
         let id = message.id();
-        require(!_delivered(id), "Message already delivered");
+        require(!_delivered(id), MailboxError::MessageAlreadyDelivered);
         storage.delivered.insert(id, true);
 
         let recipient = message.recipient();
@@ -239,7 +283,7 @@ impl Mailbox for Contract {
         require(
             ism
                 .verify(metadata, message.bytes),
-            "Message verification failed",
+            MailboxError::MessageVerificationFailed,
         );
 
         let origin = message.origin();

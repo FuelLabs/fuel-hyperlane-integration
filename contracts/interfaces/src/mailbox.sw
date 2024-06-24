@@ -4,6 +4,15 @@ use std::{bytes::Bytes, storage::*};
 use message::EncodedMessage;
 
 abi Mailbox {
+    /// Initializes the contract.
+    #[storage(write)]
+    fn initialize(
+        owner: b256,
+        default_ism: b256,
+        default_hook: b256,
+        required_hook: b256,
+    );
+
     /// Returns the domain of the chain where the contract is deployed.
     #[storage(read)]
     fn local_domain() -> u32;

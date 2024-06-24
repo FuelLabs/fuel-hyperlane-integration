@@ -8,4 +8,6 @@ members = [
     # "contracts/merkle-test",
     "contracts/message",
     "contracts/std-lib-extended",
+    "contracts/mock-post-dispatch",
+    "contracts/msg-recipient-test",
 ]
