@@ -26,5 +26,15 @@ pub struct ProcessEvent {
 
 /// Logged when the default ISM is set.
 pub struct DefaultIsmSetEvent {
-    module: ContractId,
+    pub module: ContractId,
+}
+
+/// Logged when the default hook is set.
+pub struct DefaultHookSetEvent {
+    pub module: ContractId,
+}
+
+/// Logged when the required hook is set.
+pub struct RequiredHookSetEvent {
+    pub module: ContractId,
 }

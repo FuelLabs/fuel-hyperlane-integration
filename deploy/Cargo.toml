@@ -7,3 +7,6 @@ edition = "2021"
 fuels = "0.64.0"
 tokio = { version = "1.16.1", features = ["full"] }
 rand = "0.8.4"
+# TODO remove Below imports
+hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "f9bbdde" }
+ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }

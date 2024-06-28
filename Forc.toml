@@ -10,4 +10,5 @@ members = [
     "contracts/std-lib-extended",
     "contracts/mock-post-dispatch",
     "contracts/msg-recipient-test",
+    "contracts/ism-test",
 ]

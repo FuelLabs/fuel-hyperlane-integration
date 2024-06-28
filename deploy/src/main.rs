@@ -1,3 +1,5 @@
+use hyperlane_core::{Decode, Encode, HyperlaneMessage as HyperlaneAgentMessage, H256};
+
 use rand::{thread_rng, Rng};
 use std::{io::Read, str::FromStr};
 
@@ -13,20 +15,13 @@ const TESTNET_NODE: &str = "testnet.fuel.network"; // For testnet deployments us
 abigen!(
     Contract(
         name = "Mailbox",
-        abi = "../contracts/mailbox/out/debug/mailbox-abi.json",
+        abi = "contracts/mailbox/out/debug/mailbox-abi.json",
     ),
     Contract(
         name = "PostDispatch",
-        abi = "../contracts/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
+        abi = "contracts/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
     )
 );
-
-// Random accounts to use
-// PrivateKey(0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c), Address(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e [bech32: fuel1dd3cqn8mlxzku689kmn6au3cmjp3rmz4hmqymam5qqaze9hqgx8qtjpwn9]), Balance(10000000)
-// PrivateKey(0x37fa81c84ccd547c30c176b118d5cb892bdb113e8e80141f266519422ef9eefd), Address(0x54944e5b8189827e470e5a8bacfc6c3667397dc4e1eef7ef3519d16d6d6c6610 [bech32: fuel12j2yukup3xp8u3cwt296elrvxennjlwyu8h00me4r8gk6mtvvcgqmtakkk]), Balance(10000000)
-// PrivateKey(0x862512a2363db2b3a375c0d4bbbd27172180d89f23f2e259bac850ab02619301), Address(0xe10f526b192593793b7a1559a391445faba82a1d669e3eb2dcd17f9c121b24b1 [bech32: fuel1uy84y6ceykfhjwm6z4v68y2yt746s2sav60ravku69lecysmyjcss0yrdx]), Balance(10000000)
-// PrivateKey(0x976e5c3fa620092c718d852ca703b6da9e3075b9f2ecb8ed42d9f746bf26aafb), Address(0x577e424ee53a16e6a85291feabc8443862495f74ac39a706d2dd0b9fc16955eb [bech32: fuel12alyynh98gtwd2zjj8l2hjzy8p3yjhm54su6wpkjm59elstf2h4swddd2d]), Balance(10000000)
-// PrivateKey(0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711), Address(0xc36be0e14d3eaf5d8d233e0f4a40b3b4e48427d25f84c460d2b03b242a38479e [bech32: fuel1cd47pc2d86h4mrfr8c855s9nknjggf7jt7zvgcxjkqajg23cg70qnxg0hd]), Balance(10000000)
 
 #[tokio::main]
 async fn main() {
@@ -56,7 +51,7 @@ async fn main() {
     // Post Dispatch Mock Deployment
 
     let binary_filepath = "../contracts/mock-post-dispatch/out/debug/mock-post-dispatch.bin";
-    let contract = Contract::load_from(binary_filepath, config).unwrap();
+    let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
     let post_dispatch_contract_id = contract
         .deploy(&wallet, TxPolicies::default())
         .await
@@ -67,16 +62,21 @@ async fn main() {
         post_dispatch_contract_id
     );
 
+    // Recipient deplyment
+
+    let recipient_id = Contract::load_from(
+        "../contracts/msg-recipient-test/out/debug/msg-recipient-test.bin",
+        config,
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
     // Instantiate Contracts
 
-    let post_dispatch = PostDispatch::new(post_dispatch_contract_id, wallet.clone());
+    let post_dispatch = PostDispatch::new(post_dispatch_contract_id.clone(), wallet.clone());
     let mailbox = Mailbox::new(mailbox_contract_id, wallet.clone());
-
-    // XXX cleanup
-    // let acc = mailbox.account().address();
-    // let bytes: fuels::types::Bytes32 = acc.hash();
-    // let smtn: &[u8] = bytes.as_slice();
-    // let smtn: [u8; 32] = bytes.as_slice().try_into().unwrap();
 
     // Initalize Mailbox Contract
 
@@ -100,10 +100,9 @@ async fn main() {
 
     // Example Dispatch
 
-    let destination_domain = 0x01;
-    let recipient_address = Bits256::zeroed();
-    let message_body_str ="0x03000000150033d90d0000000000000000000000006caeb3f629335544e5c83920358511528ab4d32500aa36a7000000000000000000000000678c64f17b4e91d737640e5c62e8f329f31dc4ac000000000000000000000000c908e76871406df6f866b068beb0100ea678d9f600000000000000000000000000000000000000000000003635c9adc5dea00000";
-    let message_body = Bytes::from_hex_str(message_body_str).unwrap();
+    let message = test_message(&mailbox, &recipient_id);
+    let message_id = message.id();
+
     let metadata_str = "0x000000000000000000000010000000950000000000000000000000007222b8b24788a79b173a42b2efa2585ed5a76198d06677e4f9f9426baf25bb5869b727d9d762e7ad0e65a0b996c8c26bdec9b4bc000000154fc320ced73551ed55147775d01afd40aa0c487e1d03492285a023a0d2f7696311b4658361ffe3e917b871e8982e0a488921076222eb5805dcd54d628e0c82981c";
     let metadata = Bytes::from_hex_str(metadata_str).unwrap();
     let hook = ContractId::default();
@@ -111,13 +110,13 @@ async fn main() {
     let dispatch_res = mailbox
         .methods()
         .dispatch(
-            destination_domain,
-            recipient_address,
-            message_body,
+            message.destination,
+            h256_to_bits256(message.recipient),
+            Bytes(message.clone().body),
             metadata,
             hook,
         )
-        .with_contract_ids(&[Bech32ContractId::from(post_dispatch.contract_id())])
+        .with_contract_ids(&[post_dispatch_contract_id])
         .call()
         .await;
 
@@ -134,14 +133,31 @@ async fn main() {
         println!("Log: {}", log);
     }
 
+    let dispatch_events = res.decode_logs_with_type::<DispatchEvent>().unwrap();
+    let dispatch_message: Vec<u8> = dispatch_events
+        .first()
+        .unwrap()
+        .message
+        .bytes
+        .clone()
+        .into();
+    let decoded_message = HyperlaneAgentMessage::from(dispatch_message);
+    println!("Decoded message id: {:?}", decoded_message.id());
+    println!("Decoded message: {:?}", decoded_message);
+    println!("Original message: {:?}", message);
+    println!("\n\n");
+
+    println!("message sender {:?}", h256_to_bits256(message.sender));
+    println!("message recipient {:?}", h256_to_bits256(message.recipient));
+    println!("\n\n");
+    println!("message id bits {:?}", h256_to_bits256(message_id));
+    println!("message built id {:?}", message_id);
+
     if let Some(tx) = res.tx_id {
         println!("Transaction sent with ID: {}", tx);
     } else {
         println!("Failed to get TX ID.");
     }
-
-    let owner = mailbox.methods().owner().call().await.unwrap();
-    println!("Owner: {:?}", owner.value);
 }
 
 fn get_deployment_config() -> LoadConfiguration {
@@ -151,4 +167,27 @@ fn get_deployment_config() -> LoadConfiguration {
     let salt = Salt::new(bytes);
 
     LoadConfiguration::default().with_salt(salt)
+}
+
+// XXX REMOVE
+fn test_message(
+    mailbox: &Mailbox<WalletUnlocked>,
+    recipient: &Bech32ContractId,
+) -> HyperlaneAgentMessage {
+    let hash = mailbox.account().address().hash();
+    let sender = hash.as_slice();
+
+    HyperlaneAgentMessage {
+        version: 3u8,
+        nonce: 0u32,
+        origin: 0x6675656cu32,
+        sender: H256::from_slice(sender),
+        destination: 0x6675656cu32,
+        recipient: H256::from_slice(recipient.hash().as_slice()),
+        body: vec![10u8; 100],
+    }
+}
+
+pub fn h256_to_bits256(h: H256) -> Bits256 {
+    Bits256(h.0)
 }

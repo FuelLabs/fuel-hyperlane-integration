@@ -16,6 +16,7 @@ use std::{
     constants::ZERO_B256,
     context::msg_amount,
     contract_id::ContractId,
+    convert::Into,
     hash::*,
     revert::revert,
     storage::storage_map::*,
@@ -104,6 +105,7 @@ impl Mailbox for Contract {
         only_owner();
         require(!module.is_zero(), MailboxError::InvalidISMAddress);
         storage.default_ism.write(module);
+        log(DefaultIsmSetEvent { module });
     }
 
     /// Gets the default ISM used for message verification.
@@ -118,6 +120,7 @@ impl Mailbox for Contract {
         only_owner();
         require(!module.is_zero(), MailboxError::InvalidHookAddress);
         storage.default_hook.write(module);
+        log(DefaultHookSetEvent { module });
     }
 
     /// Gets the default hook used for message processing.
@@ -132,6 +135,7 @@ impl Mailbox for Contract {
         only_owner();
         require(!module.is_zero(), MailboxError::InvalidHookAddress);
         storage.required_hook.write(module);
+        log(RequiredHookSetEvent { module });
     }
 
     /// Gets the required hook used for message processing.
@@ -178,10 +182,7 @@ impl Mailbox for Contract {
         }
 
         let message = _build_message(destination_domain, recipient_address, message_body);
-
-        log(message.bytes);
         let id = message.id();
-        log(id);
 
         storage.latest_dispatched_id.write(id);
         let nonce = storage.nonce.read();
@@ -190,7 +191,7 @@ impl Mailbox for Contract {
             message_id: id,
             destination_domain,
             recipient_address: recipient_address,
-            message,
+            message: message.message_clean(),
         });
         log(DispatchIdEvent { message_id: id });
 
@@ -255,17 +256,17 @@ impl Mailbox for Contract {
         reentrancy_guard();
         require_not_paused();
 
-        let message = EncodedMessage { bytes: message };
+        let message = EncodedMessage::from_bytes(message);
 
+        let version = message.version();
         require(
-            message
-                .version() == VERSION,
-            MailboxError::InvalidProtocolVersion(message.version()),
+            version == VERSION,
+            MailboxError::InvalidProtocolVersion(version),
         );
+        let domain = message.origin();
         require(
-            message
-                .origin() == LOCAL_DOMAIN,
-            MailboxError::InvalidMessageOrigin(message.origin()),
+            domain == LOCAL_DOMAIN,
+            MailboxError::InvalidMessageOrigin(domain),
         );
         let id = message.id();
         require(!_delivered(id), MailboxError::MessageAlreadyDelivered);
@@ -286,14 +287,12 @@ impl Mailbox for Contract {
             MailboxError::MessageVerificationFailed,
         );
 
-        let origin = message.origin();
         let sender = message.sender();
-
-        msg_recipient.handle(origin, sender, message.body());
+        msg_recipient.handle(domain, sender, message.body());
 
         log(ProcessEvent {
             message_id: id,
-            origin,
+            origin: domain,
             sender,
             recipient,
         });
@@ -302,8 +301,7 @@ impl Mailbox for Contract {
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     #[storage(read)]
     fn count() -> u64 {
-        // storage.merkle_tree.get_count()
-        0
+        _count()
     }
 
     /// Calculates and returns the merkle tree's current root.
@@ -318,6 +316,7 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u64) {
         // (storage.merkle_tree.root(), storage.merkle_tree.get_count())
+        let count = _count();
         (ZERO_B256, 0)
     }
 }
@@ -347,6 +346,13 @@ fn _build_message(
 #[storage(read)]
 fn _delivered(message_id: b256) -> bool {
     storage.delivered.get(message_id).try_read().unwrap_or(false)
+}
+
+/// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
+#[storage(read)]
+fn _count() -> u64 {
+    // storage.merkle_tree.get_count()
+    0
 }
 
 // Pausable and Ownable Implementations
@@ -395,12 +401,4 @@ impl Ownable for Contract {
     fn renounce_ownership() {
         renounce_ownership();
     }
-}
-
-#[test]
-fn initialize_mailbox() {
-    let mailbox = abi(Mailbox, CONTRACT_ID);
-
-    assert(mailbox.local_domain() == 0x6675656cu32);
-    assert(mailbox.default_ism() == ContractId::from(ZERO_B256));
 }
