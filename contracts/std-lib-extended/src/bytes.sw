@@ -124,7 +124,14 @@ impl Bytes {
     /// The Bytes will be able to hold exactly `length` bytes without
     /// reallocating.
     pub fn with_length(length: u64) -> Self {
-        Bytes::with_capacity(length)
+        // TODO Used to be implemented by changing the len param
+        // of the Bytes struct. This is no longer possible.
+        // Investigate if there is a better way to implement this.
+        let mut bytes = Bytes::with_capacity(length);
+        while bytes.len() < length {
+            bytes.push(0u8);
+        }
+        bytes
     }
 
     /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.

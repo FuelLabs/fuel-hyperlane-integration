@@ -18,6 +18,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ism-test"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "std",
+]
+
+[[package]]
 name = "mailbox"
 source = "member"
 dependencies = [
@@ -40,6 +49,22 @@ source = "member"
 dependencies = [
     "std",
     "std_lib_extended",
+]
+
+[[package]]
+name = "mock-post-dispatch"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
+]
+
+[[package]]
+name = "msg-recipient-test"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
 ]
 
 [[package]]
