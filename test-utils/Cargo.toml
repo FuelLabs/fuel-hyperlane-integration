@@ -5,9 +5,10 @@ edition = "2021"
 
 
 [dependencies]
-ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "f9bbdde" }
-hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "f9bbdde" }
-fuels = "0.62.0"
+ethers = { workspace = true }
+hyperlane-core = { workspace = true }
+hyperlane-ethereum = { workspace = true }
+fuels = { workspace = true }
+
 serde = "1.0.147"
 serde_json = "1.0"

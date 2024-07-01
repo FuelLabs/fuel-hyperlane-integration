@@ -1,9 +1,11 @@
 [package]
-name = "deploy"
+name = "e2e"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 fuels = { workspace = true }
 tokio = { workspace = true }
+hyperlane-core = { workspace = true }
+ethers = { workspace = true }
 rand = "0.8.4"

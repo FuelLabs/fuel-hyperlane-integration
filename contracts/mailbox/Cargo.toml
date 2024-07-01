@@ -7,12 +7,11 @@ authors = ["mantasm"]
 license = "Apache-2.0"
 
 [dev-dependencies]
-fuels = { version = "0.64.0", features = ["fuel-core-lib"] }
-tokio = { version = "1.12", features = ["rt", "macros"] }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "f9bbdde" }
-ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }
-# test-utils = { path = "../../test-utils" }
-
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+tokio = { workspace = true }
+hyperlane-core = { workspace = true }
+ethers = { workspace = true }
+test-utils = { path = "../../test-utils" }
 
 [[test]]
 harness = true

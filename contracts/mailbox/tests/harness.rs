@@ -1,20 +1,14 @@
 use std::str::FromStr;
 
 use fuels::{
-    accounts::{provider, wallet},
-    crypto::SecretKey,
     prelude::*,
     types::{Bits256, Bytes},
 };
-// use ethers::types::H256;
-use fuels::types::errors::transaction::Reason;
 use hyperlane_core::{Encode, HyperlaneMessage as HyperlaneAgentMessage, H256};
-// use test_utils::{
-//     bits256_to_h256, funded_wallet_with_private_key, get_revert_reason, get_revert_string,
-//     h256_to_bits256,
-// };
 
-// use test_utils::h256_to_bits256;
+use test_utils::{
+    bits256_to_h256, funded_wallet_with_private_key, get_revert_reason, h256_to_bits256,
+};
 
 // Load abi from json
 abigen!(
@@ -132,42 +126,24 @@ async fn get_contract_instance() -> (
 }
 
 // TODO from test utils
-pub fn h256_to_bits256(h: H256) -> Bits256 {
-    Bits256(h.0)
-}
-pub fn bits256_to_h256(b: Bits256) -> H256 {
-    H256(b.0)
-}
-pub fn get_revert_reason(call_error: Error) -> String {
-    let reason = if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
-        reason
-    } else {
-        panic!(
-            "Error is not a RevertTransactionError. Error: {:?}",
-            call_error
-        );
-    };
+// pub fn h256_to_bits256(h: H256) -> Bits256 {
+//     Bits256(h.0)
+// }
+// pub fn bits256_to_h256(b: Bits256) -> H256 {
+//     H256(b.0)
+// }
+// pub fn get_revert_reason(call_error: Error) -> String {
+//     let reason = if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
+//         reason
+//     } else {
+//         panic!(
+//             "Error is not a RevertTransactionError. Error: {:?}",
+//             call_error
+//         );
+//     };
 
-    return reason;
-}
-
-pub async fn funded_wallet_with_private_key(funder: &WalletUnlocked) -> WalletUnlocked {
-    let secret_key = SecretKey::from_str(NON_OWNER_PRIVATE_KEY).unwrap();
-    let provider = funder.provider().unwrap().clone();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider));
-
-    fund_address(funder, wallet.address()).await.unwrap();
-    wallet
-}
-
-async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Result<()> {
-    // Only a balance of 1 is required to be able to sign transactions from an Address.
-    let amount: u64 = 1;
-    from_wallet
-        .transfer(to, amount, AssetId::BASE, TxPolicies::default())
-        .await?;
-    Ok(())
-}
+//     return reason;
+// }
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
@@ -552,7 +528,8 @@ async fn test_pause() {
 async fn test_pause_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account()).await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY).await;
 
     let call = mailbox
         .with_account(non_owner_wallet)
@@ -592,7 +569,8 @@ async fn test_unpause() {
 async fn test_unpause_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account()).await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY).await;
 
     // First pause...
     mailbox.methods().pause().call().await.unwrap();
@@ -661,7 +639,8 @@ async fn test_set_default_ism_reverts_if_not_owner() {
         ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
             .unwrap();
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account()).await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY).await;
 
     let call = mailbox
         .with_account(non_owner_wallet)
@@ -726,7 +705,8 @@ async fn test_set_default_hook_reverts_if_not_owner() {
         ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
             .unwrap();
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account()).await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY).await;
 
     let call = mailbox
         .with_account(non_owner_wallet)
@@ -782,7 +762,8 @@ async fn test_set_required_hook_reverts_if_not_owner() {
         ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
             .unwrap();
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account()).await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY).await;
 
     let call = mailbox
         .with_account(non_owner_wallet)
