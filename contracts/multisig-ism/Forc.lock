@@ -1,0 +1,65 @@
+[[package]]
+name = "core"
+source = "path+from-root-E19CE48B3E858B72"
+
+[[package]]
+name = "interfaces"
+source = "path+from-root-7E53ADC53725AC82"
+dependencies = [
+    "message",
+    "standards",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
+name = "message"
+source = "path+from-root-7E53ADC53725AC82"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "multisig-ism"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "multisig_ism_metadata",
+    "standards",
+    "std",
+    "std_lib_extended",
+    "sway_libs",
+]
+
+[[package]]
+name = "multisig_ism_metadata"
+source = "path+from-root-7E53ADC53725AC82"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18"
+dependencies = ["std"]
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?tag=v0.60.0#2f0392ee35a1e4dd80bd8034962d5b4083dfb8b6"
+dependencies = ["core"]
+
+[[package]]
+name = "std_lib_extended"
+source = "path+from-root-7E53ADC53725AC82"
+dependencies = ["std"]
+
+[[package]]
+name = "sway_libs"
+source = "git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc"
+dependencies = [
+    "standards",
+    "std",
+]

@@ -1,6 +1,6 @@
 [[package]]
 name = "core"
-source = "path+from-root-E19CE48B3E858B72"
+source = "path+from-root-9000D08E03D0E7FC"
 
 [[package]]
 name = "igp"
@@ -14,7 +14,7 @@ dependencies = [
     "message",
     "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
     "std",
-    "sway_libs",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc",
 ]
 
 [[package]]
@@ -33,15 +33,23 @@ dependencies = [
     "interfaces",
     "merkle",
     "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#3acac2b057b6a318dd79848f08f70280bf2a647a",
     "std",
-    "sway_libs",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#2a869c583d2ab9fbe8de17a3301d928b224062c7",
 ]
 
 [[package]]
 name = "merkle"
 source = "member"
 dependencies = ["std"]
+
+[[package]]
+name = "merkle-test"
+source = "member"
+dependencies = [
+    "merkle",
+    "std",
+]
 
 [[package]]
 name = "message"
@@ -68,8 +76,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "multisig-ism"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "multisig_ism_metadata",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
+    "std",
+    "std_lib_extended",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc",
+]
+
+[[package]]
+name = "multisig_ism_metadata"
+source = "member"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
 name = "standards"
-source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.4.3#6f63eb7dff2458a7d976184e565b5cbf26f61da2"
+source = "git+https://github.com/FuelLabs/sway-standards?branch=master#3acac2b057b6a318dd79848f08f70280bf2a647a"
 dependencies = ["std"]
 
 [[package]]
@@ -79,7 +108,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "std"
-source = "git+https://github.com/fuellabs/sway?tag=v0.60.0#2f0392ee35a1e4dd80bd8034962d5b4083dfb8b6"
+source = "git+https://github.com/fuellabs/sway?rev#efda0397c7bee77de73bd726ec0b732d57614973"
 dependencies = ["core"]
 
 [[package]]
@@ -89,8 +118,16 @@ dependencies = ["std"]
 
 [[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?tag=v0.21.0#6a227ed34c86fe1ebd334dbdfeccf66c43e3915b"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#2a869c583d2ab9fbe8de17a3301d928b224062c7"
 dependencies = [
-    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.4.3#6f63eb7dff2458a7d976184e565b5cbf26f61da2",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
+    "std",
+]
+
+[[package]]
+name = "sway_libs"
+source = "git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc"
+dependencies = [
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
     "std",
 ]

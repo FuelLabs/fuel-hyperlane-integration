@@ -5,10 +5,12 @@ members = [
     "contracts/igp",
     "contracts/interfaces",
     "contracts/merkle",
-    # "contracts/merkle-test",
+    "contracts/merkle-test",
     "contracts/message",
     "contracts/std-lib-extended",
     "contracts/mock-post-dispatch",
     "contracts/msg-recipient-test",
     "contracts/ism-test",
+    "contracts/multisig-ism",
+    "contracts/multisig-ism-metadata",
 ]
