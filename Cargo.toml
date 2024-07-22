@@ -4,7 +4,7 @@ members = ["contracts/mailbox", "test-utils", "deploy", "e2e"]
 
 
 [workspace.dependencies]
-fuels = "0.64.0"
+fuels = "0.65.1"
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }
 hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }

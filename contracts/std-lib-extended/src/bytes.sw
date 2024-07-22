@@ -176,9 +176,12 @@ impl Bytes {
     /// Reads a b256 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_b256(self, offset: u64) -> b256 {
-        let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
 
-        b256::from_packed_bytes(read_ptr)
+        let data = self.split_at(offset).1.split_at(B256_BYTE_COUNT).0;
+        BufferReader::from_parts(data.ptr(), data.len()).decode()
+
+        // let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
+        // b256::from_packed_bytes(read_ptr)
     }
 
     // ===== EvmAddress ====
@@ -239,9 +242,11 @@ impl Bytes {
     /// Reads a u32 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u32(self, offset: u64) -> u32 {
-        let read_ptr = self.get_read_ptr(offset, U32_BYTE_COUNT);
+        let data = self.split_at(offset).1.split_at(U32_BYTE_COUNT).0;
+        BufferReader::from_parts(data.ptr(), data.len()).decode()
+        // let read_ptr = self.get_read_ptr(offset, U32_BYTE_COUNT);
 
-        u32::from_packed_bytes(read_ptr)
+        // u32::from_packed_bytes(read_ptr)
     }
 
     // ===== u16 ====
@@ -335,32 +340,30 @@ impl Bytes {
         keccak256(self)
     }
 }
-// TODO check if needed
-// impl Bytes {
-//     /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
-//     pub fn with_ethereum_prefix(hash: b256) -> Self {
-//         let prefix = "Ethereum Signed Message:";
-//         // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-//         let prefix_len = 1 + 24 + 1 + 2;
-//         let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
 
-//         let mut offset = 0u64;
-//         // Write the 0x19
-//         offset = _self.write_u8(offset, 0x19u8);
-//         // Write the prefix
-//         offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-//         // Write \n (0x0a is the utf-8 representation of \n)
-//         offset = _self.write_u8(offset, 0x0au8);
-//         // Write "32" as a string.
-//         let hash_len_str = "32";
-//         offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-//         // Write the hash
-//         offset = _self.write_b256(offset, hash);
-
-//         assert(offset == _self.len);
-//         _self
-//     }
-// }
+impl Bytes {
+    /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
+    pub fn with_ethereum_prefix(hash: b256) -> Self {
+        let prefix = "Ethereum Signed Message:";
+        // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
+        let prefix_len = 1 + 24 + 1 + 2;
+        let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
+        let mut offset = 0u64;
+        // Write the 0x19
+        offset = _self.write_u8(offset, 0x19u8);
+        // Write the prefix
+        offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
+        // Write \n (0x0a is the utf-8 representation of \n)
+        offset = _self.write_u8(offset, 0x0au8);
+        // Write "32" as a string.
+        let hash_len_str = "32";
+        offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
+        // Write the hash
+        offset = _self.write_b256(offset, hash);
+        //assert(offset == _self.len);
+        _self
+    }
+}
 
 // Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
 // Certain situations, like when a Vec is a parameter to a public abi function,
