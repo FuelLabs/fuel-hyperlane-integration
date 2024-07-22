@@ -73,7 +73,6 @@ impl EncodedMessage {
         let bytes = Bytes::from(buffer.as_raw_slice());
 
         Self { bytes }
-
     }
 
     pub fn message_clean(self) -> EncodedMessage {
@@ -112,8 +111,9 @@ impl EncodedMessage {
     /// Gets the message's nonce.
     pub fn nonce(self) -> u32 {
         let bytes = self.bytes.clone();
-        let data = bytes.split_at(NONCE_BYTE_OFFSET).1.split_at(ORIGIN_BYTE_OFFSET - NONCE_BYTE_OFFSET).0;
-        BufferReader::from_parts(data.ptr(), data.len()).decode()
+        bytes.read_u32(NONCE_BYTE_OFFSET)
+        // let data = bytes.split_at(NONCE_BYTE_OFFSET).1.split_at(ORIGIN_BYTE_OFFSET - NONCE_BYTE_OFFSET).0;
+        // BufferReader::from_parts(data.ptr(), data.len()).decode()
     }
 
     /// Gets the message's origin domain.
@@ -126,8 +126,9 @@ impl EncodedMessage {
     /// Gets the message's sender.
     pub fn sender(self) -> b256 {
         let bytes = self.bytes.clone();
-        let data = bytes.split_at(SENDER_BYTE_OFFSET).1.split_at(DESTINATION_BYTE_OFFSET - SENDER_BYTE_OFFSET).0;
-        BufferReader::from_parts(data.ptr(), data.len()).decode()
+        bytes.read_b256(SENDER_BYTE_OFFSET)
+        // let data = bytes.split_at(SENDER_BYTE_OFFSET).1.split_at(DESTINATION_BYTE_OFFSET - SENDER_BYTE_OFFSET).0;
+        // BufferReader::from_parts(data.ptr(), data.len()).decode()
     }
 
     /// Gets the message's destination domain.

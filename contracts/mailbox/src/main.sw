@@ -300,7 +300,7 @@ impl Mailbox for Contract {
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     #[storage(read)]
-    fn count() -> u64 {
+    fn count() -> u32 {
         _count()
     }
 
@@ -318,6 +318,12 @@ impl Mailbox for Contract {
         // (storage.merkle_tree.root(), storage.merkle_tree.get_count())
         let count = _count();
         (ZERO_B256, 0)
+    }
+
+    #[storage(read, write)]
+    fn recipient_ism(recipient: ContractId) -> ContractId {
+        let recipient = abi(MessageRecipient, recipient.into());
+        recipient.interchain_security_module()  // XXX Tests, checks and permissions
     }
 }
 
@@ -350,7 +356,7 @@ fn _delivered(message_id: b256) -> bool {
 
 /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
 #[storage(read)]
-fn _count() -> u64 {
+fn _count() -> u32 {
     // storage.merkle_tree.get_count()
     0
 }

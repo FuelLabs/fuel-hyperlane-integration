@@ -92,7 +92,7 @@ abi Mailbox {
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     // TODO nonce ?
     #[storage(read)]
-    fn count() -> u64;
+    fn count() -> u32;
 
     /// Calculates and returns the merkle tree's current root.
     #[storage(read)]
@@ -102,4 +102,16 @@ abi Mailbox {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u64);
+
+    /// Returns the ISM set by a recipient.
+    ///
+    /// ### Arguments
+    ///
+    /// * `recipient` - The recipient's contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * The ISM contract Id.
+    #[storage(read, write)]
+    fn recipient_ism(recipient: ContractId) -> ContractId;
 }
