@@ -18,7 +18,7 @@ abigen!(
     ),
     Contract(
         name = "MsgRecipient",
-        abi = "contracts/msg-recipient-test/out/debug/msg-recipient-test-abi.json"
+        abi = "contracts/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
     ),
     Contract(
         name = "PostDispatchMock",

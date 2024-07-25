@@ -88,8 +88,13 @@ source = "member"
 dependencies = ["std"]
 
 [[package]]
+name = "storagemapvec"
+source = "git+https://github.com/FuelLabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a"
+dependencies = ["std"]
+
+[[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?branch=master#624b664d1792bbb0955c6c66b051bc6dc722327b"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#2a869c583d2ab9fbe8de17a3301d928b224062c7"
 dependencies = [
     "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
     "std",
@@ -111,5 +116,6 @@ dependencies = [
     "standards git+https://github.com/FuelLabs/sway-standards?branch=master#ade6077a83657498deb2f9bf46aa02ced03c3b01",
     "std",
     "std_lib_extended",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#624b664d1792bbb0955c6c66b051bc6dc722327b",
+    "storagemapvec",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#2a869c583d2ab9fbe8de17a3301d928b224062c7",
 ]

@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["contracts/mailbox", "test-utils", "deploy", "e2e"]
+members = [
+  "contracts/mailbox",
+  "contracts/validator-announce",
+  "test-utils",
+  "deploy",
+  "e2e",
+]
 
 
 [workspace.dependencies]

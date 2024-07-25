@@ -1,0 +1,22 @@
+[package]
+authors = ["Emre Keskin"]
+edition = "2021"
+license = "Apache-2.0"
+name = "validator-announce"
+version = "0.1.0"
+
+[dependencies]
+fuels = { version = "0.64.0", features = ["fuel-core-lib"] }
+tokio = { version = "1.12", features = ["rt", "macros"] }
+ethers = { version = "2.0", features = ["legacy"] }
+schemars = "0.8.21"
+eyre = "0.6.8"
+
+hyperlane-core = { workspace = true }
+hyperlane-ethereum = { workspace = true }
+test-utils = { path = "../../test-utils" }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

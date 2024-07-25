@@ -335,32 +335,44 @@ impl Bytes {
         keccak256(self)
     }
 }
-// TODO check if needed
-// impl Bytes {
-//     /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
-//     pub fn with_ethereum_prefix(hash: b256) -> Self {
-//         let prefix = "Ethereum Signed Message:";
-//         // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-//         let prefix_len = 1 + 24 + 1 + 2;
-//         let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
 
-//         let mut offset = 0u64;
-//         // Write the 0x19
-//         offset = _self.write_u8(offset, 0x19u8);
-//         // Write the prefix
-//         offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-//         // Write \n (0x0a is the utf-8 representation of \n)
-//         offset = _self.write_u8(offset, 0x0au8);
-//         // Write "32" as a string.
-//         let hash_len_str = "32";
-//         offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-//         // Write the hash
-//         offset = _self.write_b256(offset, hash);
 
-//         assert(offset == _self.len);
-//         _self
-//     }
-// }
+impl Bytes {
+    /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
+    pub fn with_ethereum_prefix(hash: b256) -> Self {
+        let prefix = "Ethereum Signed Message:";
+        let prefix_len = 1 + 24 + 1 + 2;
+        let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
+
+        let mut offset = 0u64;
+        offset = _self.write_u8(offset, 0x19u8);
+        offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
+        offset = _self.write_u8(offset, 0x0au8);
+        let hash_len_str = "32";
+        offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
+        offset = _self.write_b256(offset, hash);
+        // log("offset modified");
+        // log(offset);
+
+        //assert(offset == _self.len);
+        _self
+    }
+}
+
+pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
+    // Create copy that's 128 bytes in length.
+    // It's possible for `bytes` to have a length < 128 bytes,
+    // so to avoid the str[128] bad memory out of bounds, a copy with the
+    // correct length is created.
+    let mut copy = Bytes::with_length(128);
+    let _ = copy.write_bytes(0u64, bytes);
+
+    let read_ptr = copy.get_read_ptr(0, 128);
+    // convert the ptr to a str[128]
+    asm(ptr: read_ptr) {
+        ptr: str[128]
+    }
+}
 
 // Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
 // Certain situations, like when a Vec is a parameter to a public abi function,

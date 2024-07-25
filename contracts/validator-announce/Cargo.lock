@@ -15,7 +15,7 @@ dependencies = [
 [[package]]
 name = "abigen"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=befc38d#befc38daba7d8c44615f0fb12ea1a9993c2c9b67"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=6398aab7275ea57cc69e3f1581328ed5cf4b1dff#6398aab7275ea57cc69e3f1581328ed5cf4b1dff"
 dependencies = [
  "Inflector",
  "ethers 1.0.2",
@@ -1625,15 +1625,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deploy"
-version = "0.1.0"
-dependencies = [
- "fuels",
- "rand",
- "tokio",
-]
-
-[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1861,17 +1852,6 @@ name = "dyn-clone"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
-
-[[package]]
-name = "e2e"
-version = "0.1.0"
-dependencies = [
- "ethers 1.0.2",
- "fuels",
- "hyperlane-core",
- "rand",
- "tokio",
-]
 
 [[package]]
 name = "ecdsa"
@@ -2450,7 +2430,7 @@ dependencies = [
 [[package]]
 name = "ethers-prometheus"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=befc38d#befc38daba7d8c44615f0fb12ea1a9993c2c9b67"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=6398aab7275ea57cc69e3f1581328ed5cf4b1dff#6398aab7275ea57cc69e3f1581328ed5cf4b1dff"
 dependencies = [
  "abigen",
  "async-trait",
@@ -4049,7 +4029,7 @@ dependencies = [
 [[package]]
 name = "hyperlane-core"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=befc38d#befc38daba7d8c44615f0fb12ea1a9993c2c9b67"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=6398aab7275ea57cc69e3f1581328ed5cf4b1dff#6398aab7275ea57cc69e3f1581328ed5cf4b1dff"
 dependencies = [
  "async-rwlock",
  "async-trait",
@@ -4078,7 +4058,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3",
- "strum 0.26.3",
+ "strum 0.25.0",
  "thiserror",
  "tiny-keccak",
  "tokio",
@@ -4089,7 +4069,7 @@ dependencies = [
 [[package]]
 name = "hyperlane-ethereum"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=befc38d#befc38daba7d8c44615f0fb12ea1a9993c2c9b67"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=6398aab7275ea57cc69e3f1581328ed5cf4b1dff#6398aab7275ea57cc69e3f1581328ed5cf4b1dff"
 dependencies = [
  "abigen",
  "async-trait",
@@ -5108,17 +5088,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mailbox"
-version = "0.1.0"
-dependencies = [
- "ethers 1.0.2",
- "fuels",
- "hyperlane-core",
- "test-utils",
- "tokio",
-]
-
-[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5838,9 +5807,9 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "pest"
-version = "2.7.11"
+version = "2.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd53dff83f26735fdc1ca837098ccf133605d794cdae66acfc2bfac3ec809d95"
+checksum = "560131c633294438da9f7c4b08189194b20946c8274c6b9e38881a7874dc8ee8"
 dependencies = [
  "memchr",
  "thiserror",
@@ -5849,9 +5818,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.7.11"
+version = "2.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a548d2beca6773b1c244554d36fcf8548a8a58e74156968211567250e48e49a"
+checksum = "26293c9193fbca7b1a3bf9b79dc1e388e927e6cacaa78b4a3ab705a1d3d41459"
 dependencies = [
  "pest",
  "pest_generator",
@@ -5859,9 +5828,9 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.7.11"
+version = "2.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c93a82e8d145725dcbaf44e5ea887c8a869efdcc28706df2d08c69e17077183"
+checksum = "3ec22af7d3fb470a85dd2ca96b7c577a1eb4ef6f1683a9fe9a8c16e136c04687"
 dependencies = [
  "pest",
  "pest_meta",
@@ -5872,9 +5841,9 @@ dependencies = [
 
 [[package]]
 name = "pest_meta"
-version = "2.7.11"
+version = "2.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a941429fea7e08bedec25e4f6785b6ffaacc6b755da98df5ef3e7dcf4a124c4f"
+checksum = "d7a240022f37c361ec1878d646fc5b7d7c4d28d5946e1a80ad5a7a4f4ca0bdcd"
 dependencies = [
  "once_cell",
  "pest",
@@ -7241,9 +7210,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.120"
+version = "1.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
+checksum = "e8eddb61f0697cc3989c5d64b452f5488e2b8a60fd7d5076a3045076ffef8cb0"
 dependencies = [
  "itoa",
  "ryu",
@@ -7778,7 +7747,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 name = "test-utils"
 version = "0.1.0"
 dependencies = [
- "ethers 1.0.2",
+ "ethers 2.0.14",
  "ethers-signers 2.0.14",
  "eyre",
  "fuels",
@@ -8947,18 +8916,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.7.35"
+version = "0.7.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
+checksum = "ae87e3fcd617500e5d106f0380cf7b77f3c6092aae37191433159dda23cfb087"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.35"
+version = "0.7.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
+checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
 dependencies = [
  "proc-macro2",
  "quote",

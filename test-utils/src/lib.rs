@@ -1,8 +1,5 @@
-use std::str::FromStr;
-
-//use ethers::core::k256::ecdsa::SigningKey;
 use ethers::types::{Signature as EthersSignature, U256};
-//use ethers_signers::{LocalWallet, Signer, Wallet};
+use std::str::FromStr;
 
 use fuels::{
     accounts::{wallet::WalletUnlocked, Account},
@@ -23,6 +20,13 @@ fn hyperlane_to_ethers_u256(value: hyperlane_core::U256) -> ethers::types::U256 
     let mut bytes = [0u8; 32];
     value.to_big_endian(&mut bytes);
     ethers::types::U256::from_big_endian(&bytes)
+}
+
+pub struct Announcement {
+    pub validator: EvmAddress,
+    pub mailbox_address: H256,
+    pub mailbox_domain: u32,
+    pub storage_location: String,
 }
 
 pub struct HyperlaneSignatureWrapper(HyperlaneSignature);
@@ -65,14 +69,13 @@ pub fn get_signer(private_key: &str) -> Signers {
     Signers::from(wallet)
 }
 */
-
 pub fn signature_to_compact(signature: &EthersSignature) -> [u8; 64] {
     let mut compact = [0u8; 64];
 
     let mut r_bytes = [0u8; 32];
     signature.r.to_big_endian(&mut r_bytes);
-
     let mut s_and_y_parity_bytes = [0u8; 32];
+    
     // v is either 27 or 28, subtract 27 to normalize to y parity as 0 or 1
     let y_parity = signature.v - 27;
     let s_and_y_parity = (U256::from(y_parity) << 255) | signature.s;
@@ -80,7 +83,6 @@ pub fn signature_to_compact(signature: &EthersSignature) -> [u8; 64] {
 
     compact[..32].copy_from_slice(&r_bytes);
     compact[32..64].copy_from_slice(&s_and_y_parity_bytes);
-
     compact
 }
 
@@ -88,7 +90,8 @@ pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, sig
     let signed = signer.sign(signable).await.unwrap();
     let ethers_signature: EthersSignature =
         HyperlaneSignatureWrapper::from(signed.signature).into();
-    return B512::try_from(signature_to_compact(&ethers_signature).as_slice()).unwrap();
+    let compact_signature = signature_to_compact(&ethers_signature);
+    B512::try_from(compact_signature.as_slice()).unwrap()
 }
 
 pub async fn funded_wallet_with_private_key(
@@ -114,16 +117,14 @@ async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Resul
 }
 
 pub fn get_revert_reason(call_error: Error) -> String {
-    let reason = if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
+    if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
         reason
     } else {
         panic!(
             "Error is not a RevertTransactionError. Error: {:?}",
             call_error
         );
-    };
-
-    return reason;
+    }
 }
 
 // Given an Error from a call or simulation, returns the revert reason.
