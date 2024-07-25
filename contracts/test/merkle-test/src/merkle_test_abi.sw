@@ -9,7 +9,7 @@ abi TestStorageMerkleTree {
     fn root() -> b256;
 
     #[storage(read)]
-    fn get_count() -> u64;
+    fn get_count() -> u32;
 
     fn branch_root(leaf: b256, branch: [b256; 32], index: u64) -> b256;
 }

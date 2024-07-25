@@ -5,4 +5,4 @@ license = "Apache-2.0"
 name = "mock-post-dispatch"
 
 [dependencies]
-interfaces = { path = "../interfaces" }
+interfaces = { path = "../../interfaces" }

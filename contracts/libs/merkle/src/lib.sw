@@ -18,7 +18,13 @@ use std::{
         },
         storage_key::*,
     },
+    bytes::Bytes,
 };
+
+
+enum MerkleError {
+    MerkleTreeFull: (),
+}
 
 // The depth of the merkle tree.
 const TREE_DEPTH: u64 = 32;
@@ -26,7 +32,7 @@ const TREE_DEPTH: u64 = 32;
 // The max number of leaves in the tree.
 // Sway doesn't let you exponentiate in a const - this is the
 // pre-calculated value of (2 ** 32) - 1
-const MAX_LEAVES: u64 = 4294967295;
+const MAX_LEAVES: u32 = 4294967295;
 
 // Keccak256 zero hashes.
 // Copied from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
@@ -92,8 +98,7 @@ impl StorageKey<StorageMerkleTree> {
     // Reads an element of `branch` from storage.
     #[storage(read)]
     pub fn get_branch(self, index: u64) -> b256 {
-        let res = read::<b256>(sha256((index, self.field_id())), 0);
-        // let res = read::<b256>(self.get_branch_storage_key(index), 0);
+        let res = read::<b256>(self.get_branch_storage_key(index), 0);
         match res {
             Some(value) => value,
             None => ZERO_B256,
@@ -106,13 +111,13 @@ impl StorageKey<StorageMerkleTree> {
     }
 
     #[storage(read)]
-    pub fn get_count(self) -> u64 {
-        read::<u64>(self.field_id(), 0).unwrap_or(0)
+    pub fn get_count(self) -> u32 {
+        read::<u32>(self.field_id(), 0).unwrap_or(0)
     }
 
     // Writes the `count` into storage.
     #[storage(write)]
-    fn store_count(self, count: u64) {
+    fn store_count(self, count: u32) {
         write(self.field_id(), 0, count)
     }
 
@@ -121,7 +126,7 @@ impl StorageKey<StorageMerkleTree> {
     #[storage(read, write)]
     pub fn insert(self, leaf: b256) {
         let count = self.get_count();
-        require(count < MAX_LEAVES, "merkle tree full");
+        require(count < MAX_LEAVES, MerkleError::MerkleTreeFull);
 
         // Increment the count.
         let mut count = count + 1;

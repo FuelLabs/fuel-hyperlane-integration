@@ -21,7 +21,6 @@ use std::{
     revert::revert,
     storage::storage_map::*,
 };
-use merkle::*;
 use message::{EncodedMessage, Message};
 
 /// Hyperlane Protocol Version.
@@ -49,8 +48,6 @@ configurable {
 
 storage {
     delivered: StorageMap<b256, bool> = StorageMap::<b256, bool> {},
-    /// A merkle tree that includes outbound message IDs as leaves.
-    merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     default_ism: ContractId = ContractId::from(ZERO_B256),
     default_hook: ContractId = ContractId::from(ZERO_B256),
     required_hook: ContractId = ContractId::from(ZERO_B256),
@@ -60,7 +57,6 @@ storage {
 
 impl Mailbox for Contract {
     /// Initializes the contract.
-    /// TODO - Possibly add an init guard so that contract functions can only be called after initialization.
     #[storage(write)]
     fn initialize(
         owner: b256,
@@ -298,32 +294,10 @@ impl Mailbox for Contract {
         });
     }
 
-    /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
-    #[storage(read)]
-    fn count() -> u32 {
-        _count()
-    }
-
-    /// Calculates and returns the merkle tree's current root.
-    #[storage(read)]
-    fn root() -> b256 {
-        // storage.merkle_tree.root()
-        ZERO_B256
-    }
-
-    /// Returns a checkpoint representing the current merkle tree:
-    /// (root of merkle tree, index of the last element in the tree).
-    #[storage(read)]
-    fn latest_checkpoint() -> (b256, u64) {
-        // (storage.merkle_tree.root(), storage.merkle_tree.get_count())
-        let count = _count();
-        (ZERO_B256, 0)
-    }
-
     #[storage(read, write)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
-        recipient.interchain_security_module()  // XXX Tests, checks and permissions
+        recipient.interchain_security_module() 
     }
 }
 
@@ -339,7 +313,7 @@ fn _build_message(
     let sender = b256::from(msg_sender().unwrap().as_address().unwrap());
 
     EncodedMessage::new(
-        3,
+        VERSION,
         nonce,
         LOCAL_DOMAIN,
         sender,
@@ -354,12 +328,6 @@ fn _delivered(message_id: b256) -> bool {
     storage.delivered.get(message_id).try_read().unwrap_or(false)
 }
 
-/// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
-#[storage(read)]
-fn _count() -> u32 {
-    // storage.merkle_tree.get_count()
-    0
-}
 
 // Pausable and Ownable Implementations
 

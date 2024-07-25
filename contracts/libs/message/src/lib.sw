@@ -35,7 +35,7 @@ pub struct EncodedMessage {
 }
 
 // Byte offets of Message properties in an EncodedMessage.
-const VERSION_BYTE_OFFSET: u64 = 0u64;
+const _VERSION_BYTE_OFFSET: u64 = 0u64;
 const NONCE_BYTE_OFFSET: u64 = 1u64;
 const ORIGIN_BYTE_OFFSET: u64 = 5u64;
 const SENDER_BYTE_OFFSET: u64 = 9u64;

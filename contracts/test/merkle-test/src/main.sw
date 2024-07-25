@@ -21,7 +21,7 @@ impl TestStorageMerkleTree for Contract {
     }
 
     #[storage(read)]
-    fn get_count() -> u64 {
+    fn get_count() -> u32 {
         storage.tree.get_count()
     }
 
@@ -30,10 +30,4 @@ impl TestStorageMerkleTree for Contract {
     }
 }
 
-#[test]
-fn test_success() {
-    let test_contract = abi(TestStorageMerkleTree, CONTRACT_ID);
-    let result = test_contract.get_count();
 
-    assert_eq(result, 0);
-}

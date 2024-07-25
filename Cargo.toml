@@ -1,6 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["contracts/mailbox", "test-utils", "deploy", "e2e"]
+members = [
+    "contracts/mailbox",
+    "test-utils",
+    "deploy",
+    "e2e",
+    "contracts/hooks/merkle-tree-hook",
+    "contracts/test/merkle-test",
+]
 
 
 [workspace.dependencies]
@@ -9,3 +16,6 @@ ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }
 hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }
 tokio = { version = "1.16.1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+sha3 = "0.10.8"
+serde_json = "1.0"

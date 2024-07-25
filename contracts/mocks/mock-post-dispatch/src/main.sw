@@ -15,7 +15,7 @@ impl PostDispatchHook for Contract {
     }
 
     #[payable]
-    #[storage(read)]
+    #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
         // Do nothing
     }

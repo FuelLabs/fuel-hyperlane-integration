@@ -7,6 +7,8 @@ abi TestMessageRecipient {
     #[storage(read)]
     fn handled() -> bool;
 
+    #[storage(read, write)]
+    fn set_ism(module: ContractId);
 }
 
 storage {
@@ -16,7 +18,7 @@ storage {
 
 impl MessageRecipient for Contract {
     #[storage(read, write)]
-    fn handle(origin: u32, sender: b256, message_body: Bytes) {
+    fn handle(_origin: u32, _sender: b256, _message_body: Bytes) {
         storage.handled.write(true);
     }
 
@@ -30,6 +32,11 @@ impl TestMessageRecipient for Contract {
     #[storage(read)]
     fn handled() -> bool {
         storage.handled.read()
+    }
+
+    #[storage(read, write)]
+    fn set_ism(module: ContractId) {
+        storage.module.write(module)
     }
 
 }

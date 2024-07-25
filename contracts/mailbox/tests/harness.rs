@@ -18,15 +18,15 @@ abigen!(
     ),
     Contract(
         name = "MsgRecipient",
-        abi = "contracts/msg-recipient-test/out/debug/msg-recipient-test-abi.json"
+        abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json"
     ),
     Contract(
         name = "PostDispatchMock",
-        abi = "contracts/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
     ),
     Contract(
         name = "TestInterchainSecurityModule",
-        abi = "contracts/ism-test/out/debug/ism-test-abi.json",
+        abi = "contracts/test/ism-test/out/debug/ism-test-abi.json",
     ),
 );
 
@@ -65,7 +65,7 @@ async fn get_contract_instance() -> (
         .unwrap();
 
     let post_dispatch_id = Contract::load_from(
-        "../mock-post-dispatch/out/debug/mock-post-dispatch.bin",
+        "../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",
         LoadConfiguration::default(),
     )
     .unwrap()
@@ -74,7 +74,7 @@ async fn get_contract_instance() -> (
     .unwrap();
 
     let recipient_id = Contract::load_from(
-        "../msg-recipient-test/out/debug/msg-recipient-test.bin",
+        "../test/msg-recipient-test/out/debug/msg-recipient-test.bin",
         LoadConfiguration::default(),
     )
     .unwrap()
@@ -83,7 +83,7 @@ async fn get_contract_instance() -> (
     .unwrap();
 
     let default_ism_id = Contract::load_from(
-        "../ism-test/out/debug/ism-test.bin",
+        "../test/ism-test/out/debug/ism-test.bin",
         LoadConfiguration::default(),
     )
     .unwrap()
@@ -124,26 +124,6 @@ async fn get_contract_instance() -> (
         default_ism_id,
     )
 }
-
-// TODO from test utils
-// pub fn h256_to_bits256(h: H256) -> Bits256 {
-//     Bits256(h.0)
-// }
-// pub fn bits256_to_h256(b: Bits256) -> H256 {
-//     H256(b.0)
-// }
-// pub fn get_revert_reason(call_error: Error) -> String {
-//     let reason = if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
-//         reason
-//     } else {
-//         panic!(
-//             "Error is not a RevertTransactionError. Error: {:?}",
-//             call_error
-//         );
-//     };
-
-//     return reason;
-// }
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
@@ -281,29 +261,6 @@ async fn test_dispatch_returns_id() {
     assert_eq!(bits256_to_h256(dispatch_call.value), id);
 }
 
-// TODO test when mekrle tree is working
-// #[tokio::test]
-// async fn test_dispatch_inserts_into_tree() {
-//     let (mailbox, _, _) = get_contract_instance().await;
-
-//     let message_body = vec![10u8; 100];
-
-//     mailbox
-//         .methods()
-//         .dispatch(
-//             TEST_REMOTE_DOMAIN,
-//             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-//             Bytes(message_body),
-//         )
-//         .call()
-//         .await
-//         .unwrap();
-
-//     let count = mailbox.methods().count().simulate().await.unwrap();
-
-//     assert_eq!(count.value, 1u32);
-// }
-
 #[tokio::test]
 async fn test_dispatch_reverts_if_paused() {
     let (mailbox, _, _, post_dispatch_id, _) = get_contract_instance().await;
@@ -326,46 +283,6 @@ async fn test_dispatch_reverts_if_paused() {
 
     assert_eq!(get_revert_reason(call.unwrap_err()), "Paused");
 }
-
-// ============ latest_checkpoint ============
-
-// TODO test when mekrle tree is working
-// #[tokio::test]
-// async fn test_latest_checkpoint() {
-//     let (mailbox, _, _) = get_contract_instance().await;
-
-//     let message_body = vec![10u8; 100];
-
-//     // When no messages have been dispatched, the latest checkpoint fn should revert
-//     let call = mailbox.methods().latest_checkpoint().simulate().await;
-//     assert!(call.is_err());
-//     assert_eq!(
-//         get_revert_string(call.err().unwrap()),
-//         "no messages dispatched"
-//     );
-
-//     mailbox
-//         .methods()
-//         .dispatch(
-//             TEST_REMOTE_DOMAIN,
-//             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-//             Bytes(message_body),
-//         )
-//         .call()
-//         .await
-//         .unwrap();
-
-//     let (_root, index) = mailbox
-//         .methods()
-//         .latest_checkpoint()
-//         .simulate()
-//         .await
-//         .unwrap()
-//         .value;
-
-//     // The index is 0-indexed
-//     assert_eq!(index, 0u32);
-// }
 
 // ============ process ============
 
@@ -584,6 +501,38 @@ async fn test_unpause_reverts_if_not_owner() {
 
     assert!(call.is_err());
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
+}
+
+// ============ recipient_ism ============
+
+#[tokio::test]
+async fn test_recipient_ism() {
+    let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
+
+    let msg_recipient = MsgRecipient::new(recipient, mailbox.account());
+    let set_ism = msg_recipient
+        .methods()
+        .interchain_security_module()
+        .simulate()
+        .await
+        .unwrap();
+    assert!(set_ism.value == ContractId::zeroed());
+
+    msg_recipient
+        .methods()
+        .set_ism(default_ism.clone())
+        .call()
+        .await
+        .unwrap();
+
+    let set_ism = msg_recipient
+        .methods()
+        .interchain_security_module()
+        .simulate()
+        .await
+        .unwrap();
+
+    assert_eq!(set_ism.value, default_ism.into());
 }
 
 // ============ set_default_ism ============

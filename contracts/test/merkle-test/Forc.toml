@@ -2,8 +2,7 @@
 authors = ["Mantas Miklasevicius"]
 entry = "main.sw"
 license = "Apache-2.0"
-name = "ism-test"
+name = "merkle-test"
 
 [dependencies]
-interfaces = { path = "../interfaces" }
-message = { path = "../message" }
+merkle = { path = "../../libs/merkle" }
