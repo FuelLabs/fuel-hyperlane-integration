@@ -58,7 +58,6 @@ impl PostDispatchHook for Contract {
         let id = message.id();
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let latest_dispatched = mailbox.latest_dispatched_id();
-        // let latest_dispatched = b256::zero();
 
         require(
             latest_dispatched == id,
