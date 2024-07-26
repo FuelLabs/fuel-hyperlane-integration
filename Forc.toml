@@ -8,6 +8,7 @@ members = [
     "contracts/libs/message",
     "contracts/libs/std-lib-extended",
     "contracts/mocks/mock-post-dispatch",
+    "contracts/mocks/mock-msg-recipient",
     "contracts/test/msg-recipient-test",
     "contracts/test/ism-test",
     "contracts/hooks/merkle-tree-hook",
