@@ -190,7 +190,7 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    let (mailbox, _, recipient, post_dispatch_id, _) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let (message, metadata, hook) = test_message(&mailbox, &recipient, true);
     let message_id = message.id();
@@ -204,7 +204,9 @@ async fn test_dispatch_logs_message() {
             metadata,
             hook,
         )
-        .with_contract_ids(&[post_dispatch_id])
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -239,7 +241,7 @@ async fn test_dispatch_logs_message() {
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
-    let (mailbox, _, recipient, post_dispatch_id, _) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let (message, metadata, hook) = test_message(&mailbox, &recipient, true);
     let id = message.id();
@@ -253,7 +255,9 @@ async fn test_dispatch_returns_id() {
             metadata,
             hook,
         )
-        .with_contract_ids(&[post_dispatch_id])
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -288,7 +292,7 @@ async fn test_dispatch_reverts_if_paused() {
 
 #[tokio::test]
 async fn test_process_event() {
-    let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let (message, metadata, _) = test_message(&mailbox, &recipient, true);
 
@@ -296,7 +300,9 @@ async fn test_process_event() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient, default_ism])
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -319,7 +325,7 @@ async fn test_process_event() {
 
 #[tokio::test]
 async fn test_process_handled() {
-    let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let (message, metadata, _) = test_message(&mailbox, &recipient, true);
 
@@ -327,7 +333,9 @@ async fn test_process_handled() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient.clone(), default_ism])
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -339,7 +347,7 @@ async fn test_process_handled() {
 
 #[tokio::test]
 async fn test_process_deliver_twice() {
-    let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let (message, metadata, _) = test_message(&mailbox, &recipient, true);
 
@@ -347,7 +355,9 @@ async fn test_process_deliver_twice() {
         .methods()
         .process(metadata.clone(), Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient.clone(), default_ism.clone()])
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -366,8 +376,7 @@ async fn test_process_deliver_twice() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient, default_ism])
-        .call()
+        .determine_missing_contracts(Some(3))
         .await
         .unwrap_err();
 
@@ -390,8 +399,7 @@ async fn test_process_ism_reject() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient, default_ism])
-        .call()
+        .determine_missing_contracts(Some(3))
         .await
         .unwrap_err();
 
@@ -403,7 +411,7 @@ async fn test_process_ism_reject() {
 
 #[tokio::test]
 async fn test_process_reverts_if_paused() {
-    let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     // Pause the contract
     mailbox.methods().pause().call().await.unwrap();
@@ -414,8 +422,7 @@ async fn test_process_reverts_if_paused() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient, default_ism])
-        .call()
+        .determine_missing_contracts(Some(3))
         .await
         .unwrap_err();
 

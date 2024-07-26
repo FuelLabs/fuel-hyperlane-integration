@@ -145,6 +145,11 @@ impl Mailbox for Contract {
         storage.latest_dispatched_id.read()
     }
 
+    #[storage(read)]
+    fn nonce() -> u32 {
+        _nonce()
+    }
+
     /// Dispatches a message to the destination domain and recipient.
     /// Returns the message's ID.
     ///
@@ -181,7 +186,7 @@ impl Mailbox for Contract {
         let id = message.id();
 
         storage.latest_dispatched_id.write(id);
-        let nonce = storage.nonce.read();
+        let nonce = _nonce();
         storage.nonce.write(nonce + 1);
         log(DispatchEvent {
             message_id: id,
@@ -304,12 +309,17 @@ impl Mailbox for Contract {
 // Internal Contract Functions
 
 #[storage(read)]
+fn _nonce() -> u32 {
+    storage.nonce.read()
+}
+
+#[storage(read)]
 fn _build_message(
     destination_domain: u32,
     recipient: b256,
     message_body: Bytes,
 ) -> EncodedMessage {
-    let nonce = storage.nonce.read();
+    let nonce = _nonce();
     let sender = b256::from(msg_sender().unwrap().as_address().unwrap());
 
     EncodedMessage::new(
