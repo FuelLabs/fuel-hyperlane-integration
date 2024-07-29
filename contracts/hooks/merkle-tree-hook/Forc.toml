@@ -1,0 +1,10 @@
+[project]
+authors = ["Mantas Miklasevicius"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "merkle-tree-hook"
+
+[dependencies]
+interfaces = { path = "../../interfaces" }
+merkle = { path = "../../libs/merkle" }
+message = { path = "../../libs/message" }
