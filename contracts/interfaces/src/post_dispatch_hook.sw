@@ -24,7 +24,7 @@ abi PostDispatchHook {
     fn supports_metadata(metadata: Bytes) -> bool;
 
     #[payable]
-    #[storage(read)]
+    #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes);
 
     #[storage(read)]

@@ -8,5 +8,5 @@ name = "mailbox"
 sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
 standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
 interfaces = { path = "../interfaces" }
-merkle = { path = "../merkle" }
-message = { path = "../message" }
+merkle = { path = "../libs/merkle" }
+message = { path = "../libs/message" }

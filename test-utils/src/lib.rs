@@ -163,6 +163,16 @@ pub fn get_revert_string(call_error: Error) -> String {
     String::from_utf8(data).unwrap()
 }
 
+/// Kludge to deserialize into Bits256
+pub fn deserialize_bits_256<'de, D>(deserializer: D) -> Result<Bits256, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let buf = String::deserialize(deserializer)?;
+
+    Bits256::from_hex_str(&buf).map_err(serde::de::Error::custom)
+}
+
 /// Kludge to deserialize into Vec<Bits256>
 pub fn deserialize_vec_bits_256<'de, D>(deserializer: D) -> Result<Vec<Bits256>, D::Error>
 where

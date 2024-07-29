@@ -1,0 +1,21 @@
+[package]
+name = "merkle-test"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["mantasm"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { version = "0.65.1", features = ["fuel-core-lib"] }
+tokio = { version = "1.12", features = ["rt", "macros"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha3 = { workspace = true }
+test-utils = { path = "../../../test-utils" }
+
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

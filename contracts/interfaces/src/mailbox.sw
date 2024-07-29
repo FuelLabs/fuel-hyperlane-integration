@@ -90,18 +90,8 @@ abi Mailbox {
     fn process(metadata: Bytes, message: Bytes);
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
-    // TODO nonce ?
     #[storage(read)]
-    fn count() -> u32;
-
-    /// Calculates and returns the merkle tree's current root.
-    #[storage(read)]
-    fn root() -> b256;
-
-    /// Returns a checkpoint representing the current merkle tree:
-    /// (root of merkle tree, index of the last element in the tree).
-    #[storage(read)]
-    fn latest_checkpoint() -> (b256, u64);
+    fn nonce() -> u32;
 
     /// Returns the ISM set by a recipient.
     ///

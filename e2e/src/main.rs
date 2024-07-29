@@ -19,7 +19,7 @@ abigen!(
     ),
     Contract(
         name = "PostDispatch",
-        abi = "contracts/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
     )
 );
 
@@ -50,7 +50,7 @@ async fn main() {
 
     // Post Dispatch Mock Deployment
 
-    let binary_filepath = "../contracts/mock-post-dispatch/out/debug/mock-post-dispatch.bin";
+    let binary_filepath = "../contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin";
     let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
     let post_dispatch_contract_id = contract
         .deploy(&wallet, TxPolicies::default())
@@ -65,7 +65,7 @@ async fn main() {
     // Recipient deplyment
 
     let recipient_id = Contract::load_from(
-        "../contracts/msg-recipient-test/out/debug/msg-recipient-test.bin",
+        "../contracts/test/msg-recipient-test/out/debug/msg-recipient-test.bin",
         config,
     )
     .unwrap()

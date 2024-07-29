@@ -2,13 +2,6 @@ library;
 
 use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
 
-use hyperlane_message::Message;
-
-use multisig_ism_metadata::MultisigMetadata;
-
-use hyperlane_interfaces::ModuleType;
-
-
 abi MultisigIsm {
     #[storage(read)]
     fn threshold(domain: u32) -> u8;
