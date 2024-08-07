@@ -7,3 +7,4 @@ pub mod post_dispatch_hook;
 pub mod message_recipient;
 pub mod ism;
 pub mod merkle_tree_hook;
+pub mod igp;

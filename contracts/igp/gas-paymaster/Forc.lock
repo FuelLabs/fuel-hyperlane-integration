@@ -7,9 +7,9 @@ name = "gas-oracle"
 source = "member"
 dependencies = [
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#2f452703f513cb26e851c2bbdb8e234349f7a5ff",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#50be622109e3c584efc29edac5390c96f1ccc43a",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc",
 ]
 
 [[package]]

@@ -176,10 +176,8 @@ impl Bytes {
     /// Reads a b256 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_b256(self, offset: u64) -> b256 {
-
         let data = self.split_at(offset).1.split_at(B256_BYTE_COUNT).0;
         BufferReader::from_parts(data.ptr(), data.len()).decode()
-
         // let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
         // b256::from_packed_bytes(read_ptr)
     }
@@ -244,6 +242,7 @@ impl Bytes {
     pub fn read_u32(self, offset: u64) -> u32 {
         let data = self.split_at(offset).1.split_at(U32_BYTE_COUNT).0;
         BufferReader::from_parts(data.ptr(), data.len()).decode()
+
         // let read_ptr = self.get_read_ptr(offset, U32_BYTE_COUNT);
 
         // u32::from_packed_bytes(read_ptr)

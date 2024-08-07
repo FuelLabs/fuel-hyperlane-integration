@@ -6,7 +6,10 @@ members = [
     "deploy",
     "e2e",
     "contracts/hooks/merkle-tree-hook",
+    "contracts/hooks/igp",
     "contracts/test/merkle-test",
+    "contracts/igp/gas-oracle",
+    "contracts/igp/gas-paymaster",
 ]
 
 

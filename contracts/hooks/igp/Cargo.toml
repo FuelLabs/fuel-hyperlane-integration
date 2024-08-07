@@ -1,0 +1,17 @@
+[package]
+name = "igp-hook-test"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["Emre Keskin"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true }
+tokio = { workspace = true }
+hyperlane-core = { workspace = true }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"
