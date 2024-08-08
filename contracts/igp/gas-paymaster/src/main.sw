@@ -100,15 +100,6 @@ impl IGP for Contract {
             gas_oracle,
         });
     }
-    #[storage(read)]
-    fn gas_overhead(domain: u32) -> Option<u64> {
-        storage.gas_overheads.get(domain).try_read()
-    }
-    #[storage(read, write)]
-    fn set_gas_overhead(domain: u32, gas_overhead: u64) {
-        only_owner();
-        storage.gas_overheads.insert(domain, gas_overhead);
-    }
 }
 
 impl Claimable for Contract {
@@ -140,6 +131,7 @@ impl Claimable for Contract {
         });
     }
 }
+
 impl Ownable for Contract {
     #[storage(read)]
     fn owner() -> State {
@@ -180,6 +172,18 @@ impl OracleContractWrapper for Contract {
     #[storage(read)]
     fn get_gas_oracle(domain: u32) -> Option<b256> {
         storage.gas_oracles.get(domain).try_read()
+    }
+}
+
+impl IGPWithOverhead for Contract {
+    #[storage(read)]
+    fn gas_overhead(domain: u32) -> Option<u64> {
+        storage.gas_overheads.get(domain).try_read()
+    }
+    #[storage(read, write)]
+    fn set_gas_overhead(domain: u32, gas_overhead: u64) {
+        only_owner();
+        storage.gas_overheads.insert(domain, gas_overhead);
     }
 }
 

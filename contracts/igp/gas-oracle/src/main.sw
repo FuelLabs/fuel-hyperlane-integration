@@ -15,6 +15,16 @@ impl GasOracle for Contract {
     fn get_remote_gas_data(domain: u32) -> RemoteGasData {
         storage.remote_gas_data.get(domain).try_read().unwrap_or(RemoteGasData::default())
     }
+
+    /// Gets the token exchange rate and gas price for a given domain.
+    #[storage(read)]
+    fn get_exchange_rate_and_gas_price(domain: u32) -> ExchangeRateAndGasData {
+        let gas_data = storage.remote_gas_data.get(domain).try_read().unwrap_or(RemoteGasData::default());
+        ExchangeRateAndGasData {
+            token_exchange_rate: gas_data.token_exchange_rate,
+            gas_price: gas_data.gas_price,
+        }
+    }
 }
 impl StorageGasOracle for Contract {
     /// Sets the gas data for a given domain. Only callable by the owner.

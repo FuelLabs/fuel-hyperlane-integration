@@ -23,12 +23,6 @@ abi IGP {
 
     #[storage(read, write)]
     fn set_gas_oracle(domain: u32, gas_oracle: b256);
-
-    #[storage(read)]
-    fn gas_overhead(domain: u32) -> Option<u64>;
-
-    #[storage(read, write)]
-    fn set_gas_overhead(domain: u32, gas_overhead: u64);
 }
 
 // Allows the beneficiary to claim the contract's balance.
@@ -50,12 +44,28 @@ abi OracleContractWrapper {
     fn get_gas_oracle(domain: u32) -> Option<b256>;
 }
 
+//Functions required for calculation of overheads
+// Can be needed for specific domains in the future
+abi IGPWithOverhead {
+    #[storage(read)]
+    fn gas_overhead(domain: u32) -> Option<u64>;
+
+    #[storage(read, write)]
+    fn set_gas_overhead(domain: u32, gas_overhead: u64);
+}
+
 /// Gas data for a remote domain.
-/// TODO: consider packing data to reduce storage costs.
 pub struct RemoteGasData {
     pub token_exchange_rate: U128,
     pub gas_price: U128,
     pub token_decimals: u8,
+}
+
+/// Gas data for a remote domain.
+/// TODO: consider packing data to reduce storage costs.
+pub struct ExchangeRateAndGasData {
+    pub token_exchange_rate: U128,
+    pub gas_price: U128,
 }
 
 impl RemoteGasData {
@@ -72,6 +82,9 @@ impl RemoteGasData {
 abi GasOracle {
     #[storage(read)]
     fn get_remote_gas_data(domain: u32) -> RemoteGasData;
+
+    #[storage(read)]
+    fn get_exchange_rate_and_gas_price(domain: u32) -> ExchangeRateAndGasData;
 }
 
 ///ORACLE STORAGE CONTRACT INTERFACE
