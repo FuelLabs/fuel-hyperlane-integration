@@ -3821,8 +3821,10 @@ dependencies = [
 name = "igp-hook-test"
 version = "0.1.0"
 dependencies = [
+ "ethers",
  "fuels",
  "hyperlane-core",
+ "test-utils",
  "tokio",
 ]
 

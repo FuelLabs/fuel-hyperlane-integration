@@ -38,7 +38,6 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(_metadata: Bytes, message: Bytes) {
-        require(msg_amount() == 0, IGPHookError::NoValueExpected);
         require(_is_initialized(), IGPHookError::ContractNotInitialized);
 
         let igp_contract = abi(IGP, storage.igp.read().bits());
@@ -47,7 +46,7 @@ impl PostDispatchHook for Contract {
         let message_id = message.id();
         let destination_domain = message.destination();
         let sender = message.sender();
-        let gas_amount = 1000; //Todo: Must be changed to DEFAULT_GAS_VALUE
+        let gas_amount = 1000; //TODO: Must be changed to DEFAULT_GAS_VALUE
         igp_contract.pay_for_gas(
             message_id,
             destination_domain,

@@ -7,9 +7,11 @@ authors = ["Emre Keskin"]
 license = "Apache-2.0"
 
 [dev-dependencies]
-fuels = { workspace = true }
+fuels = { workspace = true, features = ["fuel-core-lib"] }
 tokio = { workspace = true }
 hyperlane-core = { workspace = true }
+ethers = { workspace = true }
+test-utils = { path = "../../../test-utils" }
 
 [[test]]
 harness = true
