@@ -1,6 +1,7 @@
 library;
 
 use std::{
+    bytes::Bytes,
     constants::ZERO_B256,
     hash::{
         Hash,
@@ -18,9 +19,7 @@ use std::{
         },
         storage_key::*,
     },
-    bytes::Bytes,
 };
-
 
 enum MerkleError {
     MerkleTreeFull: (),

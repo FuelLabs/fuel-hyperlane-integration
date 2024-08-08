@@ -114,16 +114,14 @@ async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Resul
 }
 
 pub fn get_revert_reason(call_error: Error) -> String {
-    let reason = if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
+    if let Error::Transaction(Reason::Reverted { reason, .. }) = call_error {
         reason
     } else {
         panic!(
             "Error is not a RevertTransactionError. Error: {:?}",
             call_error
         );
-    };
-
-    return reason;
+    }
 }
 
 // Given an Error from a call or simulation, returns the revert reason.
@@ -159,7 +157,6 @@ pub fn get_revert_string(call_error: Error) -> String {
         .cloned()
         .filter(|&byte| byte != 0)
         .collect();
-
     String::from_utf8(data).unwrap()
 }
 
