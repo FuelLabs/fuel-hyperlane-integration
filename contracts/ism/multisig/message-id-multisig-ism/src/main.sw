@@ -139,31 +139,3 @@ fn _validators_and_threshold(_message: Bytes) -> (Vec<EvmAddress>, u8) {
 fn _signature_at(metadata: Bytes, index: u32) -> Bytes {
     MessageIdMultisigIsmMetadata::new(metadata).signature_at(index)
 }
-
-// fn _to_compact_signature(signature: Bytes) -> Option<B512> {
-//     // Ensure the signature is properly formatted
-//     if signature.len() != 65 {
-//         return None
-//     }
-//     let (r, rest) = signature.split_at(32);
-//     let (s, v) = rest.split_at(32);
-//     let r_bytes: b256 = BufferReader::from_parts(r.ptr(), r.len()).decode();
-//     let r_bytes: [u8; 32] = r_bytes.to_be_bytes();
-//     let mut y_parity_and_s_bytes: b256 = BufferReader::from_parts(s.ptr(), s.len()).decode();
-//     let mut y_parity_and_s_bytes: [u8; 32] = y_parity_and_s_bytes.to_be_bytes();
-//     let v = v.read_u8(0);
-//     if v == 28 {
-//         y_parity_and_s_bytes[0] = __or(y_parity_and_s_bytes[0], 0x80);
-//     }
-
-//     let buffer = Buffer::new();
-//     let buffer = y_parity_and_s_bytes.abi_encode(buffer);
-//     let bytes = Bytes::from(buffer.as_raw_slice());
-//     let y_parity_and_s_bytes = b256::from(bytes);
-
-//     let buffer = Buffer::new();
-//     let buffer = r_bytes.abi_encode(buffer);
-//     let bytes = Bytes::from(buffer.as_raw_slice());
-//     let r_bytes = b256::from(bytes);
-//     Some(B512::from((r_bytes, y_parity_and_s_bytes)))
-// }

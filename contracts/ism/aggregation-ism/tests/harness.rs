@@ -317,6 +317,4 @@ async fn one_ism_rejects() {
     } else {
         panic!("Unexpected error");
     }
-
-    // assert_eq!(error, "DidNotMeetThreshold");
 }
