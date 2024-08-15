@@ -1,64 +1,15 @@
 [[package]]
-name = "aggregation-ism"
-source = "member"
-dependencies = [
-    "aggregation_ism_metadata",
-    "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#2f452703f513cb26e851c2bbdb8e234349f7a5ff",
-    "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#50be622109e3c584efc29edac5390c96f1ccc43a",
-]
-
-[[package]]
-name = "aggregation_ism_metadata"
-source = "member"
-dependencies = [
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
-name = "checkpoint"
-source = "member"
-dependencies = [
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
 name = "core"
 source = "path+from-root-2AB5BCE55EAAEFF4"
-
-[[package]]
-name = "default-fallback-domain-routing-ism"
-source = "member"
-dependencies = [
-    "interfaces",
-    "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#2f452703f513cb26e851c2bbdb8e234349f7a5ff",
-    "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#50be622109e3c584efc29edac5390c96f1ccc43a",
-]
-
-[[package]]
-name = "domain-routing-ism"
-source = "member"
-dependencies = [
-    "interfaces",
-    "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#2f452703f513cb26e851c2bbdb8e234349f7a5ff",
-    "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#50be622109e3c584efc29edac5390c96f1ccc43a",
-]
 
 [[package]]
 name = "gas-oracle"
 source = "member"
 dependencies = [
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#2f452703f513cb26e851c2bbdb8e234349f7a5ff",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#50be622109e3c584efc29edac5390c96f1ccc43a",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc",
 ]
 
 [[package]]
@@ -126,19 +77,6 @@ source = "member"
 dependencies = ["std"]
 
 [[package]]
-name = "merkle-root-multisig-ism"
-source = "member"
-dependencies = [
-    "checkpoint",
-    "interfaces",
-    "merkle",
-    "merkle_root_multisig_ism_metadata",
-    "message",
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
 name = "merkle-test"
 source = "member"
 dependencies = [
@@ -157,35 +95,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "merkle_root_multisig_ism_metadata"
-source = "member"
-dependencies = [
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
 name = "message"
-source = "member"
-dependencies = [
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
-name = "message-id-multisig-ism"
-source = "member"
-dependencies = [
-    "checkpoint",
-    "interfaces",
-    "message",
-    "message_id_multisig_ism_metadata",
-    "std",
-    "std_lib_extended",
-]
-
-[[package]]
-name = "message_id_multisig_ism_metadata"
 source = "member"
 dependencies = [
     "std",

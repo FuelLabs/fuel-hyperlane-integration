@@ -20,7 +20,6 @@ pub enum TypeBytes {
     U16: u64,
 }
 
-
 pub trait GetValue<T> {
     fn get_value(self) -> T;
 }

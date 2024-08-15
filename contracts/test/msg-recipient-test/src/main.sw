@@ -38,5 +38,4 @@ impl TestMessageRecipient for Contract {
     fn set_ism(module: ContractId) {
         storage.module.write(module)
     }
-
 }

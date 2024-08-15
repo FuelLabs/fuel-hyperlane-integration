@@ -301,7 +301,7 @@ impl Mailbox for Contract {
     #[storage(read, write)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
-        recipient.interchain_security_module() 
+        recipient.interchain_security_module()
     }
 }
 
@@ -336,7 +336,6 @@ fn _build_message(
 fn _delivered(message_id: b256) -> bool {
     storage.delivered.get(message_id).try_read().unwrap_or(false)
 }
-
 
 // Pausable and Ownable Implementations
 

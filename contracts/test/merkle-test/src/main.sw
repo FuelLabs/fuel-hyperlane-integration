@@ -29,5 +29,3 @@ impl TestStorageMerkleTree for Contract {
         StorageMerkleTree::branch_root(leaf, branch, index)
     }
 }
-
-
