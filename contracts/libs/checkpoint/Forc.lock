@@ -1,0 +1,21 @@
+[[package]]
+name = "checkpoint"
+source = "member"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "core"
+source = "path+from-root-9000D08E03D0E7FC"
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?rev#efda0397c7bee77de73bd726ec0b732d57614973"
+dependencies = ["core"]
+
+[[package]]
+name = "std_lib_extended"
+source = "path+from-root-BB88418ED9759C8D"
+dependencies = ["std"]

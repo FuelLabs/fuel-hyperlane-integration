@@ -9,7 +9,9 @@ use std::{
         keccak256,
     },
     vm::evm::evm_address::EvmAddress,
+    array_conversions::b256::*,
 };
+
 use ::mem::*;
 
 /// The number of bytes in a b256.
@@ -27,6 +29,10 @@ impl b256 {
         asm(ptr: ptr) {
             ptr: b256
         }
+    }
+
+    pub fn generate(seed: u64) -> Self {
+        keccak256(seed)
     }
 }
 
@@ -316,8 +322,7 @@ impl Bytes {
         bytes
     }
 
-    // TODO check if needed
-    // /// Logs all bytes.
+    /// Logs all bytes.
     pub fn log(self) {
         // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#logd-log-data-event
         asm(ptr: self.ptr(), bytes: self.len()) {
@@ -338,6 +343,36 @@ impl Bytes {
     pub fn keccak256(self) -> b256 {
         keccak256(self)
     }
+
+    // Eth signatures are 65 bytes long, with the last byte representing the recovery id.
+    pub fn to_compact_signature(self) -> Option<B512> {
+        // Ensure the signature is properly formatted
+        if self.len() != 65 {
+            return None
+        }
+        let (r, rest) = self.split_at(32);
+        let (s, v) = rest.split_at(32);
+        let r_bytes: b256 = BufferReader::from_parts(r.ptr(), r.len()).decode();
+        let r_bytes: [u8; 32] = r_bytes.to_be_bytes();
+        let mut y_parity_and_s_bytes: b256 = BufferReader::from_parts(s.ptr(), s.len()).decode();
+        let mut y_parity_and_s_bytes: [u8; 32] = y_parity_and_s_bytes.to_be_bytes();
+        let v = v.read_u8(0);
+        if v == 28 {
+            y_parity_and_s_bytes[0] = __or(y_parity_and_s_bytes[0], 0x80);
+        }
+
+        let buffer = Buffer::new();
+        let buffer = y_parity_and_s_bytes.abi_encode(buffer);
+        let bytes = Bytes::from(buffer.as_raw_slice());
+        let y_parity_and_s_bytes = b256::from(bytes);
+
+        let buffer = Buffer::new();
+        let buffer = r_bytes.abi_encode(buffer);
+        let bytes = Bytes::from(buffer.as_raw_slice());
+        let r_bytes = b256::from(bytes);
+        Some(B512::from((r_bytes, y_parity_and_s_bytes)))
+    }
+
 }
 
 <<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
@@ -345,9 +380,45 @@ impl Bytes {
 =======
 >>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
 impl Bytes {
-    /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
-    pub fn with_ethereum_prefix(hash: b256) -> Self {
+    // XXX use `to_eth_signed_message_hash` instead
+    // Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
+    // pub fn with_ethereum_prefix(hash: b256) -> Self {
+    //     let prefix = "Ethereum Signed Message:";
+    //     // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
+    //     let prefix_len = 1 + 24 + 1 + 2;
+    //     let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
+    //     let mut offset = 0u64;
+    //     // Write the 0x19
+    //     offset = _self.write_u8(offset, 0x19u8);
+    //     // Write the prefix
+    //     offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
+    //     // Write \n (0x0a is the utf-8 representation of \n)
+    //     offset = _self.write_u8(offset, 0x0au8);
+    //     // Write "32" as a string.
+    //     let hash_len_str = "32";
+    //     offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
+    //     // Write the hash
+    //     offset = _self.write_b256(offset, hash);
+    //     //assert(offset == _self.len);
+    //     _self
+    // }
+
+    /// Returns the keccak256 digest of an ERC-191 signed data with version `0x45` (`personal_sign` messages).
+    ///
+    /// The digest is calculated by prefixing a bytes32 `messageHash` with
+    /// `"\x19Ethereum Signed Message:\n32"` and hashing the result. It corresponds with the
+    /// hash signed when using the https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`] JSON-RPC method.
+    ///
+    /// NOTE: The `messageHash` parameter is intended to be the result of hashing a raw message with
+    /// keccak256, although any bytes32 value can be safely used because the final digest will
+    /// be re-hashed.
+    pub fn to_eth_signed_message_hash(hash: b256) -> b256 {
+        // We need the String "\x19Ethereum Signed Message:\n32" to be encoded as bytes
+        // but sway does not encode special chars correctly when they are in a string
+        // so we need to encode them manually
+        let prefix_start = 0x19u8; // '\x19' in utf-8
         let prefix = "Ethereum Signed Message:";
+<<<<<<< HEAD
 <<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
         let prefix_len = 1 + 24 + 1 + 2;
         let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
@@ -381,6 +452,34 @@ impl Bytes {
 >>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
         //assert(offset == _self.len);
         _self
+=======
+        let escape_char = 0x0au8; // '\n' in utf-8
+        // We encode 32 as two separate bytes so we don't need to cut off the str length encoding
+        let postprefix1 = 0x33u8; // '3' in utf-8
+        let postprefix2 = 0x32u8; // '2' in utf-8
+
+        // Encode full prefix to buffer
+        let buffer = Buffer::new();
+        let buffer = prefix_start.abi_encode(buffer);
+        let buffer = prefix.abi_encode(buffer);
+        let buffer = escape_char.abi_encode(buffer);
+        let buffer = postprefix1.abi_encode(buffer);
+        let buffer = postprefix2.abi_encode(buffer);
+
+        // Cut off the str length encoding which is 8 bytes
+        let prefix_bytes = Bytes::from(buffer.as_raw_slice());
+        let (mut data, body_with_len) = prefix_bytes.split_at(1);
+        let body = body_with_len.split_at(8).1;
+        data.append(body); // Full prefix
+
+        // Encode the hash to buffer 
+        let buffer = Buffer::new();
+        let buffer = hash.abi_encode(buffer);
+        let hash_bytes = Bytes::from(buffer.as_raw_slice());
+
+        data.append(hash_bytes); // Fully encoded data
+        data.keccak256()
+>>>>>>> feat/ism
     }
 }
 <<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
@@ -401,6 +500,18 @@ pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
 }
 =======
 >>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
+
+#[test]
+fn eth_prefix_hash() {
+    let hash = 0x4e3f92dc1bff4057a7c5e6b9f1f6c9c3a573432c2e09b68a9efb86d9904aa96f;
+    // The expected hash derived by running the hash above through the same function in Solidity
+    // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/c1d49a32595bbe095960c43bee34e64a9cfe9f37/contracts/utils/cryptography/MessageHashUtils.sol#L30
+    let expected = 0xfd087af1ca133839a8eb21ef8598c2aa006c119f631b21b601949f1a22978c86;
+
+    let eth_prefix_hash = Bytes::to_eth_signed_message_hash(hash);
+    assert(expected == eth_prefix_hash);
+}
+
 
 // Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
 // Certain situations, like when a Vec is a parameter to a public abi function,
@@ -625,4 +736,5 @@ pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
 //     assert(
 //         std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value)),
 //     );
+// }
 // }

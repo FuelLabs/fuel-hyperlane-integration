@@ -3,7 +3,7 @@ contract;
 use merkle::*;
 use message::{EncodedMessage, Message};
 use std::{bytes::Bytes, context::msg_amount,};
-use interfaces::{mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*};
+use interfaces::{mailbox::mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*};
 
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},

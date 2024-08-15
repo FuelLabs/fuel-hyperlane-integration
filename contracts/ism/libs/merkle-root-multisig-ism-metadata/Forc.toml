@@ -1,0 +1,8 @@
+[project]
+authors = ["Mantas Miklasevicius"]
+entry = "lib.sw"
+license = "Apache-2.0"
+name = "merkle_root_multisig_ism_metadata"
+
+[dependencies]
+std_lib_extended = { path = "../../../libs/std-lib-extended" }
