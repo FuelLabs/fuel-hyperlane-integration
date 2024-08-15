@@ -14,4 +14,13 @@ members = [
     "contracts/hooks/merkle-tree-hook",
     "contracts/test/merkle-test",
     "contracts/test/mailbox-test",
+    "contracts/ism/multisig/merkle-root-multisig-ism",
+    "contracts/ism/multisig/message-id-multisig-ism",
+    "contracts/ism/aggregation-ism",
+    "contracts/ism/routing/domain-routing-ism",
+    "contracts/ism/routing/default-fallback-domain-routing-ism",
+    "contracts/ism/libs/merkle-root-multisig-ism-metadata",
+    "contracts/ism/libs/message-id-multisig-ism-metadata",
+    "contracts/ism/libs/aggregation-ism-metadata",
+    "contracts/libs/checkpoint",
 ]
