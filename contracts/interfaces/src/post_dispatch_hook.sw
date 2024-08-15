@@ -24,9 +24,14 @@ abi PostDispatchHook {
     fn supports_metadata(metadata: Bytes) -> bool;
 
     #[payable]
-    #[storage(read)]
+    #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes);
 
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64;
+}
+
+abi PostDispatchHookHelper {
+    #[storage(write)]
+    fn initialize(contract_id: ContractId);
 }
