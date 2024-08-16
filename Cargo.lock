@@ -2304,11 +2304,11 @@ source = "git+https://github.com/hyperlane-xyz/ethers-rs?tag=2024-04-25#361b69b9
 dependencies = [
  "ethers-addressbook",
  "ethers-contract",
- "ethers-core",
+ "ethers-core 1.0.2",
  "ethers-etherscan",
  "ethers-middleware",
  "ethers-providers",
- "ethers-signers",
+ "ethers-signers 1.0.2",
 ]
 
 [[package]]
@@ -2316,7 +2316,7 @@ name = "ethers-addressbook"
 version = "1.0.2"
 source = "git+https://github.com/hyperlane-xyz/ethers-rs?tag=2024-04-25#361b69b9561e11eb3cf8000a51de1985e2571785"
 dependencies = [
- "ethers-core",
+ "ethers-core 1.0.2",
  "once_cell",
  "serde",
  "serde_json",
@@ -2329,7 +2329,7 @@ source = "git+https://github.com/hyperlane-xyz/ethers-rs?tag=2024-04-25#361b69b9
 dependencies = [
  "ethers-contract-abigen",
  "ethers-contract-derive",
- "ethers-core",
+ "ethers-core 1.0.2",
  "ethers-providers",
  "futures-util",
  "hex",
@@ -2348,7 +2348,7 @@ dependencies = [
  "Inflector",
  "cfg-if",
  "dunce",
- "ethers-core",
+ "ethers-core 1.0.2",
  "eyre",
  "getrandom",
  "hex",
@@ -2370,7 +2370,7 @@ version = "1.0.2"
 source = "git+https://github.com/hyperlane-xyz/ethers-rs?tag=2024-04-25#361b69b9561e11eb3cf8000a51de1985e2571785"
 dependencies = [
  "ethers-contract-abigen",
- "ethers-core",
+ "ethers-core 1.0.2",
  "hex",
  "proc-macro2",
  "quote",
@@ -2409,11 +2409,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethers-core"
+version = "2.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82d80cc6ad30b14a48ab786523af33b37f28a8623fc06afd55324816ef18fb1f"
+dependencies = [
+ "arrayvec",
+ "bytes",
+ "chrono",
+ "const-hex",
+ "elliptic-curve 0.13.8",
+ "ethabi",
+ "generic-array 0.14.7",
+ "k256 0.13.3",
+ "num_enum",
+ "open-fastrlp",
+ "rand",
+ "rlp",
+ "serde",
+ "serde_json",
+ "strum 0.26.3",
+ "tempfile",
+ "thiserror",
+ "tiny-keccak",
+ "unicode-xid",
+]
+
+[[package]]
 name = "ethers-etherscan"
 version = "1.0.2"
 source = "git+https://github.com/hyperlane-xyz/ethers-rs?tag=2024-04-25#361b69b9561e11eb3cf8000a51de1985e2571785"
 dependencies = [
- "ethers-core",
+ "ethers-core 1.0.2",
  "getrandom",
  "reqwest",
  "semver 1.0.23",
@@ -2432,10 +2459,10 @@ dependencies = [
  "async-trait",
  "auto_impl 0.5.0",
  "ethers-contract",
- "ethers-core",
+ "ethers-core 1.0.2",
  "ethers-etherscan",
  "ethers-providers",
- "ethers-signers",
+ "ethers-signers 1.0.2",
  "futures-locks",
  "futures-util",
  "instant",
@@ -2457,7 +2484,7 @@ dependencies = [
  "async-trait",
  "auto_impl 1.2.0",
  "base64 0.13.1",
- "ethers-core",
+ "ethers-core 1.0.2",
  "futures-core",
  "futures-timer",
  "futures-util",
@@ -2493,11 +2520,30 @@ dependencies = [
  "coins-bip39 0.7.0",
  "elliptic-curve 0.12.3",
  "eth-keystore",
- "ethers-core",
+ "ethers-core 1.0.2",
  "hex",
  "rand",
  "sha2 0.10.8",
  "thiserror",
+]
+
+[[package]]
+name = "ethers-signers"
+version = "2.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "228875491c782ad851773b652dd8ecac62cda8571d3bc32a5853644dd26766c2"
+dependencies = [
+ "async-trait",
+ "coins-bip32 0.8.7",
+ "coins-bip39 0.8.7",
+ "const-hex",
+ "elliptic-curve 0.13.8",
+ "eth-keystore",
+ "ethers-core 2.0.14",
+ "rand",
+ "sha2 0.10.8",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -5874,9 +5920,9 @@ dependencies = [
 
 [[package]]
 name = "primitive-types"
-version = "0.12.2"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b34d9fd68ae0b74a41b21c03c2f62847aa0ffea044eee893b4c140b37e244e2"
+checksum = "9f3486ccba82358b11a77516035647c34ba167dfa53312630de83b12bd4f3d66"
 dependencies = [
  "fixed-hash",
  "impl-codec",
@@ -6332,6 +6378,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb919243f34364b6bd2fc10ef797edbfa75f33c252e7998527479c6d6b47e1ec"
 dependencies = [
  "bytes",
+ "rlp-derive",
  "rustc-hex",
 ]
 
@@ -7266,6 +7313,8 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "ethers",
+ "ethers-signers 2.0.14",
+ "eyre",
  "fuels",
  "hyperlane-core",
  "serde",
@@ -7715,6 +7764,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "validator-announce"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-signer",
+ "alloy-signer-local",
+ "fuels",
+ "hex",
+ "serde",
+ "tokio",
 ]
 
 [[package]]

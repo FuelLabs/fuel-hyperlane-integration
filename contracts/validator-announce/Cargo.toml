@@ -1,0 +1,22 @@
+[package]
+name = "validator-announce"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["Mantas M. <mantasm.dev@gmail.com>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+hex = "0.4"
+alloy-signer = "0.2.1"
+alloy-signer-local = "0.2.1"
+alloy-primitives = "0.7.7"
+
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

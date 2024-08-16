@@ -29,6 +29,13 @@ fn hyperlane_to_ethers_u256(value: hyperlane_core::U256) -> ethers::types::U256 
     ethers::types::U256::from_big_endian(&bytes)
 }
 
+pub struct Announcement {
+    pub validator: EvmAddress,
+    pub mailbox_address: H256,
+    pub mailbox_domain: u32,
+    pub storage_location: String,
+}
+
 pub struct HyperlaneSignatureWrapper(HyperlaneSignature);
 
 impl From<HyperlaneSignature> for HyperlaneSignatureWrapper {
@@ -69,14 +76,13 @@ pub fn get_signer(private_key: &str) -> Signers {
     Signers::from(wallet)
 }
 */
-
 pub fn signature_to_compact(signature: &EthersSignature) -> [u8; 64] {
     let mut compact = [0u8; 64];
 
     let mut r_bytes = [0u8; 32];
     signature.r.to_big_endian(&mut r_bytes);
-
     let mut s_and_y_parity_bytes = [0u8; 32];
+
     // v is either 27 or 28, subtract 27 to normalize to y parity as 0 or 1
     let y_parity = signature.v - 27;
     let s_and_y_parity = (U256::from(y_parity) << 255) | signature.s;
@@ -84,7 +90,6 @@ pub fn signature_to_compact(signature: &EthersSignature) -> [u8; 64] {
 
     compact[..32].copy_from_slice(&r_bytes);
     compact[32..64].copy_from_slice(&s_and_y_parity_bytes);
-
     compact
 }
 

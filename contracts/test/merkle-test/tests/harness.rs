@@ -46,7 +46,7 @@ async fn satisfies_test_cases() {
         for (i, leaf) in case.leaves.iter().enumerate() {
             let leaf_hash = {
                 let mut hasher = Keccak256::new();
-                println!("leaf len: {}", leaf.len());
+                // println!("leaf len: {}", leaf.len());
                 match case_index {
                     // TODO will never be reached, remove if you wont need to test Merkle Ism
                     1000 => {

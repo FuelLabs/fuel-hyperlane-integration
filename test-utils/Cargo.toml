@@ -9,5 +9,7 @@ ethers = { workspace = true }
 hyperlane-core = { workspace = true }
 # hyperlane-ethereum = { workspace = true }
 fuels = { workspace = true }
+eyre = "0.6.8"
+ethers-signers = "2.0.14"
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -1,6 +1,7 @@
 library;
 
 use std::{
+    array_conversions::b256::*,
     b512::B512,
     bytes::Bytes,
     constants::ZERO_B256,
@@ -9,7 +10,6 @@ use std::{
         keccak256,
     },
     vm::evm::evm_address::EvmAddress,
-    array_conversions::b256::*,
 };
 
 use ::mem::*;
@@ -372,33 +372,9 @@ impl Bytes {
         let r_bytes = b256::from(bytes);
         Some(B512::from((r_bytes, y_parity_and_s_bytes)))
     }
-
 }
 
 impl Bytes {
-    // XXX use `to_eth_signed_message_hash` instead
-    // Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
-    // pub fn with_ethereum_prefix(hash: b256) -> Self {
-    //     let prefix = "Ethereum Signed Message:";
-    //     // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-    //     let prefix_len = 1 + 24 + 1 + 2;
-    //     let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
-    //     let mut offset = 0u64;
-    //     // Write the 0x19
-    //     offset = _self.write_u8(offset, 0x19u8);
-    //     // Write the prefix
-    //     offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-    //     // Write \n (0x0a is the utf-8 representation of \n)
-    //     offset = _self.write_u8(offset, 0x0au8);
-    //     // Write "32" as a string.
-    //     let hash_len_str = "32";
-    //     offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-    //     // Write the hash
-    //     offset = _self.write_b256(offset, hash);
-    //     //assert(offset == _self.len);
-    //     _self
-    // }
-
     /// Returns the keccak256 digest of an ERC-191 signed data with version `0x45` (`personal_sign` messages).
     ///
     /// The digest is calculated by prefixing a bytes32 `messageHash` with
@@ -453,7 +429,6 @@ fn eth_prefix_hash() {
     let eth_prefix_hash = Bytes::to_eth_signed_message_hash(hash);
     assert(expected == eth_prefix_hash);
 }
-
 
 // Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
 // Certain situations, like when a Vec is a parameter to a public abi function,
