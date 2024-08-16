@@ -12,20 +12,32 @@ use std::{
 
 pub struct ValidatorAnnouncementEvent {
     pub validator: EvmAddress,
-    pub storage_location: StorageString,
+    pub storage_location: String,
 }
+
+ // Official Hyperlane V3 Interface
 abi ValidatorAnnounce {
     #[storage(read)]
-    fn get_validators() -> Vec<b256>;
+    fn get_announced_validators() -> Vec<b256>;
 
+    #[storage(read)]
+    fn get_announced_storage_locations(validators: Vec<b256>) -> Vec<Vec<String>>;
+
+    #[storage(read, write)]
+    fn announce(
+        validator: EvmAddress,
+        storage_location: String,
+        signature: Bytes,
+    ) -> bool;
+}
+
+// Additional functions which can be used for additional VA functionality
+abi ValidatorAnnounceFunctions {
     #[storage(read)]
     fn get_mailbox() -> ContractId;
 
     #[storage(read)]
     fn get_local_domain() -> u32;
-
-    #[storage(read)]
-    fn get_announced_storage_locations(validators: Vec<b256>) -> Vec<String>;
 
     #[storage(read)]
     fn get_announced_storage_location(validator: EvmAddress) -> String;
@@ -38,11 +50,4 @@ abi ValidatorAnnounce {
 
     #[storage(write)]
     fn set_local_domain(domain: u32);
-
-    #[storage(read, write)]
-    fn announce(
-        validator: EvmAddress,
-        storage_location: Bytes,
-        signature: B512,
-    );
 }

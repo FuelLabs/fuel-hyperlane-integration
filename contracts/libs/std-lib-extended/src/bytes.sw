@@ -1,6 +1,7 @@
 library;
 
 use std::{
+    array_conversions::b256::*,
     b512::B512,
     bytes::Bytes,
     constants::ZERO_B256,
@@ -9,7 +10,6 @@ use std::{
         keccak256,
     },
     vm::evm::evm_address::EvmAddress,
-    array_conversions::b256::*,
 };
 
 use ::mem::*;
@@ -372,37 +372,9 @@ impl Bytes {
         let r_bytes = b256::from(bytes);
         Some(B512::from((r_bytes, y_parity_and_s_bytes)))
     }
-
 }
 
-<<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
-
-=======
->>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
 impl Bytes {
-    // XXX use `to_eth_signed_message_hash` instead
-    // Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
-    // pub fn with_ethereum_prefix(hash: b256) -> Self {
-    //     let prefix = "Ethereum Signed Message:";
-    //     // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-    //     let prefix_len = 1 + 24 + 1 + 2;
-    //     let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
-    //     let mut offset = 0u64;
-    //     // Write the 0x19
-    //     offset = _self.write_u8(offset, 0x19u8);
-    //     // Write the prefix
-    //     offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-    //     // Write \n (0x0a is the utf-8 representation of \n)
-    //     offset = _self.write_u8(offset, 0x0au8);
-    //     // Write "32" as a string.
-    //     let hash_len_str = "32";
-    //     offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-    //     // Write the hash
-    //     offset = _self.write_b256(offset, hash);
-    //     //assert(offset == _self.len);
-    //     _self
-    // }
-
     /// Returns the keccak256 digest of an ERC-191 signed data with version `0x45` (`personal_sign` messages).
     ///
     /// The digest is calculated by prefixing a bytes32 `messageHash` with
@@ -418,41 +390,6 @@ impl Bytes {
         // so we need to encode them manually
         let prefix_start = 0x19u8; // '\x19' in utf-8
         let prefix = "Ethereum Signed Message:";
-<<<<<<< HEAD
-<<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
-        let prefix_len = 1 + 24 + 1 + 2;
-        let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
-
-        let mut offset = 0u64;
-        offset = _self.write_u8(offset, 0x19u8);
-        offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-        offset = _self.write_u8(offset, 0x0au8);
-        let hash_len_str = "32";
-        offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-        offset = _self.write_b256(offset, hash);
-        // log("offset modified");
-        // log(offset);
-
-=======
-        // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-        let prefix_len = 1 + 24 + 1 + 2;
-        let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
-        let mut offset = 0u64;
-        // Write the 0x19
-        offset = _self.write_u8(offset, 0x19u8);
-        // Write the prefix
-        offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
-        // Write \n (0x0a is the utf-8 representation of \n)
-        offset = _self.write_u8(offset, 0x0au8);
-        // Write "32" as a string.
-        let hash_len_str = "32";
-        offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
-        // Write the hash
-        offset = _self.write_b256(offset, hash);
->>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
-        //assert(offset == _self.len);
-        _self
-=======
         let escape_char = 0x0au8; // '\n' in utf-8
         // We encode 32 as two separate bytes so we don't need to cut off the str length encoding
         let postprefix1 = 0x33u8; // '3' in utf-8
@@ -479,27 +416,8 @@ impl Bytes {
 
         data.append(hash_bytes); // Fully encoded data
         data.keccak256()
->>>>>>> feat/ism
     }
 }
-<<<<<<< HEAD:contracts/std-lib-extended/src/bytes.sw
-
-pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
-    // Create copy that's 128 bytes in length.
-    // It's possible for `bytes` to have a length < 128 bytes,
-    // so to avoid the str[128] bad memory out of bounds, a copy with the
-    // correct length is created.
-    let mut copy = Bytes::with_length(128);
-    let _ = copy.write_bytes(0u64, bytes);
-
-    let read_ptr = copy.get_read_ptr(0, 128);
-    // convert the ptr to a str[128]
-    asm(ptr: read_ptr) {
-        ptr: str[128]
-    }
-}
-=======
->>>>>>> origin:contracts/libs/std-lib-extended/src/bytes.sw
 
 #[test]
 fn eth_prefix_hash() {
@@ -511,7 +429,6 @@ fn eth_prefix_hash() {
     let eth_prefix_hash = Bytes::to_eth_signed_message_hash(hash);
     assert(expected == eth_prefix_hash);
 }
-
 
 // Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
 // Certain situations, like when a Vec is a parameter to a public abi function,

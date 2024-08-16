@@ -1,20 +1,20 @@
 [package]
-authors = ["Emre Keskin"]
-edition = "2021"
-license = "Apache-2.0"
 name = "validator-announce"
+description = "A cargo-generate template for Rust + Sway integration testing."
 version = "0.1.0"
+edition = "2021"
+authors = ["Mantas M. <mantasm.dev@gmail.com>"]
+license = "Apache-2.0"
 
-[dependencies]
-fuels = { version = "0.64.0", features = ["fuel-core-lib"] }
-tokio = { version = "1.12", features = ["rt", "macros"] }
-ethers = { version = "2.0", features = ["legacy"] }
-schemars = "0.8.21"
-eyre = "0.6.8"
+[dev-dependencies]
+fuels = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+hex = "0.4"
+alloy-signer = "0.2.1"
+alloy-signer-local = "0.2.1"
+alloy-primitives = "0.7.7"
 
-hyperlane-core = { workspace = true }
-hyperlane-ethereum = { workspace = true }
-test-utils = { path = "../../test-utils" }
 
 [[test]]
 harness = true

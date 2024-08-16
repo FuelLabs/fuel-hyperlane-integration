@@ -1,17 +1,11 @@
 [project]
 authors = ["Emre Keskin"]
-edition = "2021"
 entry = "main.sw"
 license = "Apache-2.0"
 name = "validator-announce"
 
 [dependencies]
 interfaces = { path = "../interfaces" }
+std_lib_extended = { path = "../libs/std-lib-extended" }
 standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
-std_lib_extended = { path = "../std-lib-extended" }
 sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
-
-[[test]]
-harness = true
-name = "integration_tests"
-path = "tests/harness.rs"
