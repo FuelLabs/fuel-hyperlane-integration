@@ -207,11 +207,21 @@ async fn satisfies_test_cases() {
         }
 
         // Ensure the count is correct
-        let count = test_merkle.methods().get_count().simulate().await.unwrap();
+        let count = test_merkle
+            .methods()
+            .get_count()
+            .simulate(Execution::StateReadOnly)
+            .await
+            .unwrap();
         assert_eq!(count.value, case.leaves.len() as u32);
 
         // Ensure it produces the correct root
-        let root = test_merkle.methods().root().simulate().await.unwrap();
+        let root = test_merkle
+            .methods()
+            .root()
+            .simulate(Execution::StateReadOnly)
+            .await
+            .unwrap();
         assert_eq!(root.value, case.expected_root);
 
         // Ensure it can verify each of the leaves' proofs
@@ -220,7 +230,7 @@ async fn satisfies_test_cases() {
             let proof_root = test_merkle
                 .methods()
                 .branch_root(proof.leaf, path, proof.index as u64)
-                .simulate()
+                .simulate(Execution::StateReadOnly)
                 .await
                 .unwrap();
             assert_eq!(proof_root.value, case.expected_root);

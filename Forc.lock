@@ -27,7 +27,7 @@ dependencies = [
 
 [[package]]
 name = "core"
-source = "path+from-root-2AB5BCE55EAAEFF4"
+source = "path+from-root-BA54D33021D7CD23"
 
 [[package]]
 name = "default-fallback-domain-routing-ism"
@@ -233,7 +233,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "std"
-source = "git+https://github.com/fuellabs/sway?tag=v0.62.0#efda0397c7bee77de73bd726ec0b732d57614973"
+source = "git+https://github.com/fuellabs/sway?rev#ddad3aacd7971ccb2b9dc92666b130ada1bbae3e"
 dependencies = ["core"]
 
 [[package]]

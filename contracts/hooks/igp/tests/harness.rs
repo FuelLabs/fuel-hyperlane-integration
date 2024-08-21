@@ -173,7 +173,7 @@ async fn test_quote_dispatch() {
             igp.contract_id().clone(),
             oracle.contract_id().clone().clone(),
         ])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -200,7 +200,7 @@ async fn test_post_dispatch() {
             igp.contract_id().clone(),
             oracle.contract_id().clone(),
         ])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap();
 
@@ -239,7 +239,7 @@ async fn test_post_dispatch_with_insufficient_payment() {
             igp.contract_id().clone(),
             oracle.contract_id().clone(),
         ])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -274,7 +274,7 @@ async fn test_quote_dispatch_error_propagation() {
         .methods()
         .quote_dispatch(metadata, Bytes(message_bytes))
         .with_contract_ids(&[igp.contract_id().clone()]) //oracle contract is required when igp is called, but not provided
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await;
 
     assert_eq!(

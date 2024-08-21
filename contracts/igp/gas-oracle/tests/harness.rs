@@ -86,7 +86,7 @@ async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
         let remote_gas_data = oracle
             .methods()
             .get_remote_gas_data(config.domain)
-            .simulate()
+            .simulate(Execution::StateReadOnly)
             .await
             .unwrap()
             .value;
@@ -105,7 +105,7 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
     } = oracle
         .methods()
         .get_remote_gas_data(1234)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
