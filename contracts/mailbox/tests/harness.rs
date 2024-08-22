@@ -341,7 +341,12 @@ async fn test_process_handled() {
         .unwrap();
 
     let msg_recipient = MsgRecipient::new(recipient, mailbox.account());
-    let handled = msg_recipient.methods().handled().simulate().await.unwrap();
+    let handled = msg_recipient
+        .methods()
+        .handled()
+        .simulate(Execution::StateReadOnly)
+        .await
+        .unwrap();
     assert!(handled.value);
 }
 
@@ -365,7 +370,7 @@ async fn test_process_deliver_twice() {
     let delivered: bool = mailbox
         .methods()
         .delivered(h256_to_bits256(message.id()))
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -440,7 +445,7 @@ async fn test_pause() {
     let paused: bool = mailbox
         .methods()
         .is_paused()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -481,7 +486,7 @@ async fn test_unpause() {
     let paused: bool = mailbox
         .methods()
         .is_paused()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -520,7 +525,7 @@ async fn test_recipient_ism() {
     let set_ism = msg_recipient
         .methods()
         .interchain_security_module()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap();
     assert!(set_ism.value == ContractId::zeroed());
@@ -535,7 +540,7 @@ async fn test_recipient_ism() {
     let set_ism = msg_recipient
         .methods()
         .interchain_security_module()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap();
 
@@ -552,7 +557,7 @@ async fn test_set_default_ism() {
     let default_ism = mailbox
         .methods()
         .default_ism()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -581,7 +586,7 @@ async fn test_set_default_ism() {
     let default_ism = mailbox
         .methods()
         .default_ism()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -619,7 +624,7 @@ async fn test_set_default_hook() {
     let default_hook = mailbox
         .methods()
         .default_hook()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -647,7 +652,7 @@ async fn test_set_default_hook() {
     let default_hook = mailbox
         .methods()
         .default_hook()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -704,7 +709,7 @@ async fn test_set_required_hook() {
     let required_hook = mailbox
         .methods()
         .required_hook()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;

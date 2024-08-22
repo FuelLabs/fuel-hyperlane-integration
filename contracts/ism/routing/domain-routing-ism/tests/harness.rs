@@ -116,7 +116,7 @@ async fn getters_and_setters() {
     let domains = domain_routing_ism
         .methods()
         .domains()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -126,7 +126,7 @@ async fn getters_and_setters() {
     let domain_1_ism = domain_routing_ism
         .methods()
         .module(domain)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -145,7 +145,7 @@ async fn getters_and_setters() {
     let domains = domain_routing_ism
         .methods()
         .domains()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -156,7 +156,7 @@ async fn getters_and_setters() {
     let domain_1_ism = domain_routing_ism
         .methods()
         .module(domain)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -173,7 +173,7 @@ async fn getters_and_setters() {
     let domains = domain_routing_ism
         .methods()
         .domains()
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -183,7 +183,7 @@ async fn getters_and_setters() {
     let domain_1_ism = domain_routing_ism
         .methods()
         .module(domain)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;

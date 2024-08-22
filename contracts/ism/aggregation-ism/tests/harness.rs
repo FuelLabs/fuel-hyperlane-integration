@@ -122,7 +122,7 @@ async fn aggregation_getters_and_setters() {
     let (modules, threshold) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -145,7 +145,7 @@ async fn aggregation_getters_and_setters() {
     let (modules, threshold) = ism
         .methods()
         .modules_and_threshold(bytes)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -163,7 +163,7 @@ async fn all_isms_accept() {
     let (modules, threshold) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -187,7 +187,7 @@ async fn all_isms_accept() {
     let (modules, _) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -216,7 +216,7 @@ async fn invalid_metadata() {
     let (modules, threshold) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -240,7 +240,7 @@ async fn invalid_metadata() {
     let (modules, _) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -269,7 +269,7 @@ async fn one_ism_rejects() {
     let (modules, threshold) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -299,7 +299,7 @@ async fn one_ism_rejects() {
     let (modules, _) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
