@@ -11,7 +11,7 @@ abi MessageRecipient {
     /// * `sender` - The sender address on the origin chain.
     /// * `message_body` - Raw bytes content of the message body.
     #[storage(read, write)]
-    fn handle(origin: u32, sender: b256, message_body: Bytes);
+    fn handle(id: b256, origin: u32, sender: b256, message_body: Bytes);
 
     /// Returns the address of the ISM used for message verification.
     /// If zero address is returned, the mailbox default ISM is used.

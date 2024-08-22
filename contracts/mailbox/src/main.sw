@@ -289,7 +289,7 @@ impl Mailbox for Contract {
         );
 
         let sender = message.sender();
-        msg_recipient.handle(domain, sender, message.body());
+        msg_recipient.handle(id, domain, sender, message.body());
 
         log(ProcessEvent {
             message_id: id,

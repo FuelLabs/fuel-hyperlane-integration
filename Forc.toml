@@ -2,6 +2,7 @@
 
 members = [
   "contracts/mailbox",
+  "contracts/warp-route",
   "contracts/igp/gas-paymaster",
   "contracts/igp/gas-oracle",
   "contracts/interfaces",

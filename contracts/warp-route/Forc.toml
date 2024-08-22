@@ -1,0 +1,11 @@
+[project]
+authors = ["Emre Keskin"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "warp-route"
+
+[dependencies]
+interfaces = { path = "../interfaces" }
+message = { path = "../libs/message" }
+standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
+sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }

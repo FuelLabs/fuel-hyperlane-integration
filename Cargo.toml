@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "contracts/mailbox",
+    "contracts/warp-route",
     "test-utils",
     "deploy",
     "e2e",
