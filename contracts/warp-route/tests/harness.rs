@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod warp_route_test {
+mod warp_route {
     use fuels::{prelude::*, types::Bits256};
     use once_cell::sync::Lazy;
     use std::str::FromStr;

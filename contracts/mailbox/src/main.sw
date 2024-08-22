@@ -4,9 +4,8 @@ use sway_libs::{ownership::*, pausable::*, reentrancy::reentrancy_guard,};
 use standards::src5::State;
 
 use interfaces::{
-    events::*,
-    ism::*,
-    mailbox::Mailbox,
+    isms::ism::*,
+    mailbox::{mailbox::*, events::*},
     message_recipient::MessageRecipient,
     ownable::Ownable,
     post_dispatch_hook::*,

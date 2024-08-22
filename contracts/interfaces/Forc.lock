@@ -1,0 +1,92 @@
+[[package]]
+name = "core"
+source = "path+from-root-E19CE48B3E858B72"
+
+[[package]]
+name = "igp"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "interfaces"
+source = "member"
+dependencies = [
+    "message",
+    "standards",
+    "std",
+    "std_lib_extended",
+    "sway_libs",
+]
+
+[[package]]
+name = "ism-test"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "std",
+]
+
+[[package]]
+name = "mailbox"
+source = "member"
+dependencies = [
+    "interfaces",
+    "merkle",
+    "message",
+    "standards",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
+name = "merkle"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "message"
+source = "member"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "mock-post-dispatch"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
+]
+
+[[package]]
+name = "msg-recipient-test"
+source = "member"
+dependencies = [
+    "interfaces",
+    "std",
+]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18"
+dependencies = ["std"]
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?tag=v0.60.0#2f0392ee35a1e4dd80bd8034962d5b4083dfb8b6"
+dependencies = ["core"]
+
+[[package]]
+name = "std_lib_extended"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "sway_libs"
+source = "git+https://github.com/fuellabs/sway-libs?tag=v0.22.0#172adbbcc36e561a56c5820209445f86f0856bfc"
+dependencies = [
+    "standards",
+    "std",
+]

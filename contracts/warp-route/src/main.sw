@@ -41,7 +41,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{mailbox::*, ownable::Ownable, warp_route::*};
+use interfaces::{mailbox::mailbox::*, ownable::Ownable, warp_route::*};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
