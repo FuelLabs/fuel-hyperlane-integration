@@ -223,7 +223,13 @@ async fn test_initial_beneficiary() {
     let expected_beneficiary: Identity =
         Identity::Address(Address::from_str(INITIAL_BENEFICIARY_ADDRESS).unwrap());
 
-    let beneficiary = igp.methods().beneficiary().simulate().await.unwrap().value;
+    let beneficiary = igp
+        .methods()
+        .beneficiary()
+        .simulate(Execution::StateReadOnly)
+        .await
+        .unwrap()
+        .value;
     assert_eq!(beneficiary, expected_beneficiary);
 }
 
@@ -262,7 +268,7 @@ async fn test_pay_for_gas() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -338,7 +344,7 @@ async fn test_pay_for_gas_reverts_if_insufficient_payment() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -390,7 +396,7 @@ async fn test_pay_for_gas_reverts_if_not_base_asset() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -447,7 +453,7 @@ async fn test_quote_gas_payment() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -480,7 +486,7 @@ async fn test_quote_gas_payment() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -513,7 +519,7 @@ async fn test_quote_gas_payment() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -546,7 +552,7 @@ async fn test_quote_gas_payment() {
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN, TEST_GAS_AMOUNT)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -567,7 +573,7 @@ async fn test_quote_gas_payment_reverts_if_no_gas_oracle_set() {
     let quote = igp
         .methods()
         .quote_gas_payment(TEST_DESTINATION_DOMAIN + 1, TEST_GAS_AMOUNT)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await;
 
     assert!(quote.is_err());
@@ -714,7 +720,7 @@ async fn test_get_remote_gas_data() {
         .methods()
         .get_remote_gas_data(TEST_DESTINATION_DOMAIN)
         .with_contract_ids(&[oracle.contract_id().clone()])
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;
@@ -737,7 +743,7 @@ async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {
     let res = igp
         .methods()
         .get_gas_oracle(TEST_DESTINATION_DOMAIN + 10)
-        .simulate()
+        .simulate(Execution::StateReadOnly)
         .await
         .unwrap()
         .value;

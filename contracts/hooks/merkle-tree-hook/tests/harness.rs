@@ -96,7 +96,7 @@ async fn get_contract_instance() -> (
         let message = mailbox
             .methods()
             .build_outbound_message(DESTINATION, recipient, body)
-            .simulate()
+            .simulate(Execution::Realistic)
             .await
             .unwrap()
             .value;

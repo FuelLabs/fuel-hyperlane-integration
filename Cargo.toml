@@ -16,17 +16,15 @@ members = [
   "contracts/igp/gas-oracle",
   "contracts/igp/gas-paymaster",
   "contracts/validator-announce",
-
 ]
 
 
 [workspace.dependencies]
-# TODO update and resolve broken harness imports
-fuels = "0.65.1"
+fuels = "0.66.2"
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }
 hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", branch = "main" }
-tokio = { version = "1.16.1", features = ["full"] }
+tokio = { version = "1.12", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 sha3 = "0.10.8"
 serde_json = "1.0"
