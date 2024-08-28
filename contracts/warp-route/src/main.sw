@@ -149,11 +149,15 @@ impl WarpRoute for Contract {
         let message_body = _build_token_metadata_bytes(recipient, amount, asset_metadata);
 
         //Dispatch the message to the destination domain
-        let message_id = mailbox.dispatch(
+        let message_id = mailbox.dispatch {
+            coins: this_balance(AssetId::base()),
+            asset_id: b256::from(AssetId::base()),
+            gas: this_balance(AssetId::base()),
+        }(
             destination_domain,
             recipient,
             message_body,
-            message_body, //TODO: Should be metadata when metadata content is determined
+            Bytes::new(), // TODO: check if metadata is required
             hook_contract,
         );
 

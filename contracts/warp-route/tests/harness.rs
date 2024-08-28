@@ -428,10 +428,21 @@ mod warp_route {
                     .await
                     .unwrap();
 
+            //For gas payment
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    10_000_000,
+                    get_native_asset(),
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
+
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let amount = 1u64;
 
-            let call_params = CallParameters::new(amount, asset, 1_000_000_000);
+            let call_params = CallParameters::new(amount, asset, 5_000_000);
 
             // Transfer remote
             let call = warp_route
@@ -797,10 +808,21 @@ mod warp_route {
 
             assert_eq!(wallet_balance_before_mint + mint_amount, wallet_balance);
 
+            //For gas payment
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    10_000_000,
+                    get_native_asset(),
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
+
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let amount = 100;
 
-            let call_params = CallParameters::new(amount, asset, 100_000);
+            let call_params = CallParameters::new(amount, asset, 2_000_000);
 
             let call = warp_route
                 .methods()
