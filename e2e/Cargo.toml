@@ -7,5 +7,7 @@ edition = "2021"
 fuels = { workspace = true }
 tokio = { workspace = true }
 hyperlane-core = { workspace = true }
-ethers = { workspace = true }
-rand = "0.8.4"
+rand = { workspace = true }
+futures = { workspace = true }
+dotenv = "0.15"
+once_cell = "1.10.0"
