@@ -325,7 +325,7 @@ async fn test_process_event() {
 
 #[tokio::test]
 async fn test_process_handled() {
-    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, ism_id) = get_contract_instance().await;
 
     let (message, metadata, _) = test_message(&mailbox, &recipient, true);
 
@@ -333,9 +333,7 @@ async fn test_process_handled() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .determine_missing_contracts(Some(3))
-        .await
-        .unwrap()
+        .with_contract_ids(&[recipient.clone().into(), ism_id.into()])
         .call()
         .await
         .unwrap();

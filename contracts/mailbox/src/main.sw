@@ -319,7 +319,11 @@ fn _build_message(
     message_body: Bytes,
 ) -> EncodedMessage {
     let nonce = _nonce();
-    let sender = b256::from(msg_sender().unwrap().as_address().unwrap());
+    let sender: b256 = match msg_sender().unwrap() {
+        Identity::Address(address) => address.into(),
+        Identity::ContractId(contract_id) => contract_id.into(),
+        _ => revert(0x111),
+    };
 
     EncodedMessage::new(
         VERSION,
