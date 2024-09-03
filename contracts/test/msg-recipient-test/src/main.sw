@@ -18,7 +18,7 @@ storage {
 
 impl MessageRecipient for Contract {
     #[storage(read, write)]
-    fn handle(_origin: u32, _sender: b256, _message_body: Bytes) {
+    fn handle( _origin: u32, _sender: b256, _message_body: Bytes) {
         storage.handled.write(true);
     }
 
