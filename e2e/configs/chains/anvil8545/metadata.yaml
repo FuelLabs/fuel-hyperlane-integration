@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../schema.json
+name: anvil8545
+chainId: 31337
+domainId: 31337
+protocol: ethereum
+rpcUrls:
+  - http: http://localhost:8545
+displayName: Anvil Test Node # String: Human-readable name of the chain
