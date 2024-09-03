@@ -2181,12 +2181,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
 name = "downcast"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2210,9 +2204,7 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "fuels",
- "futures",
  "hyperlane-core",
- "once_cell",
  "rand",
  "tokio",
 ]
@@ -8135,6 +8127,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
 dependencies = [
  "try-lock",
+]
+
+[[package]]
+name = "warp-route"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "fuels",
+ "hyperlane-core",
+ "once_cell",
+ "test-utils",
+ "tokio",
 ]
 
 [[package]]

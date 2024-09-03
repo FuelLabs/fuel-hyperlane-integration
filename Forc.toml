@@ -2,6 +2,7 @@
 
 members = [
   "contracts/mailbox",
+  "contracts/warp-route",
   "contracts/interfaces",
   "contracts/libs/merkle",
   "contracts/libs/message",
