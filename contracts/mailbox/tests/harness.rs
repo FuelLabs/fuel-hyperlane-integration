@@ -333,7 +333,7 @@ async fn test_process_handled() {
         .methods()
         .process(metadata, Bytes(message.to_vec()))
         .with_tx_policies(TxPolicies::default())
-        .with_contract_ids(&[recipient.clone().into(), ism_id.into()])
+        .with_contract_ids(&[recipient.clone(), ism_id])
         .call()
         .await
         .unwrap();

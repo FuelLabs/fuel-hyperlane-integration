@@ -4,9 +4,9 @@ source = "member"
 dependencies = [
     "aggregation_ism_metadata",
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -35,9 +35,9 @@ source = "member"
 dependencies = [
     "interfaces",
     "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -46,9 +46,9 @@ source = "member"
 dependencies = [
     "interfaces",
     "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -56,9 +56,9 @@ name = "gas-oracle"
 source = "member"
 dependencies = [
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -66,9 +66,9 @@ name = "gas-paymaster"
 source = "member"
 dependencies = [
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -106,9 +106,9 @@ dependencies = [
     "interfaces",
     "merkle",
     "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "standards"
-source = "git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7"
+source = "git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5"
 dependencies = ["std"]
 
 [[package]]
@@ -228,7 +228,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "standards"
-source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.5.2#270350e69bd7455b7e99f0aae2e29a94d42324bd"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c"
 dependencies = ["std"]
 
 [[package]]
@@ -243,9 +243,9 @@ dependencies = ["std"]
 
 [[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25"
 dependencies = [
-    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.2#270350e69bd7455b7e99f0aae2e29a94d42324bd",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
     "std",
 ]
 
@@ -262,10 +262,10 @@ name = "validator-announce"
 source = "member"
 dependencies = [
     "interfaces",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
     "std_lib_extended",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
 
 [[package]]
@@ -274,7 +274,7 @@ source = "member"
 dependencies = [
     "interfaces",
     "message",
-    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#0cbef8516d9ebfc3fad194b8790ce13296f883e7",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#5b501cf54a5c5ddb77e042086627a6af7f8fb3a5",
     "std",
-    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#afb9fcdae8492449a28fa215f876ea3c4e63ade3",
+    "sway_libs git+https://github.com/fuellabs/sway-libs?branch=master#b03cc281241b36945da0fa3bd816862219334c25",
 ]
