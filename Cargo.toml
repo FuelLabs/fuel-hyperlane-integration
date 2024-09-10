@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
   "contracts/mailbox",
-    "contracts/warp-route",
+  "contracts/warp-route",
   "test-utils",
   "deploy",
   "e2e",
@@ -21,7 +21,7 @@ members = [
 
 
 [workspace.dependencies]
-fuels = "0.66.2"
+fuels = "0.66.4"
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2024-04-25" }
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "befc38d" }
 hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", branch = "main" }
