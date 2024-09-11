@@ -21,12 +21,15 @@ use std::{
     storage::storage_map::*,
     u128::U128,
 };
+
+/// Errors that can occur during IGP operations.
 enum IgpError {
     InsufficientGasPayment: (),
     InvalidGasOracle: (),
     QuoteGasPaymentOverflow: (),
     InterchainGasPaymentInBaseAsset: (),
 }
+
 /// The scale of a token exchange rate. 1e19.
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000;
 
@@ -44,17 +47,35 @@ storage {
 
 impl IGP for Contract {
     /// Quotes the required interchain gas payment to be paid in the base asset.
+    ///
     /// ### Arguments
     ///
-    /// * `destination_domain` - The destination domain of the message.
-    /// * `gas_amount` - The amount of destination gas to pay for.
+    /// * `destination_domain`: [u32] - The destination domain of the message.
+    /// * `gas_amount`: [u64] - The amount of destination gas to pay for.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The total payment for the gas amount.
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
         quote_gas(destination_domain, gas_amount)
     }
 
-    #[storage(read)]
+    /// Allows the caller to pay for gas.
+    ///
+    /// ### Arguments
+    ///
+    /// * `message_id`: [b256] - The message ID.
+    /// * `destination_domain`: [u32] - The domain to pay for.
+    /// * `gas_amount`: [u64] - The amount of gas.
+    /// * `refund_address`: [Identity] - The address to refund the excess payment to.
+    ///
+    /// ### Reverts
+    ///
+    /// * If asset sent is not the base asset.
+    /// * If the payment is less than the required amount.
     #[payable]
+    #[storage(read)]
     fn pay_for_gas(
         message_id: b256,
         destination_domain: u32,
@@ -87,10 +108,27 @@ impl IGP for Contract {
             payment: required_payment,
         });
     }
+
+    /// Returns the gas oracle for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas oracle for.
     #[storage(read)]
     fn gas_oracle(domain: u32) -> Option<b256> {
         storage.gas_oracles.get(domain).try_read()
     }
+
+    /// Sets the gas oracle for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to set the gas oracle for.
+    /// * `gas_oracle`: [b256] - The gas oracle.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_gas_oracle(domain: u32, gas_oracle: b256) {
         only_owner();
@@ -104,18 +142,32 @@ impl IGP for Contract {
 
 impl Claimable for Contract {
     /// Gets the current beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
     #[storage(read)]
     fn beneficiary() -> Identity {
         storage.beneficiary.read()
     }
-    // Sets the beneficiary to `beneficiary`. Only callable by the owner.
+
+    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The new beneficiary.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_beneficiary(beneficiary: Identity) {
         only_owner();
         storage.beneficiary.write(beneficiary);
         log(BeneficiarySetEvent { beneficiary });
     }
-    // Sends all base asset funds to the beneficiary. Callable by anyone.
+
+    /// Sends all base asset funds to the beneficiary. Callable by anyone.
     #[storage(read)]
     fn claim() {
         let BASE_ASSET_ID = AssetId::base();
@@ -131,6 +183,10 @@ impl Claimable for Contract {
         });
     }
 }
+
+// --------------------------------------------
+// --------- Ownable Implementation -----------
+// --------------------------------------------
 
 impl Ownable for Contract {
     #[storage(read)]
@@ -157,6 +213,15 @@ impl Ownable for Contract {
 
 impl OracleContractWrapper for Contract {
     /// Sets the gas oracle for a given domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to set the gas oracle for.
+    /// * `gas_oracle`: [b256] - The gas oracle.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_gas_from_oracle(domain: u32, gas_oracle: b256) {
         only_owner();
@@ -169,6 +234,14 @@ impl OracleContractWrapper for Contract {
     }
 
     /// Gets the gas oracle for a given domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas oracle for.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The gas oracle.
     #[storage(read)]
     fn get_gas_oracle(domain: u32) -> Option<b256> {
         storage.gas_oracles.get(domain).try_read()
@@ -186,6 +259,10 @@ impl IGPWithOverhead for Contract {
         storage.gas_overheads.insert(domain, gas_overhead);
     }
 }
+
+// --------------------------------------------
+// --------- Internal Functions ---------------
+// --------------------------------------------
 
 /// Converts a `u256` to `u64`, returning `None` if the value overflows `u64`.
 fn u256_to_u64(value: u256) -> Option<u64> {

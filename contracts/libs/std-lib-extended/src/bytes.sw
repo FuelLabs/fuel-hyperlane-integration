@@ -330,16 +330,6 @@ impl Bytes {
         };
     }
 
-    /// Logs all bytes.
-    /// `log_id` is a marker value to identify the logged data,
-    /// which is set to `rB` in the logd instruction.
-    pub fn log_with_id(self, log_id: u64) {
-        // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#logd-log-data-event
-        asm(ptr: self.ptr(), bytes: self.len(), log_id: log_id) {
-            logd zero log_id ptr bytes;
-        };
-    }
-
     pub fn keccak256(self) -> b256 {
         keccak256(self)
     }

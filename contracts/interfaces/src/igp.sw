@@ -6,11 +6,29 @@ use std::u128::U128;
 const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
 
 abi IGP {
+    /// Qupote payment total payment for a given gas amount.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas price for.
+    /// * `gas_amount`: [u64] - The amount of gas.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The total payment for the gas amount.
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64;
 
-    #[storage(read)]
+    /// Allows the caller to pay for gas.
+    ///
+    /// ### Arguments
+    ///
+    /// * `message_id`: [b256] - The message ID.
+    /// * `destination_domain`: [u32] - The domain to pay for.
+    /// * `gas_amount`: [u64] - The amount of gas.
+    /// * `refund_address`: [Identity] - The address to refund the excess payment to.
     #[payable]
+    #[storage(read)]
     fn pay_for_gas(
         message_id: b256,
         destination_domain: u32,
@@ -18,19 +36,47 @@ abi IGP {
         refund_address: Identity,
     );
 
+    /// Returns the gas oracle for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas oracle for.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The gas oracle.
     #[storage(read)]
     fn gas_oracle(domain: u32) -> Option<b256>;
 
+    /// Sets the gas oracle for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to set the gas oracle for.
+    /// * `gas_oracle`: [b256] - The gas oracle.
     #[storage(read, write)]
     fn set_gas_oracle(domain: u32, gas_oracle: b256);
 }
 
-// Allows the beneficiary to claim the contract's balance.
+/// Allows the beneficiary to claim the contract's balance.
 abi Claimable {
+    /// Gets the beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
     #[storage(read)]
     fn beneficiary() -> Identity;
+
+    /// Sets the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The beneficiary.
     #[storage(read, write)]
     fn set_beneficiary(beneficiary: Identity);
+
+    /// Claims the contract's balance and sends it to the beneficiary.
     #[storage(read)]
     fn claim();
 }
@@ -44,8 +90,8 @@ abi OracleContractWrapper {
     fn get_gas_oracle(domain: u32) -> Option<b256>;
 }
 
-//Functions required for calculation of overheads
-// Can be needed for specific domains in the future
+/// Functions required for calculation of overheads
+/// Can be needed for specific domains in the future
 abi IGPWithOverhead {
     #[storage(read)]
     fn gas_overhead(domain: u32) -> Option<u64>;
@@ -80,9 +126,27 @@ impl RemoteGasData {
 
 /// An oracle that provides gas data for a remote domain.
 abi GasOracle {
+    /// Gets the gas data for a remote domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [RemoteGasData] - The gas data for the remote domain.
     #[storage(read)]
     fn get_remote_gas_data(domain: u32) -> RemoteGasData;
 
+    /// Gets the exchange rate and gas price for a remote domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [ExchangeRateAndGasData] - The exchange rate and gas price for the remote domain.
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(domain: u32) -> ExchangeRateAndGasData;
 }
@@ -105,20 +169,20 @@ abi StorageGasOracle {
     fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>);
 }
 
-// EVENTS
+//  ----------------- Events -----------------
 
-// Logged when the benficiary is set.
+/// Logged when the benficiary is set.
 pub struct BeneficiarySetEvent {
     pub beneficiary: Identity,
 }
 
-// Logged when the balance is claimed and sent to the beneficiary.
+/// Logged when the balance is claimed and sent to the beneficiary.
 pub struct ClaimEvent {
     pub beneficiary: Identity,
     pub amount: u64,
 }
 
-// Logged when the gas oracle is set for a domain.
+/// Logged when the gas oracle is set for a domain.
 pub struct GasOracleSetEvent {
     pub domain: u32,
     pub gas_oracle: b256,

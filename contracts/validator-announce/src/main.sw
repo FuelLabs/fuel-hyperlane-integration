@@ -22,6 +22,7 @@ use std::{
 use std_lib_extended::bytes::*;
 use interfaces::va::*;
 
+/// Errors which can occur in the ValidatorAnnounce contract.
 enum ValidarorAnnounceError {
     ValidatorNotSigner: (),
     ReplayAnnouncement: (),
@@ -30,6 +31,7 @@ enum ValidarorAnnounceError {
 configurable {
     /// The local domain. Defaults to "fuel" in bytes.
     LOCAL_DOMAIN: u32 = 0x6675656cu32,
+    /// The mailbox contract ID which the VA is associated with.
     MAILBOX_ID: ContractId = ContractId::from(ZERO_B256),
 }
 
@@ -37,19 +39,28 @@ storage {
     /// Replay id -> whether it has been used.
     /// Used for ensuring a storage location for a validator cannot be announced more than once.
     replay_protection: StorageMap<b256, bool> = StorageMap {},
+    /// Announced storage locations for each validator.
     announced_storage_locations: StorageMap<b256, StorageVec<StorageString>> = StorageMap {},
     /// Unique validator list
     validators: StorageVec<b256> = StorageVec {},
 }
 
 impl ValidatorAnnounce for Contract {
+    /// Returns a list of validators that have made announcements
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<b256>] - The list of validators that have made announcements
     #[storage(read)]
     fn get_announced_validators() -> Vec<b256> {
         _get_announced_validators()
     }
 
-    // Returns all announced storage locations for each of the validators.
-    // Only intended for off-chain view calls due to potentially high gas costs.
+    /// Returns a list of all announced storage locations   
+    ///
+    /// ### Arguments
+    ///
+    /// * `validators`: [Vec<b256>] - The list of validators to get storage locations for
     #[storage(read)]
     fn get_announced_storage_locations(validators: Vec<b256>) -> Vec<Vec<String>> {
         let mut all_storage_locations: Vec<Vec<String>> = Vec::new();
@@ -76,6 +87,22 @@ impl ValidatorAnnounce for Contract {
         all_storage_locations
     }
 
+    /// Announces a validator signature storage location    
+    ///
+    /// ### Arguments
+    ///
+    /// * `validator`: [b256] - The address of the validator
+    /// * `storage_location`: [string] - Information encoding the location of signed checkpoints
+    /// * `signature`: [bytes] - The signed validator announcement
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - Whether the announcement was successful
+    ///
+    /// ### Reverts
+    ///
+    /// * If the announcement has already been made
+    /// * If the validator is not the signer of the announcement
     #[storage(read, write)]
     fn announce(
         validator: EvmAddress,

@@ -21,20 +21,21 @@ use std::{
     },
 };
 
+/// Errors that can occur when interacting with the merkle tree.
 enum MerkleError {
     MerkleTreeFull: (),
 }
 
-// The depth of the merkle tree.
+/// The depth of the merkle tree.
 const TREE_DEPTH: u64 = 32;
 
-// The max number of leaves in the tree.
-// Sway doesn't let you exponentiate in a const - this is the
-// pre-calculated value of (2 ** 32) - 1
+/// The max number of leaves in the tree.
+/// Sway doesn't let you exponentiate in a const - this is the
+/// pre-calculated value of (2 ** 32) - 1
 const MAX_LEAVES: u32 = 4294967295;
 
-// Keccak256 zero hashes.
-// Copied from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
+/// Keccak256 zero hashes.
+/// Copied from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
 const ZERO_HASHES: [b256; 32] = [
     0x0000000000000000000000000000000000000000000000000000000000000000,
     0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5,
@@ -70,31 +71,47 @@ const ZERO_HASHES: [b256; 32] = [
     0x8448818bb4ae4562849e949e17ac16e0be16688e156b5cf15e098c627c0056a9,
 ];
 
-// A persistent incremental merkle tree, only intended to be used in storage.
-//
-// The merkle tree implementation closely resembles https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
-// which itself resembles the eth2 deposit contract.
-// 
-// The Sway implementation pulls from concepts found in `StorageVec` https://github.com/FuelLabs/sway/blob/c462cbca8000e2325fb6f219305a4a2721407d11/sway-lib-std/src/storage.sw#L183
-//
-// There are two writed variables:
-//   count: u64
-//     The number of leaves inserted into the merkle tree.
-//     This is writed at this struct's storage key, retrieved using self.field_id()
-//   branch: [b256; 32]
-//     The current branch.
-//     Each element is writed at the storage key `sha256((index, self.field_id()))`,
-//     similar to how elements of a StorageVec are written.
+/// A persistent incremental merkle tree, only intended to be used in storage.
+///
+/// The merkle tree implementation closely resembles https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
+/// which itself resembles the eth2 deposit contract.
+/// 
+/// The Sway implementation pulls from concepts found in `StorageVec` https://github.com/FuelLabs/sway/blob/c462cbca8000e2325fb6f219305a4a2721407d11/sway-lib-std/src/storage.sw#L183
+///
+/// There are two writed variables:
+///   count: u64
+///     The number of leaves inserted into the merkle tree.
+///     This is writed at this struct's storage key, retrieved using self.field_id()
+///   branch: [b256; 32]
+///     The current branch.
+///     Each element is writed at the storage key `sha256((index, self.field_id()))`,
+///     similar to how elements of a StorageVec are written.
 pub struct StorageMerkleTree {}
 
 impl StorageKey<StorageMerkleTree> {
-    // Gets the storage key of an element in `branch`.
+    /// Gets the storage key of an element in `branch`.
+    ///
+    /// ### Arguments
+    ///
+    /// * `index`: [u64] - The index of the element.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The storage key.
     #[storage(read)]
     fn get_branch_storage_key(self, index: u64) -> b256 {
         sha256((index, self.field_id()))
     }
 
-    // Reads an element of `branch` from storage.
+    /// Reads an element of `branch` from storage.
+    ///
+    /// ### Arguments
+    ///
+    /// * `index`: [u64] - The index of the element.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The branch element.
     #[storage(read)]
     pub fn get_branch(self, index: u64) -> b256 {
         let res = read::<b256>(self.get_branch_storage_key(index), 0);
@@ -104,24 +121,46 @@ impl StorageKey<StorageMerkleTree> {
         }
     }
 
+    /// Writes an element of `branch` to storage.
+    ///
+    /// ### Arguments
+    ///
+    /// * `index`: [u64] - The index of the element.
+    /// * `value`: [b256] - The value to write.
     #[storage(write)]
     fn store_branch(self, index: u64, value: b256) {
         write(self.get_branch_storage_key(index), 0, value)
     }
 
+    /// Reads the `count` from storage.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - The count.
     #[storage(read)]
     pub fn get_count(self) -> u32 {
         read::<u32>(self.field_id(), 0).unwrap_or(0)
     }
 
-    // Writes the `count` into storage.
+    /// Writes the `count` into storage.
+    ///
+    /// ### Arguments
+    ///
+    /// * `count`: [u32] - The count to write.
     #[storage(write)]
     fn store_count(self, count: u32) {
         write(self.field_id(), 0, count)
     }
 
-    // Inserts `leaf` into the tree.
-    // Reverts if the merkle tree is full.
+    /// Inserts `leaf` into the tree.
+    ///
+    /// ### Arguments
+    ///
+    /// * `leaf`: [b256] - The leaf to insert.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the tree is full.
     #[storage(read, write)]
     pub fn insert(self, leaf: b256) {
         let count = self.get_count();
@@ -149,7 +188,11 @@ impl StorageKey<StorageMerkleTree> {
         revert(0x6d65726b6c65);
     }
 
-    // Calculates and returns the tree's current root.
+    /// Calculates and returns the tree's current root.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The root.
     #[storage(read)]
     pub fn root(self) -> b256 {
         let index = self.get_count();
@@ -172,8 +215,18 @@ impl StorageKey<StorageMerkleTree> {
 }
 
 impl StorageMerkleTree {
-    // Calculates and returns the root calculated from a provided `leaf`,
-    // `branch`, and the leaf's `index`.
+    /// Calculates and returns the root calculated from a provided `leaf`,
+    /// `branch`, and the leaf's `index`.
+    ///
+    /// ### Arguments
+    ///
+    /// * `leaf`: [b256] - The leaf to calculate the root from.
+    /// * `branch`: [[b256; 32]] - The branch to calculate the root from.
+    /// * `index`: [u64] - The index of the leaf.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The root.
     pub fn branch_root(leaf: b256, branch: [b256; 32], index: u64) -> b256 {
         let mut current = leaf;
 
