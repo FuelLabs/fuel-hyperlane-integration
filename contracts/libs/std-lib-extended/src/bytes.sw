@@ -12,8 +12,6 @@ use std::{
     vm::evm::evm_address::EvmAddress,
 };
 
-use ::mem::*;
-
 /// The number of bytes in a b256.
 pub const B256_BYTE_COUNT: u64 = 32u64;
 
@@ -36,154 +34,11 @@ impl b256 {
     }
 }
 
-/// The EVM address will start 12 bytes into the underlying b256.
-const EVM_ADDRESS_B256_BYTE_OFFSET: u64 = 12u64;
-/// The number of bytes in an EVM address.
-pub const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
-
-impl EvmAddress {
-    /// Returns a pointer to the EvmAddress's packed bytes.
-    fn packed_bytes(self) -> raw_ptr {
-        __addr_of(self).add_uint_offset(EVM_ADDRESS_B256_BYTE_OFFSET)
-    }
-
-    /// Gets an EvmAddress from a pointer to packed bytes.
-    fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        // The EvmAddress value will be written to this b256.
-        let mut value: b256 = ZERO_B256;
-        // Point to 12 bytes into the 32 byte b256, where the EVM address
-        // contents are expected to start.
-        let value_ptr = __addr_of(value).add_uint_offset(EVM_ADDRESS_B256_BYTE_OFFSET);
-        // Write the bytes from ptr into value_ptr.
-        ptr.copy_bytes_to(value_ptr, EVM_ADDRESS_BYTE_COUNT);
-        // Return the value.
-        EvmAddress::from(value)
-    }
-}
-
-/// The number of bytes in a B512.
-pub const B512_BYTE_COUNT: u64 = 64u64;
-
-impl B512 {
-    /// Returns a pointer to the B512's packed bytes.
-    fn packed_bytes(self) -> raw_ptr {
-        __addr_of(self.bits())
-    }
-
-    /// Gets a B512 from a pointer to packed bytes.
-    fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        let component_0 = b256::from_packed_bytes(ptr);
-        let component_1 = b256::from_packed_bytes(ptr.add_uint_offset(B256_BYTE_COUNT));
-
-        B512::from((component_0, component_1))
-    }
-}
-
-/// The number of bytes in a u64.
-pub const U64_BYTE_COUNT: u64 = 8u64;
-
-impl u64 {
-    /// Returns a pointer to the u64's packed bytes.
-    fn packed_bytes(self) -> raw_ptr {
-        CopyTypeWrapper::ptr_to_value(WrapperType::U64(self), U64_BYTE_COUNT)
-    }
-
-    /// Gets a u64 from a pointer to packed bytes.
-    fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        CopyTypeWrapper::value_from_ptr(ptr, TypeBytes::U64(U64_BYTE_COUNT)).get_value()
-    }
-}
-
 /// The number of bytes in a u32.
 pub const U32_BYTE_COUNT: u64 = 4u64;
 
-impl u32 {
-    /// Returns a pointer to the u32's packed bytes.
-    fn packed_bytes(self) -> raw_ptr {
-        CopyTypeWrapper::ptr_to_value(WrapperType::U32(self), U32_BYTE_COUNT)
-    }
-
-    /// Gets a u32 from a pointer to packed bytes.
-    fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        CopyTypeWrapper::value_from_ptr(ptr, TypeBytes::U32(U32_BYTE_COUNT)).get_value()
-    }
-}
-
-/// The number of bytes in a u16.
-pub const U16_BYTE_COUNT: u64 = 2u64;
-
-impl u16 {
-    /// Returns a pointer to the u16's packed bytes.
-    fn packed_bytes(self) -> raw_ptr {
-        CopyTypeWrapper::ptr_to_value(WrapperType::U16(self), U16_BYTE_COUNT)
-    }
-
-    /// Gets a u16 from a pointer to packed bytes.
-    fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        CopyTypeWrapper::value_from_ptr(ptr, TypeBytes::U16(U16_BYTE_COUNT)).get_value()
-    }
-}
-
-impl Bytes {
-    /// Constructs a new `Bytes` with the specified length and capacity.
-    ///
-    /// The Bytes will be able to hold exactly `length` bytes without
-    /// reallocating.
-    /// Pads the Bytes with zeros.
-    ///
-    /// ### Arguments
-    ///
-    /// * `length`: [u64] - The length of the Bytes to create.
-    ///
-    /// ### Returns
-    ///
-    /// * [Bytes] - The newly created Bytes with the specified length & capacity.
-    pub fn with_length(length: u64) -> Self {
-        let mut bytes = Bytes::with_capacity(length);
-        while bytes.len() < length {
-            bytes.push(0u8);
-        }
-        bytes
-    }
-
-    /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.
-    /// Reverts if the bounds of self are violated.
-    /// Returns the byte index after the last byte written.
-    pub fn write_packed_bytes(
-        ref mut self,
-        offset: u64,
-        bytes_ptr: raw_ptr,
-        byte_count: u64,
-) -> u64 {
-        let new_byte_offset = offset + byte_count;
-        // Ensure that the written bytes will stay within the correct bounds.
-        assert(new_byte_offset <= self.len());
-        // Get a pointer to the buffer at the offset.
-        let write_ptr = self.ptr().add_uint_offset(offset);
-        // Copy from the `bytes_ptr` into `write_ptr`.
-        bytes_ptr.copy_bytes_to(write_ptr, byte_count);
-        new_byte_offset
-    }
-
-    /// Gets a pointer to bytes within self at the specified offset.
-    /// Reverts if the `byte_count`, which is the expected number of bytes
-    /// to read from the pointer, violates the bounds of self.
-    pub fn get_read_ptr(self, offset: u64, byte_count: u64) -> raw_ptr {
-        // Ensure that the bytes to read are within the correct bounds.
-        assert(offset + byte_count <= self.len());
-        // Get a pointer to buffer at the offset.
-        self.ptr().add_uint_offset(offset)
-    }
-}
-
 impl Bytes {
     // ===== b256 ====
-    /// Writes a b256 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the b256.
-    pub fn write_b256(ref mut self, offset: u64, value: b256) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), B256_BYTE_COUNT)
-    }
 
     /// Reads a b256 at the specified offset.
     /// Reverts if it violates the bounds of self.
@@ -192,60 +47,7 @@ impl Bytes {
         BufferReader::from_parts(data.ptr(), data.len()).decode()
     }
 
-    // ===== EvmAddress ====
-    /// Writes an EvmAddress at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the address.
-    pub fn write_evm_address(ref mut self, offset: u64, value: EvmAddress) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), EVM_ADDRESS_BYTE_COUNT)
-    }
-
-    /// Reads an EvmAddress at the specified offset.
-    pub fn read_evm_address(ref mut self, offset: u64) -> EvmAddress {
-        let read_ptr = self.get_read_ptr(offset, EVM_ADDRESS_BYTE_COUNT);
-
-        EvmAddress::from_packed_bytes(read_ptr)
-    }
-
-    // ===== B512 ====
-    /// Writes a B512 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the B512.
-    pub fn write_b512(ref mut self, offset: u64, value: B512) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), B512_BYTE_COUNT)
-    }
-
-    /// Reads a B512 at the specified offset.
-    /// Reverts if it violates the bounds of self.
-    pub fn read_b512(self, offset: u64) -> B512 {
-        let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
-
-        B512::from_packed_bytes(read_ptr)
-    }
-
-    // ===== u64 ====
-    /// Writes a u64 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the u64.
-    pub fn write_u64(ref mut self, offset: u64, value: u64) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), U64_BYTE_COUNT)
-    }
-
-    /// Reads a u64 at the specified offset.
-    /// Reverts if it violates the bounds of self.
-    pub fn read_u64(self, offset: u64) -> u64 {
-        let read_ptr = self.get_read_ptr(offset, U64_BYTE_COUNT);
-
-        u64::from_packed_bytes(read_ptr)
-    }
-
     // ===== u32 ====
-    /// Writes a u32 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the u32.
-    pub fn write_u32(ref mut self, offset: u64, value: u32) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), U32_BYTE_COUNT)
-    }
 
     /// Reads a u32 at the specified offset.
     /// Reverts if it violates the bounds of self.
@@ -254,63 +56,12 @@ impl Bytes {
         BufferReader::from_parts(data.ptr(), data.len()).decode()
     }
 
-    // ===== u16 ====
-    /// Writes a u16 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the u16.
-    pub fn write_u16(ref mut self, offset: u64, value: u16) -> u64 {
-        self.write_packed_bytes(offset, value.packed_bytes(), U16_BYTE_COUNT)
-    }
-
-    /// Reads a u16 at the specified offset.
-    /// Reverts if it violates the bounds of self.
-    pub fn read_u16(self, offset: u64) -> u16 {
-        let read_ptr = self.get_read_ptr(offset, U16_BYTE_COUNT);
-        u16::from_packed_bytes(read_ptr)
-    }
-
     // ===== u8 ====
-    /// Writes a u8 at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the u8.
-    pub fn write_u8(ref mut self, offset: u64, value: u8) -> u64 {
-        self.set(offset, value);
-        offset + 1
-    }
 
     /// Reads a u8 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u8(self, offset: u64) -> u8 {
         self.get(offset).unwrap()
-    }
-
-    // ===== Bytes =====
-    /// Writes Bytes at the specified offset. Reverts if it violates the
-    /// bounds of self.
-    /// Returns the byte index after the end of the bytes written.
-    pub fn write_bytes(ref mut self, offset: u64, value: Bytes) -> u64 {
-        self.write_packed_bytes(offset, value.ptr(), value.len())
-    }
-
-
-    /// Reads Bytes at the specified offset.
-    /// Reverts if it violates the bounds of self.
-    /// Does not modify the Bytes object.
-    ///
-    /// ### Arguments
-    ///
-    /// * `offset`: [u64] - The offset to read the Bytes from.
-    /// * `len`: [u64] - The length of the Bytes to read.
-    ///
-    /// ### Returns
-    ///
-    /// * [Bytes] - The Bytes object read from the specified offset.
-    pub fn read_bytes(self, offset: u64, len: u64) -> Bytes {
-        let read_ptr = self.get_read_ptr(offset, len);
-
-        let mut bytes = Bytes::with_length(len);
-        read_ptr.copy_bytes_to(bytes.ptr(), len);
-        bytes
     }
 
     /// Logs all bytes without len encoding.
