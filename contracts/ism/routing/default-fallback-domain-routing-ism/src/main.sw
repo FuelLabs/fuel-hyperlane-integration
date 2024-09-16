@@ -6,6 +6,7 @@ use sway_libs::{ownership::*};
 use interfaces::{mailbox::mailbox::Mailbox, isms::{ism::*, routing::{default_fallback_domain_routing_ism::*, routing_ism::*}}, ownable::*};
 use message::{EncodedMessage, Message};
 
+/// Errors that can occur in the DefaultFallbackDomainRoutingIsm.
 enum DefaultFallbackDomainRoutingIsmError {
     AlreadyInitialized:(),
     NotInitialized:(),
@@ -13,16 +14,40 @@ enum DefaultFallbackDomainRoutingIsmError {
 }
 
 storage {
+    /// Mapping of modules which are used for specific domains.
     domain_modules: StorageMap<u32, b256> = StorageMap {},
+    /// List of domains that have been set.
     domains: StorageVec<u32> = StorageVec {},
+    /// Address of the mailbox from which the default ISM is fetched.
     mailbox: b256 = b256::zero(),
 }
 
 impl InterchainSecurityModule for Contract {
+    /// Returns an enum that represents the type of security model
+    /// encoded by this ISM. Relayers infer how to fetch and format metadata.
+    ///
+    /// ### Returns
+    ///
+    /// * [ModuleType] - The type of security model.
     fn module_type() -> ModuleType {
         ModuleType::ROUTING
     }
 
+    /// Verifies the message using the metadata.
+    ///
+    /// ### Arguments
+    ///
+    /// * `metadata`: [Bytes] - The metadata to be used for verification.
+    /// * `message`: [Bytes] - The message to be verified.
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - True if the message is verified successfully.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is not initialized.
+    /// * If the ISM call fails.
     #[storage(read)]
     fn verify(metadata: Bytes, message: Bytes) -> bool {
         only_initialized();
@@ -34,15 +59,37 @@ impl InterchainSecurityModule for Contract {
 }
 
 impl RoutingIsm for Contract {
+    /// Returns the ISM responsible for verifying the message.
+    ///
+    /// ### Arguments
+    ///
+    /// * `message`: [Bytes] - Formatted Hyperlane message
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ISM to use to verify the message
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is not initialized.
     #[storage(read)]
     fn route(message: Bytes) -> b256 {
         only_initialized();
-
         _route(message)
     }
 }
 
 impl DefaultFallbackDomainRoutingIsm for Contract {
+    /// Sets the owner and mailbox of the ISM.
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The address of the owner.
+    /// * `mailbox`: [b256] - The address of the mailbox.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is already initialized.
     #[storage(write, read)]
     fn initialize(owner: b256, mailbox: b256){
         only_not_initialized();
@@ -51,6 +98,19 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
         storage.mailbox.write(mailbox);
     }
 
+    /// Sets the ISMs to be used for the specified origin domains
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The address of the owner.
+    /// * `mailbox`: [b256] - The address of the mailbox.
+    /// * `domains`: [Vec<u32>] - The list of origin domains.
+    /// * `modules`: [Vec<b256>] - The list of ISMs to be used for the specified domains.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is already initialized.
+    /// * If the length of the domains and modules do not match.
     #[storage(write, read)]
     fn initialize_with_domains(owner: b256, mailbox: b256, domains: Vec<u32>, modules: Vec<b256>) {
         only_not_initialized();
@@ -76,10 +136,19 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
                 break;
             }
         }
-        
-
     }
 
+    /// Sets the ISM to be used for the specified origin domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The origin domain.
+    /// * `module`: [b256] - The ISM to be used for the specified domain.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is not initialized.
+    /// * If the caller is not the owner.
     #[storage(write, read)]
     fn set(domain: u32, module: b256) {
         only_initialized();
@@ -88,6 +157,16 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
         _set(domain, module);
     }   
 
+    /// Removes the specified origin domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The origin domain.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the ISM is not initialized.
+    /// * If the caller is not the owner.
     #[storage(write, read)]
     fn remove(domain: u32) {
         only_initialized();
@@ -99,11 +178,25 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
         }
     }
 
+    /// Returns the domains that have been set
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<u32>] - The list of origin domains.
     #[storage(read)]
     fn domains() -> Vec<u32> {
         storage.domains.load_vec()
     }
 
+    /// Returns the ISM to be used for the specified origin domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The origin domain.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ISM to be used for the specified domain.
     #[storage(read)]
     fn module(domain: u32) -> b256 {
         storage.domain_modules.get(domain).try_read().unwrap_or(b256::zero())
@@ -153,8 +246,6 @@ fn _route(message: Bytes) -> b256 {
     let mailbox_id = storage.mailbox.read();
     let mailbox = abi(Mailbox, mailbox_id);
     <b256 as From<ContractId>>::from(mailbox.default_ism())
-
-        
 }
 
 #[storage(read)]

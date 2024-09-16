@@ -20,31 +20,68 @@ pub struct MessageIdMultisigIsmMetadata {
 }
 
 impl MessageIdMultisigIsmMetadata {
+    /// Creates a new instance of MessageIdMultisigIsmMetadata.
+    ///
+    /// ### Arguments
+    ///
+    /// * `bytes`: [Bytes] - The encoded metadata.
+    ///
+    /// ### Returns
+    ///
+    /// * [MessageIdMultisigIsmMetadata] - The new instance.
     pub fn new(bytes: Bytes) -> Self {
         Self { bytes }
     }
 
+    /// Returns the origin merkle tree hook of the signed checkpoint as bytes with a length of 32.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - Origin merkle tree hook of the signed checkpoint.
     pub fn origin_merkle_tree_hook(self) -> Bytes {
         let bytes = self.bytes.clone();
         bytes.split_at(ORIGIN_MERKLE_TREE_OFFSET + 32).0
     }
 
+    /// Returns the merkle root of the signed checkpoint.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - Merkle root of the signed checkpoint.
     pub fn root(self) -> Bytes {
         let bytes = self.bytes.clone();
         bytes.split_at(MERKLE_ROOT_OFFSET).1.split_at(32).0
     }
 
+    /// Returns the merkle index of the signed checkpoint
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - Merkle index of the signed checkpoint.
     pub fn index(self) -> u32 {
         let bytes = self.bytes.clone();
         bytes.read_u32(MERKLE_INDEX_OFFSET)
     }
 
+    /// Returns the validator ECDSA signature at the given index.
+    ///
+    /// ### Arguments
+    ///
+    /// * `index`: [u32] - The index of the signature.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - The validator ECDSA signature at the given index.
     pub fn signature_at(self, index: u32) -> Bytes {
         let bytes = self.bytes.clone();
         let start = u64::from(SIGNATURES_OFFSET + (index * SIGNATURE_LENGTH));
         bytes.split_at(start).1.split_at(u64::from(SIGNATURE_LENGTH)).0
     }
 }
+
+// -------------------------
+// ---- Sway Unit Tests ----
+// -------------------------
 
 #[test]
 fn message_id_multisig_metadata() {

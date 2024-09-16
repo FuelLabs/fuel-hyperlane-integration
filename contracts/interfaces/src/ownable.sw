@@ -5,9 +5,14 @@ use standards::src5::State;
 
 abi Ownable {
     /// Returns the owner of the contract.
+    ///
+    /// ### Returns
+    ///
+    /// * [State] - The owner of the contract.
     #[storage(read)]
     fn owner() -> State;
 
+    /// Checks if the caller is the owner of the contract.
     #[storage(read)]
     fn only_owner();
 
@@ -15,7 +20,7 @@ abi Ownable {
     ///
     /// ### Arguments
     ///
-    /// * `new_owner` - The address of the new owner.
+    /// * `new_owner`: [Identity] - The address of the new owner.
     #[storage(write)]
     fn transfer_ownership(new_owner: Identity);
 
@@ -23,7 +28,7 @@ abi Ownable {
     ///
     /// ### Arguments
     ///
-    /// * `new_owner` - The address of the new owner.
+    /// * `new_owner`: [Identity] - The address of the new owner.
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity);
 

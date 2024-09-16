@@ -5,7 +5,10 @@ use standards::src5::State;
 
 use interfaces::{
     isms::ism::*,
-    mailbox::{mailbox::*, events::*},
+    mailbox::{
+        events::*,
+        mailbox::*,
+    },
     message_recipient::MessageRecipient,
     ownable::Ownable,
     post_dispatch_hook::*,
@@ -28,6 +31,7 @@ const VERSION = 3;
 /// The max bytes in a message body. Equal to 2 KiB, or 2 * (2 ** 10).
 const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
 
+/// Errors that can occur while interacting with the mailbox contract.
 enum MailboxError {
     InvalidISMAddress: (),
     InvalidHookAddress: (),
@@ -46,16 +50,33 @@ configurable {
 }
 
 storage {
+    /// A map of message IDs to a boolean indicating if the message has been processed.
     delivered: StorageMap<b256, bool> = StorageMap::<b256, bool> {},
+    /// The default ISM used for message verification.
     default_ism: ContractId = ContractId::from(ZERO_B256),
+    /// The default post dispatch hook, invoked after a message is dispatched.
     default_hook: ContractId = ContractId::from(ZERO_B256),
+    /// The required post dispatch hook, invoked after a message is dispatched.
     required_hook: ContractId = ContractId::from(ZERO_B256),
+    /// The latest dispatched message ID.
     latest_dispatched_id: b256 = ZERO_B256,
+    /// The nonce used for message IDs.
     nonce: u32 = 0,
 }
 
 impl Mailbox for Contract {
     /// Initializes the contract.
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The owner of the contract.
+    /// * `default_ism`: [b256] - The default ISM contract Id.
+    /// * `default_hook`: [b256] - The default hook contract Id.
+    /// * `required_hook`: [b256] - The required hook contract Id.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is already initialized.
     #[storage(write)]
     fn initialize(
         owner: b256,
@@ -74,7 +95,11 @@ impl Mailbox for Contract {
         storage.required_hook.write(ContractId::from(required_hook));
     }
 
-    /// Returns the domain of the chain where the contract is deployed.
+    /// Gets the domain which is specified on contract initialization.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - The domain of the contract.
     #[storage(read)]
     fn local_domain() -> u32 {
         LOCAL_DOMAIN
@@ -84,7 +109,11 @@ impl Mailbox for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `message_id` - The unique identifier of the message.
+    /// * `message_id`: [b256] - The unique identifier of the message.
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - True if the message has been processed.
     #[storage(read)]
     fn delivered(message_id: b256) -> bool {
         _delivered(message_id)
@@ -94,7 +123,12 @@ impl Mailbox for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `module` - Address implementing ISM interface.
+    /// * `module`: [ContractId] - Address implementing ISM interface.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    /// * If the provided ISM address is zero.
     #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
         only_owner();
@@ -104,12 +138,25 @@ impl Mailbox for Contract {
     }
 
     /// Gets the default ISM used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing ISM interface.
     #[storage(read)]
     fn default_ism() -> ContractId {
         storage.default_ism.read()
     }
 
-    /// Sets the default hook used for message processing.
+    /// Sets the required hook used for message verification.
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - Address implementing Hook interface.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    /// * If the provided hook address is zero.
     #[storage(write)]
     fn set_default_hook(module: ContractId) {
         only_owner();
@@ -118,13 +165,26 @@ impl Mailbox for Contract {
         log(DefaultHookSetEvent { module });
     }
 
-    /// Gets the default hook used for message processing.
+    /// Gets the default hook used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing Hook interface.
     #[storage(read)]
     fn default_hook() -> ContractId {
         storage.default_hook.read()
     }
 
-    /// Sets the required hook used for message processing.
+    /// Sets the required hook used for message verification.
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - Address implementing Hook interface.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    /// * If the provided hook address is zero.
     #[storage(write)]
     fn set_required_hook(module: ContractId) {
         only_owner();
@@ -133,17 +193,31 @@ impl Mailbox for Contract {
         log(RequiredHookSetEvent { module });
     }
 
-    /// Gets the required hook used for message processing.
+    /// Gets the required hook used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing Hook interface.
     #[storage(read)]
     fn required_hook() -> ContractId {
         storage.required_hook.read()
     }
 
+    /// Returns the ID of the last dispatched message.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ID of the last dispatched message.
     #[storage(read)]
     fn latest_dispatched_id() -> b256 {
         storage.latest_dispatched_id.read()
     }
 
+    /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - The number of leaves in the merkle tree.
     #[storage(read)]
     fn nonce() -> u32 {
         _nonce()
@@ -154,9 +228,22 @@ impl Mailbox for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `destination_domain` - The domain of the destination chain.
-    /// * `recipient` - Address of the recipient on the destination chain.
-    /// * `message_body` - Raw bytes content of the message body.
+    /// * `destination_domain`: [u32] - The domain of the destination chain.
+    /// * `recipient`: [b256] - Address of the recipient on the destination chain.
+    /// * `message_body`: [Bytes] - Raw bytes content of the message body.
+    /// * `metadata`: [Bytes] - Raw bytes content of the metadata.
+    /// * `hook`: [ContractId] - The hook contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ID of the dispatched message.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the message body is too large.
+    /// * If the contract is paused.
+    /// * If reentrancy is detected.
+    /// * If any external call fails.
     #[payable]
     #[storage(read, write)]
     fn dispatch(
@@ -217,13 +304,23 @@ impl Mailbox for Contract {
         id
     }
 
-    /// Quotes the cost of dispatching a message to the destination domain and recipient.
+    /// Quotes a price for dispatching a message
     ///
     /// ### Arguments
     ///
-    /// * `destination_domain` - The domain of the destination chain.
-    /// * `recipient` - Address of the recipient on the destination chain.
-    /// * `message_body` - Raw bytes content of the message body.
+    /// * `destination_domain`: [u32] - The domain of the destination chain.
+    /// * `recipient_address`: [b256] - Address of the recipient on the destination chain.
+    /// * `message_body`: [Bytes] - Raw bytes content of the message body.
+    /// * `metadata`: [Bytes] - Raw bytes content of the metadata.
+    /// * `hook`: [ContractId] - The hook contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The price of the dispatch.
+    ///
+    /// ### Reverts
+    ///
+    /// * If any external call fails.
     #[storage(read)]
     fn quote_dispatch(
         destination_domain: u32,
@@ -249,8 +346,18 @@ impl Mailbox for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `metadata` - The metadata for ISM verification.
-    /// * `message` - The message as emitted by dispatch.
+    /// * `metadata`: [Bytes] - The metadata for ISM verification.
+    /// * `message`: [Bytes] - The message as emitted by dispatch.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is paused.
+    /// * If reentrancy is detected.
+    /// * If the message has already been delivered.
+    /// * If the message's protocol version is invalid.
+    /// * If the message's origin is invalid.
+    /// * If the message's verification fails.
+    /// * If any external call fails.
     #[storage(read, write)]
     fn process(metadata: Bytes, message: Bytes) {
         reentrancy_guard();
@@ -298,6 +405,19 @@ impl Mailbox for Contract {
         });
     }
 
+    /// Returns the ISM set by a recipient.
+    ///
+    /// ### Arguments
+    ///
+    /// * `recipient`: [ContractId] - The recipient's contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The ISM contract Id.
+    ///
+    /// ### Reverts
+    ///
+    /// * If recipient call fails.
     #[storage(read, write)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());

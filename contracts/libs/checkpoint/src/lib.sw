@@ -3,6 +3,19 @@ library;
 use std::bytes::Bytes;
 use std_lib_extended::bytes::*;
 
+/// Returns the digest validators are expected to sign when signing checkpoints
+///
+/// ### Arguments
+///
+/// * `origin`: [u32] - The origin domain of the checkpoint
+/// * `origin_merkle_tree_hook`: [Bytes] - The address of the origin merkle tree hook as bytes with a length of 32
+/// * `checkpoint_root`: [Bytes] - The root of the checkpoint
+/// * `checkpoint_index`: [u32] - The index of the checkpoint
+/// * `message_id`: [b256] - The message ID of the checkpoint
+///
+/// ### Returns
+///
+/// * [Bytes] - The digest of the checkpoint
 pub fn digest(
     origin: u32,
     origin_merkle_tree_hook: Bytes,
@@ -37,6 +50,16 @@ pub fn digest(
     <Bytes as From<b256>>::from(Bytes::to_eth_signed_message_hash(hashed_bytes))
 }
 
+/// Returns the domain hash that validators are expected to use when signing checkpoints.
+///
+/// ### Arguments
+///
+/// * `origin`: [u32] - The origin domain of the checkpoint
+/// * `origin_merkle_tree_hook`: [Bytes] - The address of the origin merkle tree hook as bytes with a length of 32
+///
+/// ### Returns
+///
+/// * [b256] - The domain hash
 pub fn domain_hash(origin: u32, origin_merkle_tree_hook: Bytes) -> b256 {
     // Encode origin
     let buffer = Buffer::new();
@@ -61,6 +84,10 @@ pub fn domain_hash(origin: u32, origin_merkle_tree_hook: Bytes) -> b256 {
     // Hash bytes
     origin_bytes.keccak256()
 }
+
+// -------------------------
+// ---- Sway Unit Tests ----
+// -------------------------
 
 struct TestDomainData {
     domain: u32,

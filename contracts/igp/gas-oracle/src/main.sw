@@ -2,21 +2,38 @@ contract;
 
 use sway_libs::ownership::*;
 use standards::src5::State;
-
 use interfaces::{igp::*, ownable::Ownable, post_dispatch_hook::*,};
 use std::hash::*;
 
 storage {
+    /// Mapping of the domain to the remote gas data.
     remote_gas_data: StorageMap<u32, RemoteGasData> = StorageMap {},
 }
+
 impl GasOracle for Contract {
     /// Gets the gas data from storage.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [RemoteGasData] - The gas data for the remote domain.
     #[storage(read)]
     fn get_remote_gas_data(domain: u32) -> RemoteGasData {
         storage.remote_gas_data.get(domain).try_read().unwrap_or(RemoteGasData::default())
     }
 
     /// Gets the token exchange rate and gas price for a given domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [ExchangeRateAndGasData] - The exchange rate and gas price for the remote domain.
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(domain: u32) -> ExchangeRateAndGasData {
         let gas_data = storage.remote_gas_data.get(domain).try_read().unwrap_or(RemoteGasData::default());
@@ -26,8 +43,17 @@ impl GasOracle for Contract {
         }
     }
 }
+
 impl StorageGasOracle for Contract {
     /// Sets the gas data for a given domain. Only callable by the owner.
+    ///
+    /// ### Arguments
+    ///
+    /// * `configs`: [Vec]<[RemoteGasDataConfig]> - The remote gas data configs to set.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>) {
         only_owner();
@@ -42,6 +68,11 @@ impl StorageGasOracle for Contract {
         }
     }
 }
+
+// --------------------------------------------
+// --------- Ownable Implementation -----------
+// --------------------------------------------
+
 impl Ownable for Contract {
     #[storage(read)]
     fn owner() -> State {

@@ -25,42 +25,89 @@ pub struct MerkleRootMultisigIsmMetadata {
 }
 
 impl MerkleRootMultisigIsmMetadata {
+    /// Creates a new instance of MerkleRootMultisigIsmMetadata.
+    ///
+    /// ### Arguments
+    ///
+    /// * `bytes`: [Bytes] - The encoded metadata.
+    ///
+    /// ### Returns
+    ///
+    /// * [MerkleRootMultisigIsmMetadata] - The new instance.
     pub fn new(bytes: Bytes) -> Self {
         Self { bytes }
     }
 
+    /// Returns the origin merkle tree hook of the signed checkpoint as bytes with a length of 32.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - Origin merkle tree hook of the signed checkpoint.
     pub fn origin_merkle_tree_hook(self) -> Bytes {
         let bytes = self.bytes.clone();
         bytes.split_at(ORIGIN_MERKLE_TREE_OFFSET + 32).0
     }
 
+    /// Returns the index of the message being proven.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - Index of the target message in the merkle tree.
     pub fn message_index(self) -> u32 {
         let bytes = self.bytes.clone();
         bytes.read_u32(MESSAGE_INDEX_OFFSET)
     }
 
+    /// Returns the index of the signed checkpoint
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - Index of the signed checkpoint.
     pub fn signed_index(self) -> u32 {
         let bytes = self.bytes.clone();
         bytes.read_u32(SIGNED_INDEX_OFFSET)
     }
 
+    /// Returns the message ID of the signed checkpoint.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - Message ID of the signed checkpoint.
     pub fn signed_message_id(self) -> b256 {
         let bytes = self.bytes.clone();
         b256::from(bytes.split_at(MESSAGE_ID_OFFSET).1.split_at(32).0)
     }
 
+    /// Returns the merkle proof branch of the message
+    ///
+    /// ### Returns
+    ///
+    /// * [b256; 32] - Merkle proof branch of the message.
     pub fn proof(self) -> [b256; 32] {
         let bytes = self.bytes.clone();
         let bytes = bytes.split_at(MERKLE_PROOF_OFFSET).1.split_at(MERKLE_PROOF_LENGTH).0;
         BufferReader::from_parts(bytes.ptr(), bytes.len()).decode()
     }
 
+    /// Returns the validator ECDSA signature at the given index.
+    ///
+    /// ### Arguments
+    ///
+    /// * `index`: [u32] - The index of the signature to return.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - The validator ECDSA signature at the given index.
     pub fn signature_at(self, index: u32) -> Bytes {
         let bytes = self.bytes.clone();
         let start = u64::from(SIGNATURES_OFFSET + (index * SIGNATURE_LENGTH));
         bytes.split_at(start).1.split_at(u64::from(SIGNATURE_LENGTH)).0
     }
 }
+
+// ------------------------------
+// ------ Sway Unit tests -------
+// ------------------------------
 
 #[test]
 fn merkle_root_multisig_metadata() {

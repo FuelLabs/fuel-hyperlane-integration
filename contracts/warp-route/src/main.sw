@@ -46,19 +46,31 @@ use standards::src5::State;
 use message::{EncodedMessage, Message};
 
 storage {
+    /// The mode of the WarpRoute contract
     token_mode: WarpRouteTokenMode = WarpRouteTokenMode::BRIDGED, // Default mode is Bridged
+    /// The address of the mailbox contract to use for message dispatch
     mailbox: ContractId = ContractId::zero(),
+    /// The address of the default hook contract to use for message dispatch
     default_hook: ContractId = ContractId::zero(),
+    /// Mapping of message IDs to whether they have been delivered
     delivered_messages: StorageMap<b256, bool> = StorageMap {},
-    asset_id: AssetId = AssetId::zero(),
-    sub_id: SubId = SubId::zero(),
     // TOKEN
-    total_assets: u64 = 0, // The total number of unique assets minted by this contract.
-    total_supply: StorageMap<AssetId, u64> = StorageMap {}, // The current total number of coins minted for a particular asset.
+    /// The asset ID of the token managed by the WarpRoute contract
+    asset_id: AssetId = AssetId::zero(),
+    /// The sub ID of the token managed by the WarpRoute contract
+    sub_id: SubId = SubId::zero(),
+    /// The total number of unique assets minted by this contract.
+    total_assets: u64 = 0, 
+    /// The current total number of coins minted for a particular asset.
+    total_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    /// The mapping of asset ID to the name of the token
     name: StorageMap<AssetId, StorageString> = StorageMap {},
+    /// The mapping of asset ID to the symbol of the token
     symbol: StorageMap<AssetId, StorageString> = StorageMap {},
+    /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {}, // The total number of coins ever minted for an asset.
+    /// The total number of coins ever minted for an asset.
+    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {}, 
 }
 
 configurable {
@@ -67,6 +79,24 @@ configurable {
 }
 
 impl WarpRoute for Contract {
+     /// Initializes the WarpRoute contract
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The address of the owner of the contract
+    /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
+    /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
+    /// * `hook`: [b256] - The address of the post dispatch hook contract to use
+    /// * `token_name`: [string] - The name of the token
+    /// * `token_symbol`: [string] - The symbol of the token
+    /// * `decimals`: [u8] - The number of decimals of the token
+    /// * `total_supply`: [u64] - The total supply of the token
+    /// * `asset_id`: [Option<AssetId>] - The asset ID of the token
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is already initialized
+    /// * If the asset ID is not provided in collateral mode
     #[storage(read, write)]
     fn initialize(
         owner: b256,
@@ -119,8 +149,23 @@ impl WarpRoute for Contract {
         storage.cumulative_supply.insert(asset_id, 0);
     }
 
-    #[storage(read, write)]
+    /// Transfers tokens to a remote domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination_domain`: [u32] - The domain to transfer the tokens to
+    /// * `recipient`: [b256] - The address of the recipient
+    /// * `amount`: [u64] - The amount of tokens to transfer
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is paused
+    /// * If reentrancy is detected
+    /// * If the amount provided is greater than amount sent
+    /// * If the asset ID of the asset being transferred is not the same as the asset ID set on the contract
+    /// * If any external call fails
     #[payable]
+    #[storage(read, write)]
     fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) {
         reentrancy_guard();
         require_not_paused();
@@ -168,6 +213,20 @@ impl WarpRoute for Contract {
         });
     }
 
+    /// Handles a transfer from a remote domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `id`: [b256] - The ID of the message
+    /// * `origin`: [u32] - The domain of the origin
+    /// * `sender`: [b256] - The address of the sender
+    /// * `message_body`: [bytes] - The message body
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is paused
+    /// * If the message has already been delivered
+    /// * If the cumulative supply exceeds the maximum supply
     #[storage(read, write)]
     fn handle_message(id: b256, _origin: u32, _sender: b256, message_body: Bytes) {
         require_not_paused();
@@ -222,11 +281,21 @@ impl WarpRoute for Contract {
         });
     }
 
+    /// Gets the token mode of the WarpRoute contract
+    ///
+    /// ### Returns
+    ///
+    /// * [WarpRouteTokenMode] - The token mode
     #[storage(read)]
     fn get_token_mode() -> WarpRouteTokenMode {
         storage.token_mode.read()
     }
 
+    /// Gets the token metadata of the WarpRoute contract
+    ///
+    /// ### Returns
+    ///
+    /// * [TokenMetadata] - The token metadata
     #[storage(read)]
     fn get_token_info() -> TokenMetadata {
         let asset = storage.asset_id.read();
@@ -234,22 +303,47 @@ impl WarpRoute for Contract {
         res
     }
 
+    /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
+    ///
+    /// ### Returns
+    /// 
+    /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256 {
         storage.mailbox.read().into()
     }
 
+    /// Gets the total number of coins ever minted for an asset.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The total number of coins ever minted for an asset.
     #[storage(read)]
     fn get_cumulative_supply() -> u64 {
         let asset = storage.asset_id.read();
         storage.cumulative_supply.get(asset).try_read().unwrap_or(0)
     }
 
+    /// Gets the post dispatch hook contract ID that the WarpRoute contract is using
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The post dispatch hook contract ID
     #[storage(read)]
     fn get_hook() -> b256 {
         storage.default_hook.read().into()
     }
 
+    /// Sets the mailbox contract ID that the WarpRoute contract is using for transfers
+    ///
+    /// ### Arguments
+    ///
+    /// * `mailbox_address`: [b256] - The mailbox contract ID
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
+    /// * If the mailbox address is zero
     #[storage(write)]
     fn set_mailbox(mailbox_address: b256) {
         only_owner();
@@ -257,6 +351,16 @@ impl WarpRoute for Contract {
         storage.mailbox.write(ContractId::from(mailbox_address));
     }
 
+    /// Sets the post dispatch hook contract ID that the WarpRoute contract is using
+    ///
+    /// ### Arguments
+    ///
+    /// * `hook`: [b256] - The post dispatch hook contract ID
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
+    /// * If the hook address is zero
     #[storage(write)]
     fn set_hook(hook: b256) {
         only_owner();
@@ -264,6 +368,15 @@ impl WarpRoute for Contract {
         storage.default_hook.write(ContractId::from(hook));
     }
 
+    /// Checks if a message has been delivered
+    ///
+    /// ### Arguments
+    ///
+    /// * `message_id`: [b256] - The ID of the message
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - Whether the message has been delivered
     #[storage(read)]
     fn is_message_delivered(message_id: b256) -> bool {
         storage.delivered_messages.get(message_id).try_read().unwrap_or(false)
@@ -297,6 +410,8 @@ impl WarpRoute for Contract {
         );
     }
 }
+
+// ---------------  Pausable and Ownable  ---------------
 
 impl Pausable for Contract {
     #[storage(write)]
@@ -344,7 +459,8 @@ impl Ownable for Contract {
     }
 }
 
-/// Helpers
+// ---------------  Internal Functions  ---------------
+
 #[storage(read)]
 fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
     TokenMetadata {

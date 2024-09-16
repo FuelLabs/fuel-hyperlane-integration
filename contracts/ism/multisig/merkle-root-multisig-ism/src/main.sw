@@ -15,6 +15,7 @@ use message::EncodedMessage;
 use std_lib_extended::bytes::*;
 use merkle::*;
 
+/// Error types for the Merkle Root Multisig ISM.
 enum MerkleRootMultisigError {
     NoMultisigThreshold: (),
     NoValidatorMatch: (),
@@ -24,15 +25,40 @@ enum MerkleRootMultisigError {
 }
 
 storage {
+    /// The list of validators that can approve messages.
     validators: StorageVec<EvmAddress> = StorageVec {},
+    /// The threshold of approval for the Multisig ISM.
     threshold: u8 = 0,
 }
 
 impl InterchainSecurityModule for Contract {
+    /// Returns an enum that represents the type of security model
+    /// encoded by this ISM. Relayers infer how to fetch and format metadata.
+    ///
+    /// ### Returns
+    ///
+    /// * [ModuleType] - The type of security model.
     fn module_type() -> ModuleType {
         ModuleType::MERKLE_ROOT_MULTISIG
     }
 
+    /// Verifies the message using the metadata.
+    ///
+    /// ### Arguments
+    ///
+    /// * `metadata`: [Bytes] - The metadata to be used for verification.
+    /// * `message`: [Bytes] - The message to be verified.
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - True if the message is verified successfully.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the threshold is not set or is less than 0.
+    /// * If the signature recovery fails.
+    /// * If the signer recovery fails.
+    /// * If no validator matches the signer.
     #[storage(read)]
     fn verify(metadata: Bytes, message: Bytes) -> bool {
         let digest = _digest(metadata, message);
@@ -88,26 +114,71 @@ impl InterchainSecurityModule for Contract {
 }
 
 impl MultisigIsm for Contract {
+    /// Returns the validators and threshold for the Multisig ISM for the given message.
+    ///
+    /// ### Arguments
+    ///
+    /// * `message`: [Bytes] - The message to be processed.
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<EvmAddress>] - The list of validators that are set to approve the message.
+    /// * [u8] - The threshold of approval for the Multisig ISM.
     #[storage(read)]
     fn validators_and_threshold(message: Bytes) -> (Vec<EvmAddress>, u8) {
         _validators_and_threshold(message)
     }
 
+    /// Returns the digest to be used for signature verification.
+    ///
+    /// ### Arguments
+    ///
+    /// * `metadata`: [Bytes] - ABI encoded module metadata.
+    /// * `message`: [Bytes] - Formatted Hyperlane message.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - The digest to be signed by validators.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the message index and signed index do not match.
+    /// * If data passed in is invalid.
     fn digest(metadata: Bytes, message: Bytes) -> Bytes {
         _digest(metadata, message)
     }
 
+    /// Returns the signature at a given index from the metadata.
+    ///
+    /// ### Arguments
+    ///
+    /// * `metadata`: [Bytes] - ABI encoded module metadata.
+    /// * `index`: [u32] - The index of the signature to be retrieved.
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - Packed encoding of signature (65 bytes).
     fn signature_at(metadata: Bytes, index: u32) -> Bytes {
         _signature_at(metadata, index)
     }
 }
 
 impl MultisigIsmFunctions for Contract {
+    /// Enrolls a validator to the Multisig ISM.
+    ///
+    /// ### Arguments
+    ///
+    /// * `validator`: [EvmAddress] - The address of the validator to be enrolled.
     #[storage(write)]
     fn enroll_validator(validator: EvmAddress) {
         storage.validators.push(validator);
     }
 
+    /// Sets the threshold for the Multisig ISM.
+    ///
+    /// ### Arguments
+    ///
+    /// * `threshold`: [u8] - The threshold of approval for the Multisig ISM.
     #[storage(write)]
     fn set_threshold(threshold: u8) {
         storage.threshold.write(threshold);
@@ -147,6 +218,7 @@ fn _digest(metadata: Bytes, message: Bytes) -> Bytes {
             .signed_message_id(),
     )
 }
+
 #[storage(read)]
 fn _validators_and_threshold(_message: Bytes) -> (Vec<EvmAddress>, u8) {
     let validators = storage.validators.load_vec();

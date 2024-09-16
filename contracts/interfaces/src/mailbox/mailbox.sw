@@ -5,6 +5,13 @@ use message::EncodedMessage;
 
 abi Mailbox {
     /// Initializes the contract.
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The owner of the contract.
+    /// * `default_ism`: [b256] - The default ISM contract Id.
+    /// * `default_hook`: [b256] - The default hook contract Id.
+    /// * `required_hook`: [b256] - The required hook contract Id.
     #[storage(write)]
     fn initialize(
         owner: b256,
@@ -13,7 +20,11 @@ abi Mailbox {
         required_hook: b256,
     );
 
-    /// Returns the domain of the chain where the contract is deployed.
+    /// Gets the domain which is specified on contract initialization.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - The domain of the contract.
     #[storage(read)]
     fn local_domain() -> u32;
 
@@ -21,7 +32,11 @@ abi Mailbox {
     ///
     /// ### Arguments
     ///
-    /// * `message_id` - The unique identifier of the message.
+    /// * `message_id`: [b256] - The unique identifier of the message.
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - True if the message has been processed.
     #[storage(read)]
     fn delivered(message_id: b256) -> bool;
 
@@ -29,27 +44,55 @@ abi Mailbox {
     ///
     /// ### Arguments
     ///
-    /// * `module` - Address implementing ISM interface.
+    /// * `module`: [ContractId] - Address implementing ISM interface.
     #[storage(read, write)]
     fn set_default_ism(module: ContractId);
 
     /// Gets the default ISM used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing ISM interface.
     #[storage(read)]
     fn default_ism() -> ContractId;
 
+    /// Sets the required hook used for message verification.
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - Address implementing Hook interface.
     #[storage(write)]
     fn set_default_hook(module: ContractId);
 
+    /// Gets the default hook used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing Hook interface.
     #[storage(read)]
     fn default_hook() -> ContractId;
 
+    /// Sets the required hook used for message verification.
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - Address implementing Hook interface.
     #[storage(write)]
     fn set_required_hook(module: ContractId);
 
+    /// Gets the required hook used for message verification.
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - Address implementing Hook interface.
     #[storage(read)]
     fn required_hook() -> ContractId;
 
     /// Returns the ID of the last dispatched message.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ID of the last dispatched message.
     #[storage(read)]
     fn latest_dispatched_id() -> b256;
 
@@ -58,9 +101,15 @@ abi Mailbox {
     ///
     /// ### Arguments
     ///
-    /// * `destination_domain` - The domain of the destination chain.
-    /// * `recipient` - Address of the recipient on the destination chain.
-    /// * `message_body` - Raw bytes content of the message body.
+    /// * `destination_domain`: [u32] - The domain of the destination chain.
+    /// * `recipient`: [b256] - Address of the recipient on the destination chain.
+    /// * `message_body`: [Bytes] - Raw bytes content of the message body.
+    /// * `metadata`: [Bytes] - Raw bytes content of the metadata.
+    /// * `hook`: [ContractId] - The hook contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The ID of the dispatched message.
     #[payable]
     #[storage(read, write)]
     fn dispatch(
@@ -71,6 +120,19 @@ abi Mailbox {
         hook: ContractId,
     ) -> b256;
 
+    /// Quotes a price for dispatching a message
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination_domain`: [u32] - The domain of the destination chain.
+    /// * `recipient_address`: [b256] - Address of the recipient on the destination chain.
+    /// * `message_body`: [Bytes] - Raw bytes content of the message body.
+    /// * `metadata`: [Bytes] - Raw bytes content of the metadata.
+    /// * `hook`: [ContractId] - The hook contract Id.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The price of the dispatch.
     #[storage(read)]
     fn quote_dispatch(
         destination_domain: u32,
@@ -84,12 +146,16 @@ abi Mailbox {
     ///
     /// ### Arguments
     ///
-    /// * `metadata` - The metadata for ISM verification.
-    /// * `message` - The message as emitted by dispatch.
+    /// * `metadata`: [Bytes] - The metadata for ISM verification.
+    /// * `message`: [Bytes] - The message as emitted by dispatch.
     #[storage(read, write)]
     fn process(metadata: Bytes, message: Bytes);
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
+    ///
+    /// ### Returns
+    ///
+    /// * [u32] - The number of leaves in the merkle tree.
     #[storage(read)]
     fn nonce() -> u32;
 
@@ -97,11 +163,11 @@ abi Mailbox {
     ///
     /// ### Arguments
     ///
-    /// * `recipient` - The recipient's contract Id.
+    /// * `recipient`: [ContractId] - The recipient's contract Id.
     ///
     /// ### Returns
     ///
-    /// * The ISM contract Id.
+    /// * [ContractId] - The ISM contract Id.
     #[storage(read, write)]
     fn recipient_ism(recipient: ContractId) -> ContractId;
 }

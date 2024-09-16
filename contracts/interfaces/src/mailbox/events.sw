@@ -9,6 +9,7 @@ pub struct DispatchIdEvent {
     pub message_id: b256,
 }
 
+/// Logged when a message is dispatched.
 pub struct DispatchEvent {
     pub message_id: b256,
     pub destination_domain: u32,
