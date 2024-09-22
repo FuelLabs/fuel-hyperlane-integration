@@ -219,7 +219,7 @@ async fn announce_success() {
             .await
             .unwrap();
 
-        assert_eq!(announcement_res.value, true);
+        assert!(announcement_res.value);
 
         let log = announcement_res
             .decode_logs_with_type::<ValidatorAnnouncementEvent>()
@@ -259,7 +259,7 @@ async fn announce_replay() {
         .await
         .unwrap();
 
-    assert_eq!(announcement_res.value, true);
+    assert!(announcement_res.value);
 
     let announcement_err = va_contract
         .methods()
@@ -307,7 +307,7 @@ async fn announce_invalid_signer() {
         .await
         .unwrap();
 
-    assert_eq!(announcement_res.value, true);
+    assert!(announcement_res.value);
 
     let invalid_signer = EvmAddress::from(Bits256([0u8; 32]));
 
@@ -349,8 +349,8 @@ async fn announce_invalid_signature() {
     let invalid_signature = signature
         .clone()
         .as_bytes()
-        .to_vec()
-        .into_iter()
+        .iter()
+        .copied()
         .rev()
         .collect::<Vec<u8>>();
 
@@ -368,7 +368,7 @@ async fn announce_invalid_signature() {
     if let Error::Transaction(Reason::Reverted { reason, .. }) = announcement_err {
         // Depending what type of invalid signature is provided, the error can be either of these
         // Making the invalid signature by reversing the bytes is just one example which can yield different errors
-        let possible_errors = vec!["ValidatorNotSigner", "Revert(0)"];
+        let possible_errors = ["ValidatorNotSigner", "Revert(0)"];
         assert!(possible_errors.contains(&reason.as_str()));
     } else {
         panic!("Expected revert error");
@@ -408,7 +408,7 @@ async fn get_announced_validators() {
         .await
         .unwrap();
 
-    assert_eq!(announcement_res.value, true);
+    assert!(announcement_res.value);
 
     let announced_validators = va_contract
         .methods()
@@ -449,7 +449,7 @@ async fn get_announced_validators() {
         .await
         .unwrap();
 
-    assert_eq!(announcement_res.value, true);
+    assert!(announcement_res.value);
 
     let announced_validators = va_contract
         .methods()
@@ -507,7 +507,7 @@ async fn get_announced_storage_locations_one_validator() {
             .await
             .unwrap();
 
-        assert_eq!(announcement_res.value, true);
+        assert!(announcement_res.value);
     }
 
     let announced_storage_locations = va_contract
@@ -562,7 +562,7 @@ async fn get_announced_storage_locations_four_validators() {
             .await
             .unwrap();
 
-        assert_eq!(announcement_res.value, true);
+        assert!(announcement_res.value);
     }
 
     let announced_storage_locations = va_contract

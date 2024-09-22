@@ -1,19 +1,16 @@
-use std::{fmt::format, str::FromStr};
+use std::str::FromStr;
 
-use alloy_primitives::FixedBytes;
-use alloy_signer::{k256::ecdsa::SigningKey, Signature, Signer};
-use alloy_signer_local::{LocalSigner, PrivateKeySigner};
+use alloy_signer::Signer;
+use alloy_signer_local::PrivateKeySigner;
 use fuel_merkle::binary::in_memory::MerkleTree;
 use fuels::{
     prelude::*,
-    types::{message, Bits256, ContractId},
+    types::{Bits256, ContractId},
 };
-use futures::future::join_all;
-use futures::stream::{self, StreamExt};
 
-use hyperlane_core::{accumulator::merkle, HyperlaneMessage, RawHyperlaneMessage, H256};
+use hyperlane_core::{HyperlaneMessage, H256};
 use sha3::{Digest, Keccak256};
-use test_utils::{get_merkle_root_ism_test_data, to_eip_191_payload};
+use test_utils::get_merkle_root_ism_test_data;
 
 // Load abi from json
 abigen!(Contract(
@@ -26,6 +23,7 @@ Contract(
 )
 );
 
+#[allow(dead_code)]
 fn load_message_with_proof() {
     let test_data = get_merkle_root_ism_test_data("./tests/message_with_proof.json");
     let expected_message_id =
@@ -42,7 +40,7 @@ fn load_message_with_proof() {
     // [1092:1096] Signed checkpoint index (computed from proof and index)
     // [1096:????] Validator signatures (length := threshold * 65)
     //
-    let origin_merkle_tree = "1111111111111111111111111111111111111111111111111111111111111111";
+    let _origin_merkle_tree = "1111111111111111111111111111111111111111111111111111111111111111";
     let message_index_in_merkle_tree = format!("{:04x}", test_data.index);
     // the message id used for recovery to get the root is the leaf from test_data,
     // XXX figure out got to get from the regular message id to leaf
@@ -77,6 +75,7 @@ fn load_message_with_proof() {
     println!("message {:?}", message);
 }
 
+#[allow(dead_code)]
 async fn deploy_merkle_test() -> MerkleTest<WalletUnlocked> {
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -103,9 +102,10 @@ async fn deploy_merkle_test() -> MerkleTest<WalletUnlocked> {
     MerkleTest::new(merkle_test_id, wallet)
 }
 
+#[allow(dead_code)]
 fn generate_test_messages() -> Vec<HyperlaneMessage> {
-    let origins = vec![1000, 1232, 567];
-    let message_ids = vec![
+    let origins = [1000, 1232, 567];
+    let message_ids = [
         H256::from_str("0x87aef1eedec41cf03ce02f27f11c802c5931c52c8bd58d2aa194d2183f7c0d55")
             .unwrap(),
         H256::from_str("0x5c9aedf8714a9aefbc7f0386628c240ee2bf0e9c9c67821ea686bb9f472bf67d")
@@ -139,6 +139,7 @@ fn generate_test_messages() -> Vec<HyperlaneMessage> {
     messages_generated
 }
 
+#[allow(dead_code)]
 async fn sign_and_insert_messages_to_tree(messages: Vec<HyperlaneMessage>) -> Vec<[u8; 65]> {
     let mut merkle_tree = MerkleTree::new();
 
@@ -154,7 +155,7 @@ async fn sign_and_insert_messages_to_tree(messages: Vec<HyperlaneMessage>) -> Ve
     let signature_2 = signer.sign_message(message_id_2.as_bytes()).await.unwrap();
     let signature_3 = signer.sign_message(message_id_3.as_bytes()).await.unwrap();
 
-    let leaves = vec![
+    let leaves = [
         signature_1.as_bytes(),
         signature_2.as_bytes(),
         signature_3.as_bytes(),
@@ -167,7 +168,7 @@ async fn sign_and_insert_messages_to_tree(messages: Vec<HyperlaneMessage>) -> Ve
         merkle_tree.push(&hash);
     }
 
-    for (index, message) in messages.iter().enumerate() {
+    for (index, _message) in messages.iter().enumerate() {
         let (merkle_root, proof_set) = merkle_tree.prove(index as u64).unwrap();
 
         println!("Merkle root: {:?}", merkle_root);
@@ -202,23 +203,23 @@ async fn sign_and_insert_messages_to_tree(messages: Vec<HyperlaneMessage>) -> Ve
 // const SIGNED_INDEX_OFFSET = 1092;
 // const SIGNATURES_OFFSET: u32 = 1096;
 // const SIGNATURE_LENGTH: u32 = 65;
-fn generate_test_metadata(messages: Vec<HyperlaneMessage>) -> Vec<Bytes> {
-    let origin_merkle_tree = "1111111111111111111111111111111111111111111111111111111111111111";
+//fn generate_test_metadata(messages: Vec<HyperlaneMessage>) -> Vec<Bytes> {
+//let origin_merkle_tree = "1111111111111111111111111111111111111111111111111111111111111111";
 
-    // for (index, message) in messages.iter().enumerate() {
-    //     let message_id = message.id();
-    //     let message_index = format!("{:0>4}", index);
+// for (index, message) in messages.iter().enumerate() {
+//     let message_id = message.id();
+//     let message_index = format!("{:0>4}", index);
 
-    //     let metadata = format!(
-    //         "0x{}{}{}{}{}{}",
-    //         origin_merkle_tree, message_index, message_id, merkle_proof, signed_index, signatures
-    //     );
+//     let metadata = format!(
+//         "0x{}{}{}{}{}{}",
+//         origin_merkle_tree, message_index, message_id, merkle_proof, signed_index, signatures
+//     );
 
-    //     Bytes(metadata.into_bytes())
-    // }
+//     Bytes(metadata.into_bytes())
+// }
 
-    vec![]
-}
+//vec![]
+//}
 
 // async fn populate_merkle_tests() -> Vec<MerkleTest<WalletUnlocked>> {
 //     let test_cases = get_merkle_test_cases("../../../test/merkle-test/tests/test_cases.json");
@@ -331,8 +332,9 @@ async fn getters_and_setters() {
 
 // #[tokio::test]
 // TODO Unit testing not essential, delete if not going to be implemented
+#[allow(dead_code)]
 async fn digest() {
-    let (ism, _) = get_contract_instance().await;
+    let (_ism, _) = get_contract_instance().await;
 
     load_message_with_proof();
 
@@ -358,5 +360,5 @@ async fn digest() {
     //         H256(Bytes32::try_from(digest.0.as_slice()).unwrap().into()),
     //         expected_digests[index]
     //     );
-    // }
+    //}
 }

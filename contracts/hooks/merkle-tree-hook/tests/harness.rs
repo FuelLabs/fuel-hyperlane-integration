@@ -90,9 +90,7 @@ async fn get_contract_instance() -> (
 
     let mut messages: [Bytes; 3] = core::array::from_fn(|_| Bytes(vec![0; 32]));
     for i in 0..MSG_COUNT {
-        let body = Bytes {
-            0: vec![i as u8; 32],
-        };
+        let body = Bytes(vec![i as u8; 32]);
         let message = mailbox
             .methods()
             .build_outbound_message(DESTINATION, recipient, body)
@@ -132,7 +130,7 @@ async fn test_hook_event_logs() {
             .unwrap();
 
         let root = roots[i as usize];
-        let empty_body = Bytes { 0: vec![0] };
+        let empty_body = Bytes(vec![0]);
 
         // Invoke the post dispatch hook
         let post_dispatch_call = hook
@@ -171,7 +169,7 @@ async fn test_quote_dispatch() {
 
     for i in 0..MSG_COUNT {
         let message = messages[i as usize].clone();
-        let empty_body = Bytes { 0: vec![0] };
+        let empty_body = Bytes(vec![0]);
 
         let quote = hook
             .methods()
