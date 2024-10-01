@@ -1,11 +1,9 @@
-use std::str::FromStr;
-
 use fuels::{
     prelude::*,
-    types::{Bits256, Identity},
+    types::{tx_status::TxStatus, Bits256, Identity},
 };
-
 use gas_oracle::{GasOracle, RemoteGasDataConfig};
+use std::str::FromStr;
 use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
 // Load abi from json
@@ -171,7 +169,7 @@ async fn test_claim() {
     assert_eq!(
         events,
         vec![ClaimEvent {
-            beneficiary: Identity::Address(beneficiary),
+            beneficiary: Bits256::from_hex_str(INITIAL_BENEFICIARY_ADDRESS).unwrap(),
             amount,
         }]
     );
@@ -314,6 +312,7 @@ async fn test_pay_for_gas() {
         events,
         vec![GasPaymentEvent {
             message_id: Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap(),
+            destination_domain: TEST_DESTINATION_DOMAIN,
             gas_amount: TEST_GAS_AMOUNT,
             payment: quote,
         }]
@@ -665,7 +664,7 @@ async fn test_set_beneficiary() {
     assert_eq!(
         events,
         vec![BeneficiarySetEvent {
-            beneficiary: new_beneficiary,
+            beneficiary: Bits256::from_hex_str(TEST_REFUND_ADDRESS).unwrap(),
         }]
     );
 

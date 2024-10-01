@@ -12,7 +12,6 @@ pub enum ModuleType {
     MESSAGE_ID_MULTISIG: (),
     NULL: (), // used with relayer carrying no metadata
     CCIP_READ: (),
-    ARB_L2_TO_L1: (),
 }
 
 /// Official ISM interface for Hyperlane V3

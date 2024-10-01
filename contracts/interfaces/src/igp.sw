@@ -173,12 +173,12 @@ abi StorageGasOracle {
 
 /// Logged when the benficiary is set.
 pub struct BeneficiarySetEvent {
-    pub beneficiary: Identity,
+    pub beneficiary: b256,
 }
 
 /// Logged when the balance is claimed and sent to the beneficiary.
 pub struct ClaimEvent {
-    pub beneficiary: Identity,
+    pub beneficiary: b256,
     pub amount: u64,
 }
 
@@ -191,6 +191,7 @@ pub struct GasOracleSetEvent {
 /// Logged when a gas payment is made.
 pub struct GasPaymentEvent {
     pub message_id: b256,
+    pub destination_domain: u32,
     pub gas_amount: u64,
     pub payment: u64,
 }

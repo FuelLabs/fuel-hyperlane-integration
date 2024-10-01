@@ -7,3 +7,4 @@ edition = "2021"
 fuels = { workspace = true }
 tokio = { workspace = true }
 rand = "0.8.4"
+hex = "0.4.3"

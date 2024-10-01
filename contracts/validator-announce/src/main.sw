@@ -23,14 +23,14 @@ use std_lib_extended::bytes::*;
 use interfaces::va::*;
 
 /// Errors which can occur in the ValidatorAnnounce contract.
-enum ValidarorAnnounceError {
+enum ValidatorAnnounceError {
     ValidatorNotSigner: (),
     ReplayAnnouncement: (),
 }
 
 configurable {
     /// The local domain. Defaults to "fuel" in bytes.
-    LOCAL_DOMAIN: u32 = 0x6675656cu32,
+    LOCAL_DOMAIN: u32 = 0x6675656cu32, // 1717982312
     /// The mailbox contract ID which the VA is associated with.
     MAILBOX_ID: ContractId = ContractId::from(ZERO_B256),
 }
@@ -111,7 +111,7 @@ impl ValidatorAnnounce for Contract {
     ) -> bool {
         let replay_id = _replay_id(validator, storage_location);
         let replayed = storage.replay_protection.get(replay_id).try_read().unwrap_or(false);
-        require(!replayed, ValidarorAnnounceError::ReplayAnnouncement);
+        require(!replayed, ValidatorAnnounceError::ReplayAnnouncement);
         storage.replay_protection.insert(replay_id, true);
 
         let announcement_digest = _get_announcement_digest(storage_location);
@@ -121,7 +121,7 @@ impl ValidatorAnnounce for Contract {
             validator
                 .bits() == signer
                 .bits(),
-            ValidarorAnnounceError::ValidatorNotSigner,
+            ValidatorAnnounceError::ValidatorNotSigner,
         );
 
         if !_is_validator_stored(validator) {

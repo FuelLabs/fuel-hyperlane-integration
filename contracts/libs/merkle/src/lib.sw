@@ -71,22 +71,27 @@ const ZERO_HASHES: [b256; 32] = [
     0x8448818bb4ae4562849e949e17ac16e0be16688e156b5cf15e098c627c0056a9,
 ];
 
-/// A persistent incremental merkle tree, only intended to be used in storage.
-///
-/// The merkle tree implementation closely resembles https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
-/// which itself resembles the eth2 deposit contract.
-/// 
-/// The Sway implementation pulls from concepts found in `StorageVec` https://github.com/FuelLabs/sway/blob/c462cbca8000e2325fb6f219305a4a2721407d11/sway-lib-std/src/storage.sw#L183
-///
-/// There are two writed variables:
-///   count: u64
-///     The number of leaves inserted into the merkle tree.
-///     This is writed at this struct's storage key, retrieved using self.field_id()
-///   branch: [b256; 32]
-///     The current branch.
-///     Each element is writed at the storage key `sha256((index, self.field_id()))`,
-///     similar to how elements of a StorageVec are written.
+// A persistent incremental merkle tree, only intended to be used in storage.
+//
+// The merkle tree implementation closely resembles https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Merkle.sol
+// which itself resembles the eth2 deposit contract.
+// 
+// The Sway implementation pulls from concepts found in `StorageVec` https://github.com/FuelLabs/sway/blob/c462cbca8000e2325fb6f219305a4a2721407d11/sway-lib-std/src/storage.sw#L183
+//
+// There are two writed variables:
+//   count: u64
+//     The number of leaves inserted into the merkle tree.
+//     This is written at this struct's storage key, retrieved using self.field_id()
+//   branch: [b256; 32]
+//     The current branch.
+//     Each element is written at the storage key `sha256((index, self.field_id()))`,
+//     similar to how elements of a StorageVec are written.
 pub struct StorageMerkleTree {}
+
+pub struct MerkleTree {
+    pub branch: [b256; 32], // [b256; TREE_DEPTH]
+    pub count: u32,
+}
 
 impl StorageKey<StorageMerkleTree> {
     /// Gets the storage key of an element in `branch`.
@@ -211,6 +216,21 @@ impl StorageKey<StorageMerkleTree> {
         }
 
         current
+    }
+
+    // Loads the MerkleTree from storage.
+    #[storage(read)]
+    pub fn load(self) -> MerkleTree {
+        let count = self.get_count();
+        let mut branch: [b256; 32] = [ZERO_B256; 32];
+
+        let mut i = 0;
+        while i < TREE_DEPTH {
+            branch[i] = self.get_branch(i);
+            i += 1;
+        }
+
+        MerkleTree { branch, count }
     }
 }
 
