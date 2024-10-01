@@ -165,36 +165,6 @@ async fn test_claim() {
         .await
         .unwrap();
 
-    let tx_id = call.tx_id.unwrap();
-    println!("Tx ID: {}", tx_id);
-
-    let tx = provider
-        .get_transaction_by_id(&tx_id)
-        .await
-        .unwrap()
-        .unwrap();
-    // println!("Tx: {:?}", tx);
-
-    let receipts = match &tx.status {
-        TxStatus::Success { receipts } => Some(receipts),
-        _ => None,
-    };
-
-    let log_data_receipts = receipts
-        .unwrap()
-        .into_iter()
-        .filter(|rec| match rec {
-            Receipt::LogData { .. } => true,
-            _ => false,
-        })
-        .collect::<Vec<_>>();
-
-    println!("Log data receipts: {:?}", log_data_receipts);
-    assert!(log_data_receipts.len() == 1);
-    let receipt = log_data_receipts.get(0).unwrap();
-    let data = receipt.data().unwrap().len();
-    println!("Claim event len: {:?}", data);
-
     let events = call.decode_logs_with_type::<ClaimEvent>().unwrap();
     assert_eq!(
         events,
@@ -305,9 +275,6 @@ async fn test_pay_for_gas() {
 
     let base_asset_id = get_base_asset();
     let call_params = CallParameters::new(quote + overpayment, base_asset_id, 1_000_000);
-
-    let block = provider.latest_block_height().await.unwrap();
-    println!("Block: {}", block);
 
     let call = igp
         .methods()
