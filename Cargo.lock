@@ -2032,6 +2032,7 @@ name = "deploy"
 version = "0.1.0"
 dependencies = [
  "fuels",
+ "hex",
  "rand",
  "tokio",
 ]
@@ -3727,6 +3728,8 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "fuels",
+ "futures",
+ "hex",
  "hyperlane-core",
  "test-utils",
  "tokio",

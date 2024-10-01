@@ -1,5 +1,7 @@
 library;
 
+use merkle::MerkleTree;
+
 abi MerkleTreeHook {
     /// Initializes the MerkleTree contract.
     ///
@@ -33,6 +35,9 @@ abi MerkleTreeHook {
     /// * [u32] - The count.
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32);
+
+    #[storage(read)]
+    fn tree() -> MerkleTree;
 }
 
 /// Events that can occur while interacting with the MerkleTree contract.

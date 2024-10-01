@@ -56,6 +56,11 @@ impl MerkleTreeHook for Contract {
     /// * [b256] - The root from the MerkleTree.
     /// * [u32] - The count from the MerkleTree.
     #[storage(read)]
+    fn tree() -> MerkleTree {
+        storage.merkle_tree.load()
+    }
+
+    #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
         (storage.merkle_tree.root(), storage.merkle_tree.get_count() - 1)
     }
@@ -150,3 +155,4 @@ fn _count() -> u32 {
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
 }
+

@@ -104,6 +104,7 @@ impl IGP for Contract {
 
         log(GasPaymentEvent {
             message_id,
+            destination_domain,
             gas_amount,
             payment: required_payment,
         });
@@ -164,7 +165,7 @@ impl Claimable for Contract {
     fn set_beneficiary(beneficiary: Identity) {
         only_owner();
         storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent { beneficiary });
+        log(BeneficiarySetEvent { beneficiary: beneficiary.bits() });
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
@@ -178,7 +179,7 @@ impl Claimable for Contract {
         transfer(beneficiary, BASE_ASSET_ID, balance);
 
         log(ClaimEvent {
-            beneficiary,
+            beneficiary: beneficiary.bits(),
             amount: balance,
         });
     }
