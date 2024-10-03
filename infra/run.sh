@@ -223,17 +223,19 @@ LOG_PATH=""
 DB_DIR=""
 RELAY_CHAINS=""
 VALIDATOR_CHAIN=""
+FUEL_CHAIN_NAME=""
+EVM_CHAIN_NAME=""
 mkdir -p "$OUTPUT_PATH/agents"
 
 # Environment-specific settings
 set_environment_config() {
     if [ "$ENVIRONMENT" == "TESTNET" ]; then
-        RELAY_CHAINS="fueltestnet,sepolia"
-        VALIDATOR_CHAIN="fueltestnet"
+        FUEL_CHAIN_NAME="fueltestnet"
+        EVM_CHAIN_NAME="sepolia"
         export CONFIG_FILES="$INFRA_PATH/configs/agent-config.json"
     else
-        RELAY_CHAINS="fueltest1,test1"
-        VALIDATOR_CHAIN="fueltest1"
+        FUEL_CHAIN_NAME="fueltest1"
+        EVM_CHAIN_NAME="test1"
         export CONFIG_FILES="$INFRA_PATH/configs/agent-config-local.json"
     fi
 }
@@ -241,6 +243,8 @@ set_environment_config() {
 # Function to set common variables for agents
 set_common_agent_vars() {
     LOG_PATH="$OUTPUT_PATH/agents/$1.log"
+    RELAY_CHAINS="$FUEL_CHAIN_NAME,$EVM_CHAIN_NAME"
+    VALIDATOR_CHAIN="$FUEL_CHAIN_NAME"
     DB_DIR="$OUTPUT_PATH/agents/hyperlane_db_$1_$VALIDATOR_CHAIN"
     touch "$LOG_PATH"
 }
@@ -259,8 +263,8 @@ run_relayer() {
         --relayChains "$RELAY_CHAINS" \
         --allowLocalCheckpointSyncers true \
         --defaultSigner.key "$FUEL_SIGNER_KEY" \
-        --chains.fueltestnet.signer.key "$FUEL_SIGNER_KEY" \
-        --chains.sepolia.signer.key "$SEPOLIA_SIGNER_KEY" \
+        --chains.$FUEL_CHAIN_NAME.signer.key "$FUEL_SIGNER_KEY" \
+        --chains.$EVM_CHAIN_NAME.signer.key "$SEPOLIA_SIGNER_KEY" \
         --metrics-port 9091 \
         > "$LOG_PATH" 2>&1 &
     RELAYER_PID=$!
