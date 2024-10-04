@@ -1,0 +1,97 @@
+{
+  "chains": {
+    "test1": {
+      "blockExplorers": [
+        {
+          "apiUrl": "https://api-sepolia.etherscan.io/api",
+          "family": "etherscan",
+          "name": "Etherscan",
+          "url": "https://sepolia.etherscan.io"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 1,
+        "reorgPeriod": 0
+      },
+      "chainId": 9913371,
+      "deployer": {
+        "name": "Abacus Works",
+        "url": "https://www.hyperlane.xyz"
+      },
+      "displayName": "Local Anvil",
+      "domainId": 9913371,
+      "index": {
+        "from": 0
+      },
+      "isTestnet": true,
+      "name": "test1",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Ether",
+        "symbol": "ETH"
+      },
+      "protocol": "ethereum",
+      "rpcUrls": [
+        {
+          "http": "http://localhost:8545"
+        }
+      ],
+      "domainRoutingIsmFactory": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "interchainAccountIsm": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+      "interchainAccountRouter": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "mailbox": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "proxyAdmin": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "staticAggregationHookFactory": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "staticAggregationIsmFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "staticMerkleRootMultisigIsmFactory": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "staticMessageIdMultisigIsmFactory": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "testRecipient": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+      "validatorAnnounce": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
+    },
+    "fueltest1": {
+      "blockExplorers": [
+        {
+          "apiUrl": "https://app.fuel.network/",
+          "family": "other",
+          "name": "Fuel Explorer",
+          "url": "https://app.fuel.network/"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 1,
+        "reorgPeriod": 0
+      },
+      "chainId": 13374,
+      "deployer": {
+        "name": "Abacus Works",
+        "url": "https://www.hyperlane.xyz"
+      },
+      "displayName": "Fuel Local",
+      "domainId": 13374,
+      "gasCurrencyCoinGeckoId": "fuel-2",
+      "name": "fueltest1",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Ethereum",
+        "symbol": "ETH"
+      },
+      "protocol": "fuel",
+      "rpcUrls": [
+        {
+          "http": "http://127.0.0.1:4000/v1/graphql"
+        }
+      ],
+      "interchainGasPaymaster": "0x2dbf785efc223c08e64099758606f736a411da5122828fb7aed13c587d54551a",
+      "interchainSecurityModule": "0x8335162f05e5b11e3b729445fe115e655263ec60e3e8cf2e1a837733352b4d41",
+      "mailbox": "0x8f74c5c515618e7e7684df3c77a5f68c1c0f091217b9c19bc7ef56edb73baf76",
+      "merkleTreeHook": "0x674e72ad5d9a954d3f5776b3dda9025c3b7bca99963d31ea7bfa6a19a641b484",
+      "validatorAnnounce": "0xe79beb3eadbc31b70dbcc73d4d4911d9fd9ca8d24e2cb5b3da7cffa9b7a282fd",
+      "index": {
+        "from": 11798165
+      }
+    }
+  },
+  "defaultRpcConsensusType": "fallback"
+}

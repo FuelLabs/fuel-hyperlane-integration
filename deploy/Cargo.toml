@@ -8,3 +8,5 @@ fuels = { workspace = true }
 tokio = { workspace = true }
 rand = "0.8.4"
 hex = "0.4.3"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_yaml = "0.9"
