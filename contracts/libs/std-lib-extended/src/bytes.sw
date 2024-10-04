@@ -39,7 +39,6 @@ pub const U32_BYTE_COUNT: u64 = 4u64;
 
 impl Bytes {
     // ===== b256 ====
-
     /// Reads a b256 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_b256(self, offset: u64) -> b256 {
@@ -48,7 +47,6 @@ impl Bytes {
     }
 
     // ===== u32 ====
-
     /// Reads a u32 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u32(self, offset: u64) -> u32 {
@@ -57,7 +55,6 @@ impl Bytes {
     }
 
     // ===== u8 ====
-
     /// Reads a u8 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u8(self, offset: u64) -> u8 {

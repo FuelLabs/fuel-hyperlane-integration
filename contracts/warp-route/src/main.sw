@@ -30,6 +30,7 @@ use std::{
     context::{
         msg_amount,
         this_balance,
+        balance_of,
     },
     contract_id::ContractId,
     convert::Into,
@@ -41,7 +42,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{mailbox::mailbox::*, ownable::Ownable, warp_route::*};
+use interfaces::{mailbox::mailbox::*, ownable::Ownable,claimable::*, warp_route::*};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -54,6 +55,8 @@ storage {
     default_hook: ContractId = ContractId::zero(),
     /// Mapping of message IDs to whether they have been delivered
     delivered_messages: StorageMap<b256, bool> = StorageMap {},
+    beneficiary:Identity = Identity::Address(Address::zero()),
+    
     // TOKEN
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
@@ -117,6 +120,7 @@ impl WarpRoute for Contract {
 
         let owner_id = Identity::Address(Address::from(owner));
         initialize_ownership(owner_id);
+        storage.beneficiary.write(owner_id);
         storage.mailbox.write(ContractId::from(mailbox_address));
         storage.default_hook.write(ContractId::from(hook));
         storage.token_mode.write(mode);
@@ -182,7 +186,7 @@ impl WarpRoute for Contract {
                 _burn(storage.total_supply, storage.sub_id.read(), amount);
             }
             WarpRouteTokenMode::COLLATERAL => {
-                //TODO: should not be transfered to the contract in the future
+                //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
             }
         }
@@ -195,14 +199,14 @@ impl WarpRoute for Contract {
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
-            coins: this_balance(AssetId::base()),
+            coins: balance_of(ContractId::this(), asset),
             asset_id: b256::from(AssetId::base()),
             gas: this_balance(AssetId::base()),
         }(
             destination_domain,
             recipient,
             message_body,
-            Bytes::new(), // TODO: check if metadata is required
+            Bytes::new(),
             hook_contract,
         );
 
@@ -411,7 +415,7 @@ impl WarpRoute for Contract {
     }
 }
 
-// ---------------  Pausable and Ownable  ---------------
+// ---------------  Pausable, Claimable and Ownable  ---------------
 
 impl Pausable for Contract {
     #[storage(write)]
@@ -459,6 +463,50 @@ impl Ownable for Contract {
     }
 }
 
+impl Claimable for Contract {
+    /// Gets the current beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The new beneficiary.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        storage.beneficiary.write(beneficiary);
+        log(BeneficiarySetEvent { beneficiary: beneficiary.bits() });
+    }
+
+    /// Sends all base asset funds to the beneficiary. Callable by anyone.
+    #[storage(read)]
+    fn claim() {
+        let asset = storage.asset_id.read();
+        let beneficiary = storage.beneficiary.read();
+        let balance = this_balance(asset);
+
+        transfer(beneficiary, asset, balance);
+
+        log(ClaimEvent {
+            beneficiary: beneficiary.bits(),
+            amount: balance,
+        });
+    }
+}
+
+
 // ---------------  Internal Functions  ---------------
 
 #[storage(read)]
@@ -493,7 +541,6 @@ fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64, TokenMetadata) {
     let amount = buffer_reader.read::<u64>();
     let decimals = buffer_reader.read::<u8>();
     let total_supply = buffer_reader.read::<u64>();
-
     let asset_id = storage.asset_id.read();
     let sub_id = storage.sub_id.read();
 

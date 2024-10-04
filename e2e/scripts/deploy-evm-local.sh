@@ -22,7 +22,6 @@ echo "Anvil is running with PID $ANVIL_PID"
 # Deploy the contracts to the EVM node
 hyperlane core deploy --private-key $HYP_KEY -y --chain anvil8545 --overrides ./configs
 
-
 sleep 5
 # Kill the Anvil process after the work is done
 echo "Killing Anvil process with PID $ANVIL_PID"

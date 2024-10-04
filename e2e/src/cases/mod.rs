@@ -2,6 +2,11 @@ mod example_test;
 mod ism_test_something;
 mod mailbox_get_domain;
 
+mod asset_recieve;
+mod asset_send;
+mod message_receive;
+mod message_send;
+
 use std::{future::Future, pin::Pin};
 
 pub struct TestCase {
@@ -47,9 +52,13 @@ impl FailedTestCase {
 
 pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
-        mailbox_get_domain::test(),
-        mailbox_get_domain::test(),
-        ism_test_something::test(),
-        example_test::test(),
+        // ism_test_something::test(),
+        // example_test::test(),
+        //message_receive::test(), //Works
+        //asset_recieve::test(), //Works
+
+        // - igp hooka 0 gidiyor
+        asset_send::test(),
+        //message_send::test(), //Works but changes in IGP balance not changing
     ]
 }

@@ -1,8 +1,6 @@
 pub mod abis;
 pub mod config;
 
-use std::process::Stdio;
-
 use abis::*;
 use config::{
     get_contract_data, get_deployment_config, get_e2e_env, get_loaded_private_key, get_node_url,
@@ -11,11 +9,11 @@ use config::{
 use dotenv::dotenv;
 use fuels::prelude::*;
 use once_cell::sync::Lazy;
-use tokio::{
-    io::{AsyncBufReadExt, BufReader},
-    process::{Child, Command},
-    sync::Mutex,
-    time::{timeout, Duration, Instant},
+use tokio::{process::Child, sync::Mutex};
+
+use crate::utils::{
+    contract_registry::initialize_contract_registry,
+    token::{get_collateral_asset, get_native_asset},
 };
 
 pub async fn setup() -> Option<Child> {
@@ -24,6 +22,7 @@ pub async fn setup() -> Option<Child> {
     let env = get_e2e_env();
     if let EnvE2E::Local = env {
         launch_local_node().await;
+        initialize_contract_registry().await;
     }
     // let env = get_e2e_env();
     // println!("Setting up {:?} E2E environment", env);
@@ -61,7 +60,7 @@ pub async fn cleanup(fuel_node: Option<Child>) {
 
 static PROVIDER: Lazy<Mutex<Option<Provider>>> = Lazy::new(|| Mutex::new(None));
 static WALLET: Lazy<Mutex<Option<WalletUnlocked>>> = Lazy::new(|| Mutex::new(None));
-static MAILBOX: Lazy<Mutex<Option<Mailbox<WalletUnlocked>>>> = Lazy::new(|| Mutex::new(None));
+// static MAILBOX: Lazy<Mutex<Option<Mailbox<WalletUnlocked>>>> = Lazy::new(|| Mutex::new(None));
 
 pub async fn get_provider() -> Provider {
     let mut provider_guard = PROVIDER.lock().await;
@@ -80,18 +79,26 @@ pub async fn launch_local_node() {
 pub async fn get_loaded_wallet() -> WalletUnlocked {
     let mut wallet_guard = WALLET.lock().await;
 
-    println!("wallet_guard: {:?}", wallet_guard.is_none());
-
     if wallet_guard.is_none() {
         let env = get_e2e_env();
 
         match env {
             EnvE2E::Local => {
                 let mut wallets = launch_custom_provider_and_get_wallets(
-                    WalletsConfig::new(
-                        Some(1),             /* Single wallet */
-                        Some(1),             /* Single coin (UTXO) */
-                        Some(1_000_000_000), /* Amount per coin */
+                    WalletsConfig::new_multiple_assets(
+                        1,
+                        vec![
+                            AssetConfig {
+                                id: get_native_asset(),
+                                num_coins: 1,                 /* Single coin (UTXO) */
+                                coin_amount: 100_000_000_000, /* Amount per coin */
+                            },
+                            AssetConfig {
+                                id: get_collateral_asset(),
+                                num_coins: 1,                 /* Single coin (UTXO) */
+                                coin_amount: 100_000_000_000, /* Amount per coin */
+                            },
+                        ],
                     ),
                     None,
                     None,
@@ -112,15 +119,15 @@ pub async fn get_loaded_wallet() -> WalletUnlocked {
     wallet_guard.clone().unwrap()
 }
 
-pub async fn get_mailbox() -> Result<Mailbox<WalletUnlocked>> {
-    let mut mailbox_guard = MAILBOX.lock().await;
+// pub async fn get_mailbox() -> Result<Mailbox<WalletUnlocked>> {
+//     let mut mailbox_guard = MAILBOX.lock().await;
 
-    if mailbox_guard.is_none() {
-        let (mailbox, _) = instantiate_mailbox().await?;
-        *mailbox_guard = Some(mailbox);
-    }
-    Ok(mailbox_guard.clone().unwrap())
-}
+//     if mailbox_guard.is_none() {
+//         let (mailbox, _) = instantiate_mailbox().await?;
+//         *mailbox_guard = Some(mailbox);
+//     }
+//     Ok(mailbox_guard.clone().unwrap())
+// }
 
 pub async fn deploy(
     variant: HyperlaneContractVariant,
@@ -138,29 +145,108 @@ pub async fn deploy(
     ))
 }
 
-pub async fn deploy_with_wallet(
-    variant: HyperlaneContractVariant,
-    wallet: &WalletUnlocked,
-) -> Bech32ContractId {
-    let binary_filepath = get_contract_data(variant).bin_path;
+// pub async fn deploy_with_wallet(
+//     variant: HyperlaneContractVariant,
+//     wallet: &WalletUnlocked,
+// ) -> Bech32ContractId {
+//     let binary_filepath = get_contract_data(variant).bin_path;
 
-    let config = get_deployment_config();
-    let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
+//     let config = get_deployment_config();
+//     let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
 
-    contract
-        .deploy(wallet, TxPolicies::default())
+//     contract
+//         .deploy(wallet, TxPolicies::default())
+//         .await
+//         .unwrap()
+// }
+
+// pub async fn instantiate_mailbox() -> Result<(Mailbox<WalletUnlocked>, Bech32ContractId)> {
+//     let (contract_id, wallet) = deploy(HyperlaneContractVariant::Mailbox).await?;
+//     Ok((Mailbox::new(contract_id.clone(), wallet), contract_id))
+// }
+
+pub async fn deploy_test_contracts() -> MsgRecipient<WalletUnlocked> {
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::MsgRecipient)
         .await
-        .unwrap()
+        .unwrap();
+
+    MsgRecipient::new(contract_id.clone(), wallet)
 }
 
-pub async fn instantiate_mailbox() -> Result<(Mailbox<WalletUnlocked>, Bech32ContractId)> {
-    let (contract_id, wallet) = deploy(HyperlaneContractVariant::Mailbox).await?;
-    Ok((Mailbox::new(contract_id.clone(), wallet), contract_id))
+pub async fn deploy_core_contracts() -> (
+    Mailbox<WalletUnlocked>,
+    WarpRoute<WalletUnlocked>,
+    InterchainGasPaymaster<WalletUnlocked>,
+    GasOracle<WalletUnlocked>,
+) {
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::Mailbox).await.unwrap();
+    let mailbox = Mailbox::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::WarpRoute).await.unwrap();
+    let warp_route = WarpRoute::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::InterchainGasPaymaster)
+        .await
+        .unwrap();
+
+    let igp = InterchainGasPaymaster::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::GasOracle).await.unwrap();
+    let gas_oracle = GasOracle::new(contract_id.clone(), wallet);
+
+    (mailbox, warp_route, igp, gas_oracle)
 }
 
-pub async fn instantiate_mailbox_with_wallet(
-    wallet: WalletUnlocked,
-) -> (Mailbox<WalletUnlocked>, Bech32ContractId) {
-    let contract_id = deploy_with_wallet(HyperlaneContractVariant::Mailbox, &wallet).await;
-    (Mailbox::new(contract_id.clone(), wallet), contract_id)
+pub async fn deploy_all_hooks() -> (IGPHook<WalletUnlocked>, MerkleTreeHook<WalletUnlocked>) {
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::IGPHook).await.unwrap();
+    let igp_hook = IGPHook::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::MerkleTreeHook)
+        .await
+        .unwrap();
+    let merkle_tree_hook = MerkleTreeHook::new(contract_id.clone(), wallet);
+
+    (igp_hook, merkle_tree_hook)
+}
+
+pub async fn deploy_all_isms() -> (
+    AggregationISM<WalletUnlocked>,
+    MessageIdMultisigISM<WalletUnlocked>,
+    MerkleRootMultisigISM<WalletUnlocked>,
+    DomainRoutingISM<WalletUnlocked>,
+    DefaultFallbackDomainRoutingISM<WalletUnlocked>,
+) {
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::AggregationISM)
+        .await
+        .unwrap();
+    let aggregation_ism = AggregationISM::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::MessageIdMultisigISM)
+        .await
+        .unwrap();
+    let message_id_multisig_ism = MessageIdMultisigISM::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::MerkleRootMultisigISM)
+        .await
+        .unwrap();
+    let merkle_root_multisig_ism = MerkleRootMultisigISM::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::DomainRoutingISM)
+        .await
+        .unwrap();
+    let domain_routing_ism = DomainRoutingISM::new(contract_id.clone(), wallet);
+
+    let (contract_id, wallet) = deploy(HyperlaneContractVariant::DefaultFallbackDomainRoutingISM)
+        .await
+        .unwrap();
+    let default_fallback_domain_routing_ism =
+        DefaultFallbackDomainRoutingISM::new(contract_id.clone(), wallet);
+
+    (
+        aggregation_ism,
+        message_id_multisig_ism,
+        merkle_root_multisig_ism,
+        domain_routing_ism,
+        default_fallback_domain_routing_ism,
+    )
 }

@@ -18,8 +18,7 @@ use fuels::{
     },
 };
 use hyperlane_core::{
-    HyperlaneMessage, RawHyperlaneMessage,
-    Signature as HyperlaneSignature, H256,
+    HyperlaneMessage, RawHyperlaneMessage, Signature as HyperlaneSignature, H256,
 };
 // use hyperlane_ethereum::Signers;
 
