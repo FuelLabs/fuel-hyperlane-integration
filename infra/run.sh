@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Function to check if port 8545 is in use
+check_port_8545() {
+    if lsof -i:8545 -t >/dev/null; then
+        echo "Port 8545 is already in use. Skipping node startup."
+        return 1
+    fi
+    return 0
+}
+
 # Cleanup
 kill_processes() {
     if [ -n "$ANVIL_PID" ]; then
@@ -166,6 +175,9 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
         done
     }
 
+   if ! lsof -i:8545 -t >/dev/null; then
+    echo "Port 8545 is not in use. Proceeding with node startup."
+    
     # Start local nodes
     start_anvil
     start_fuel_core
@@ -188,32 +200,36 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
 
     LOCAL_FUEL_CONTRACT_DUMP_FULL="$LOCAL_FUEL_CONTRACT_DUMP/local/contract_addresses.yaml"
 
-# Paths to contract dumps and config file
-LOCAL_FUEL_KEYS=("interchainGasPaymaster" "interchainSecurityModule" "mailbox" "merkleTreeHook" "validatorAnnounce")
-LOCAL_ANVIL_KEYS=("domainRoutingIsmFactory" "interchainAccountIsm" "interchainAccountRouter" "mailbox" "proxyAdmin" "staticAggregationHookFactory" "staticAggregationIsmFactory" "staticMerkleRootMultisigIsmFactory" "staticMessageIdMultisigIsmFactory" "testRecipient" "validatorAnnounce")
+    # Paths to contract dumps and config file
+    LOCAL_FUEL_KEYS=("interchainGasPaymaster" "interchainSecurityModule" "mailbox" "merkleTreeHook" "validatorAnnounce")
+    LOCAL_ANVIL_KEYS=("domainRoutingIsmFactory" "interchainAccountIsm" "interchainAccountRouter" "mailbox" "proxyAdmin" "staticAggregationHookFactory" "staticAggregationIsmFactory" "staticMerkleRootMultisigIsmFactory" "staticMessageIdMultisigIsmFactory" "testRecipient" "validatorAnnounce")
 
-# Read fuel data
-declare -A FUEL_VALUES
-for key in "${LOCAL_FUEL_KEYS[@]}"; do
-    FUEL_VALUES[$key]=$(yq e ".$key" "$LOCAL_FUEL_CONTRACT_DUMP_FULL")
-done
+    # Read fuel data
+    declare -A FUEL_VALUES
+    for key in "${LOCAL_FUEL_KEYS[@]}"; do
+        FUEL_VALUES[$key]=$(yq e ".$key" "$LOCAL_FUEL_CONTRACT_DUMP_FULL")
+    done
 
-# Read anvil data
-declare -A ANVIL_VALUES
-for key in "${LOCAL_ANVIL_KEYS[@]}"; do
-    ANVIL_VALUES[$key]=$(yq e ".$key" "$ANVIL_DEPLOYMENT_DUMP")
-done
+    # Read anvil data
+    declare -A ANVIL_VALUES
+    for key in "${LOCAL_ANVIL_KEYS[@]}"; do
+        ANVIL_VALUES[$key]=$(yq e ".$key" "$ANVIL_DEPLOYMENT_DUMP")
+    done
 
-# Write fuel data to config file
-for key in "${LOCAL_FUEL_KEYS[@]}"; do
-    yq e ".chains.fueltest1.$key = \"${FUEL_VALUES[$key]}\"" "$LOCAL_CONFIG_FILE" -i
-done
+    # Write fuel data to config file
+    for key in "${LOCAL_FUEL_KEYS[@]}"; do
+        yq e ".chains.fueltest1.$key = \"${FUEL_VALUES[$key]}\"" "$LOCAL_CONFIG_FILE" -i
+    done
 
-# Write anvil data to config file
-for key in "${LOCAL_ANVIL_KEYS[@]}"; do
-    yq e ".chains.test1.$key = \"${ANVIL_VALUES[$key]}\"" "$LOCAL_CONFIG_FILE" -i
-done
+    # Write anvil data to config file
+    for key in "${LOCAL_ANVIL_KEYS[@]}"; do
+        yq e ".chains.test1.$key = \"${ANVIL_VALUES[$key]}\"" "$LOCAL_CONFIG_FILE" -i
+    done
+    
+    else
+        echo "Port 8545 is already in use. Skipping node startup."
 
+    fi
 fi
 
 
