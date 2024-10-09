@@ -133,10 +133,13 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
     # Paths
     FUEL_LOCAL_SNAPSHOT="$INFRA_PATH/configs/local-fuel-snapshot"
     FUNDED_ANVIL_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-    HYP_KEY="$FUNDED_ANVIL_PRIVATE_KEY"
+    export HYP_KEY="$FUNDED_ANVIL_PRIVATE_KEY"
     ANVIL_OUTPUT="$OUTPUT_PATH/nodes/anvil_output.log"
     FUEL_CORE_OUTPUT="$OUTPUT_PATH/nodes/fuelcore_output.log"
     HYP_CLI_CORE_CONFIGS="$INFRA_PATH/configs/core-config.yaml"
+    HYP_CLI_WR_NATIVE_CONFIGS="$INFRA_PATH/configs/warp-route-native.yaml"
+    HYP_CLI_WR_COLLATERAL_CONFIGS="$INFRA_PATH/configs/warp-route-collateral.yaml"
+    HYP_CLI_WR_SYNTHETIC_CONFIGS="$INFRA_PATH/configs/warp-route-synthetic.yaml"
     LOCAL_FUEL_CONTRACT_DUMP="$OUTPUT_PATH/contracts"
 
     mkdir -p "$OUTPUT_PATH/nodes"
@@ -147,6 +150,19 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
         local key="$1"
         local value="$2"
         yq eval ".$key = \"$value\"" -i "$HYP_CLI_CORE_CONFIGS"
+    }
+
+    update_wr_configs() {
+        local mailbox_address="$1"
+        local owner_address="$2"
+        yq e ".test1.mailbox = \"$mailbox_address\"" "$HYP_CLI_WR_NATIVE_CONFIGS" -i
+        yq e ".test1.owner = \"$owner_address\"" "$HYP_CLI_WR_NATIVE_CONFIGS" -i
+
+        yq e ".test1.mailbox = \"$mailbox_address\"" "$HYP_CLI_WR_COLLATERAL_CONFIGS" -i
+        yq e ".test1.owner = \"$owner_address\"" "$HYP_CLI_WR_COLLATERAL_CONFIGS" -i
+
+        yq e ".test1.mailbox = \"$mailbox_address\"" "$HYP_CLI_WR_SYNTHETIC_CONFIGS" -i
+        yq e ".test1.owner = \"$owner_address\"" "$HYP_CLI_WR_SYNTHETIC_CONFIGS" -i
     }
     
     echo "Updating hyperlane deployment configurations with Sepolia signer address..."
@@ -188,8 +204,18 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
 
     # Deploy Hyperlane Core and contracts
     echo "Deploying Hyperlane Core..."
-    ANVIL_DEPLOYMENT_DUMP="$INFRA_PATH/configs/chains/anvil8545/addresses.yaml"
-    LOG_LEVEL="TRACE"  hyperlane core deploy --private-key "$HYP_KEY" -y --chain anvil8545 --overrides "$INFRA_PATH/configs" --config "$HYP_CLI_CORE_CONFIGS"
+    ANVIL_DEPLOYMENT_DUMP="$INFRA_PATH/configs/chains/test1/addresses.yaml"
+    LOG_LEVEL="TRACE"  hyperlane core deploy --private-key "$HYP_KEY" -y --chain test1 --overrides "$INFRA_PATH/configs" --config "$HYP_CLI_CORE_CONFIGS"
+
+    ANVIL_MAILBOX_ADDRESS=$(yq e ".mailbox" "$ANVIL_DEPLOYMENT_DUMP")
+    update_wr_configs "$ANVIL_MAILBOX_ADDRESS" "$SEPOLIA_SIGNER_ADDRESS"
+
+    echo "Deploying Hyperlane Collateral Warp Route..."
+    hyperlane warp deploy --overrides "$INFRA_PATH/configs" -y --config "$HYP_CLI_WR_COLLATERAL_CONFIGS"
+    echo "Deploying Hyperlane Synthetic Warp Route..."
+    hyperlane warp deploy --overrides "$INFRA_PATH/configs" -y --config "$HYP_CLI_WR_SYNTHETIC_CONFIGS"
+    echo "Deploying Hyperlane Native Warp Route..."
+    hyperlane warp deploy --overrides "$INFRA_PATH/configs" -y --config "$HYP_CLI_WR_NATIVE_CONFIGS"
 
     echo "Deploying FuelVM contracts..."
     cd "$PROJECT_ROOT/deploy" && RUSTFLAGS="-Awarnings" cargo run -- LOCAL "$LOCAL_FUEL_CONTRACT_DUMP"
@@ -253,6 +279,11 @@ set_environment_config() {
         FUEL_CHAIN_NAME="fueltest1"
         EVM_CHAIN_NAME="test1"
         export CONFIG_FILES="$INFRA_PATH/configs/agent-config-local.json"
+
+        # TODO fix this temp workaround if needed
+        export GASPAYMENTENFORCEMENT="[{\"type\": \"none\"}]"
+        export HYP_CHAINS_TEST1_MERKLETREEHOOK="0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
+        export HYP_CHAINS_TEST1_INTERCHAINGASPAYMASTER="0x0000000000000000000000000000000000000000"
     fi
 }
 
@@ -267,11 +298,6 @@ set_common_agent_vars() {
 
 # Function to run relayer
 run_relayer() {
-
-    # TODO fix this temp workaround if needed
-    export GASPAYMENTENFORCEMENT="[{\"type\": \"none\"}]"
-    export HYP_CHAINS_TEST1_MERKLETREEHOOK="0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
-    export HYP_CHAINS_TEST1_INTERCHAINGASPAYMASTER="0x0000000000000000000000000000000000000000"
 
 
     cargo run --release --bin relayer -- \
