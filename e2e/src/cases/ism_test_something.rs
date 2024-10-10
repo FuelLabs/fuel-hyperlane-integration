@@ -2,7 +2,7 @@ use crate::cases::TestCase;
 use tokio::time::Instant;
 
 async fn test_something_with_ism() -> Result<f64, String> {
-    let start = Instant::now();
+    let start: Instant = Instant::now();
 
     println!("test_ism_test");
 
@@ -10,5 +10,5 @@ async fn test_something_with_ism() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("mailbox_get_domain", test_something_with_ism)
+    TestCase::new("test_something_with_ism", test_something_with_ism)
 }

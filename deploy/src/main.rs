@@ -1,7 +1,5 @@
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use serde_yaml;
-use std::fmt::format;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::str::FromStr;
@@ -35,6 +33,10 @@ abigen!(
         name = "ValidatorAnnounce",
         abi = "contracts/validator-announce/out/debug/validator-announce-abi.json",
     ),
+    Contract(
+        name = "WarpRoute",
+        abi = "contracts/warp-route/out/debug/warp-route-abi.json",
+    ),
 );
 
 struct DeploymentEnv {
@@ -62,8 +64,13 @@ struct ContractAddresses {
     igp_hook: String,
     #[serde(rename = "validatorAnnounce")]
     va: String,
+    #[serde(rename = "warpRoute")]
+    warp_route: String,
+    #[serde(rename = "interchainGasPaymasterOracle")]
+    gas_oracle: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl ContractAddresses {
     fn new(
         mailbox: ContractId,
@@ -74,16 +81,20 @@ impl ContractAddresses {
         igp: ContractId,
         igp_hook: ContractId,
         va: ContractId,
+        warp_route: ContractId,
+        gas_oracle: ContractId,
     ) -> Self {
         Self {
-            mailbox: format!("0x{}", mailbox.to_string()),
-            post_dispatch: format!("0x{}", post_dispatch.to_string()),
-            recipient: format!("0x{}", recipient.to_string()),
-            ism: format!("0x{}", ism.to_string()),
-            merkle_tree_hook: format!("0x{}", merkle_tree_hook.to_string()),
-            igp: format!("0x{}", igp.to_string()),
-            igp_hook: format!("0x{}", igp_hook.to_string()),
-            va: format!("0x{}", va.to_string()),
+            mailbox: format!("0x{}", mailbox),
+            post_dispatch: format!("0x{}", post_dispatch),
+            recipient: format!("0x{}", recipient),
+            ism: format!("0x{}", ism),
+            merkle_tree_hook: format!("0x{}", merkle_tree_hook),
+            igp: format!("0x{}", igp),
+            igp_hook: format!("0x{}", igp_hook),
+            va: format!("0x{}", va),
+            warp_route: format!("0x{}", warp_route),
+            gas_oracle: format!("0x{}", gas_oracle),
         }
     }
 }
@@ -163,6 +174,11 @@ async fn main() {
     println!(
         "Mailbox deployed with ID: {}",
         ContractId::from(mailbox_contract_id.clone())
+    );
+
+    println!(
+        "Mailbox Bech32 from deploy script {:?}",
+        mailbox_contract_id
     );
 
     // Post Dispatch Mock Deployment
@@ -253,18 +269,41 @@ async fn main() {
         ContractId::from(igp_hook_id.clone())
     );
 
+    // Warp Route Deployment
+    let warp_route_id = Contract::load_from(
+        "../contracts/warp-route/out/debug/warp-route.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    //Gas Oracle Deployment
+    let gas_oracle_id = Contract::load_from(
+        "../contracts/igp/gas-oracle/out/debug/gas-oracle.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
     // Instantiate Contracts
 
     let post_dispatch = PostDispatch::new(post_dispatch_contract_id.clone(), wallet.clone());
     let mailbox = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
     let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), wallet.clone());
     let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
+    let warp_route = WarpRoute::new(warp_route_id.clone(), wallet.clone());
 
     // Initalize Mailbox Contract
 
     let wallet_address = Bits256(Address::from(wallet.address()).into());
     let post_dispatch_address = Bits256(ContractId::from(post_dispatch.id()).into());
     let ism_address = Bits256(ContractId::from(ism_id.clone()).into());
+    let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
+    let igp_hook_address = Bits256(ContractId::from(igp_hook_id.clone()).into());
 
     let init_res = mailbox
         .methods()
@@ -321,6 +360,31 @@ async fn main() {
     assert!(init_res.is_ok(), "Failed to initialize Merkle Tree Hook.");
     println!("Merkle Tree Hook initialized.");
 
+    // Initalize Warp Routes
+    let init_res = warp_route
+        .methods()
+        .initialize(
+            wallet_address,
+            mailbox_address,
+            WarpRouteTokenMode::COLLATERAL,
+            igp_hook_address,
+            "Ether".to_string(),
+            "ETH".to_string(),
+            9,
+            1_000_000_000,
+            Some(
+                AssetId::from_str(
+                    "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
+                )
+                .unwrap(),
+            ),
+        )
+        .call()
+        .await;
+
+    assert!(init_res.is_ok(), "Failed to initialize Warp Route.");
+    println!("Warp Route initialized.");
+
     // Dump contract addresses
     let addresses = ContractAddresses::new(
         mailbox_contract_id.into(),
@@ -331,6 +395,8 @@ async fn main() {
         igp_id.into(),
         igp_hook_id.into(),
         validator_id.into(),
+        warp_route_id.into(),
+        gas_oracle_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

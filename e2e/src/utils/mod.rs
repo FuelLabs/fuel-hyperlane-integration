@@ -1,5 +1,6 @@
 pub mod constants;
-pub mod contract_registry;
+pub mod local_contracts;
+pub mod mock_contracts_registry;
 pub mod token;
 
 use crate::cases::FailedTestCase;

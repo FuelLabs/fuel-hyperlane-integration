@@ -1,7 +1,7 @@
 use fuels::prelude::*;
 use std::str::FromStr;
 
-use crate::{setup::abis::*, utils::constants::*};
+use crate::utils::constants::*;
 
 pub struct TokenMetadata {
     pub name: String,
@@ -18,7 +18,6 @@ pub struct TokenMetadata {
 // asset_id: 0000000000000000000000000000000000000000000000000000000000000000,
 // sub_id: Bits256([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 // },
-
 
 pub fn get_collateral_asset() -> AssetId {
     AssetId::from_str(BRIDGED_ASSET_ID).unwrap()

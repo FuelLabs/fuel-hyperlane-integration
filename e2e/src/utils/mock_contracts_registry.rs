@@ -4,15 +4,9 @@ use fuels::{
 };
 
 use crate::{
-    setup::{
-        abis::*, deploy_all_hooks, deploy_all_isms, deploy_core_contracts, deploy_test_contracts,
-        get_loaded_wallet,
-    },
+    setup::{abis::*, deploy_mocks::*, get_loaded_wallet},
     utils::constants::*,
-    utils::token::{
-        get_native_asset, get_token_metadata,
-        send_gas_to_contract,
-    },
+    utils::token::{get_native_asset, get_token_metadata, send_gas_to_contract},
 };
 
 use once_cell::sync::Lazy;

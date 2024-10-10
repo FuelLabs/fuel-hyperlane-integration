@@ -1,24 +1,21 @@
-mod example_test;
+mod collateral_asset_send;
 mod ism_test_something;
-mod mailbox_get_domain;
-
-mod asset_recieve;
-mod asset_send;
-mod message_receive;
+mod mailbox_config;
 mod message_send;
+mod message_send_with_gas;
+mod set_gas_configs;
 
 use std::{future::Future, pin::Pin};
-
 pub struct TestCase {
     name: String,
-    test: Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>> + Send>> + Send>,
+    test: Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>>>>>,
 }
 
 impl TestCase {
     pub fn new<F, Fut>(name: &str, test: F) -> Self
     where
-        F: Fn() -> Fut + 'static + Send,
-        Fut: Future<Output = Result<f64, String>> + 'static + Send,
+        F: Fn() -> Fut + 'static,
+        Fut: Future<Output = Result<f64, String>> + 'static,
     {
         Self {
             name: name.to_string(),
@@ -52,13 +49,11 @@ impl FailedTestCase {
 
 pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
+        mailbox_config::test(),
+        set_gas_configs::test(),
+        message_send::test(),
+        message_send_with_gas::test(),
+        collateral_asset_send::test(),
         // ism_test_something::test(),
-        // example_test::test(),
-        //message_receive::test(), //Works
-        //asset_recieve::test(), //Works
-
-        // - igp hooka 0 gidiyor
-        asset_send::test(),
-        //message_send::test(), //Works but changes in IGP balance not changing
     ]
 }

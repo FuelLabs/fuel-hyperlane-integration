@@ -16,7 +16,7 @@ use fuels::{
 use token::get_native_asset;
 use tokio::time::Instant;
 
-async fn asset_send() -> Result<f64, String> {
+async fn mock_asset_send(registry: Arc<ContractRegistry>) -> Result<f64, String> {
     let start = Instant::now();
     let wallet = get_loaded_wallet().await;
 
@@ -137,5 +137,5 @@ async fn asset_send() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("asset_send", asset_send)
+    TestCase::new("mock_asset_send", asset_send)
 }

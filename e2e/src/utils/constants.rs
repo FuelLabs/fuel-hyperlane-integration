@@ -1,7 +1,7 @@
 use crate::setup::abis::{RemoteGasData, RemoteGasDataConfig};
 
 pub const TEST_LOCAL_DOMAIN: u32 = 0x6675656c;
-pub const TEST_REMOTE_DOMAIN: u32 = 0x112233c;
+pub const TEST_REMOTE_DOMAIN: u32 = 9913371;
 pub const TEST_RECIPIENT: &str =
     "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
@@ -20,22 +20,22 @@ pub const BASE_ASSET_DECIMALS: u8 = 6;
 pub const DEFAULT_LOCAL_GAS: u64 = 50_000;
 
 pub fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
-  vec![
-      RemoteGasDataConfig {
-          domain: TEST_LOCAL_DOMAIN,
-          remote_gas_data: RemoteGasData {
-              token_exchange_rate: TOKEN_EXCHANGE_RATE.into(),
-              gas_price: DEFAULT_LOCAL_GAS.into(),
-              token_decimals: BASE_ASSET_DECIMALS,
-          },
-      },
-      RemoteGasDataConfig {
-          domain: TEST_REMOTE_DOMAIN,
-          remote_gas_data: RemoteGasData {
-              token_exchange_rate: TOKEN_EXCHANGE_RATE.into(),
-              gas_price: TEST_GAS_AMOUNT .into(),
-              token_decimals: 9u8,
-          },
-      },
-  ]
+    vec![
+        RemoteGasDataConfig {
+            domain: TEST_LOCAL_DOMAIN,
+            remote_gas_data: RemoteGasData {
+                token_exchange_rate: TOKEN_EXCHANGE_RATE.into(),
+                gas_price: DEFAULT_LOCAL_GAS.into(),
+                token_decimals: BASE_ASSET_DECIMALS,
+            },
+        },
+        RemoteGasDataConfig {
+            domain: TEST_REMOTE_DOMAIN,
+            remote_gas_data: RemoteGasData {
+                token_exchange_rate: TOKEN_EXCHANGE_RATE.into(),
+                gas_price: TEST_GAS_AMOUNT.into(),
+                token_decimals: 9u8,
+            },
+        },
+    ]
 }
