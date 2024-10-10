@@ -40,7 +40,7 @@
       "merkleTreeHook": "0x157cebff4280e815373e6b7f36a957fecb007fcd116f9322302c77ab7eee7853",
       "validatorAnnounce": "0xe24c8b325fbde1d77b27e3f69dc1f60fcb23340c0249074e977b27f839b53210",
       "index": {
-        "from": 11798165
+        "from": 12059210
       }
     },
     "sepolia": {
@@ -70,7 +70,7 @@
       "fallbackRoutingHook": "0x17Dc724B7a2F09141C13b8AC33B396073785c2BC",
       "gnosisSafeTransactionServiceUrl": "https://safe-transaction-sepolia.safe.global",
       "index": {
-        "from": 6788538
+        "from": 6803464
       },
       "interchainAccountIsm": "0x83a3068B719F764d413625dA77468ED74789ae02",
       "interchainAccountRouter": "0x8e131c8aE5BF1Ed38D05a00892b6001a7d37739d",
@@ -92,13 +92,7 @@
       "proxyAdmin": "0x97Bbc6bBaFa5Ce3b2FA966c121Af63bD09e940f8",
       "rpcUrls": [
         {
-          "http": "https://ethereum-sepolia.publicnode.com"
-        },
-        {
-          "http": "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
-        },
-        {
-          "http": "https://rpc.sepolia.org"
+          "http": "https://11155111.rpc.thirdweb.com"
         }
       ],
       "staticAggregationHookFactory": "0x160C28C92cA453570aD7C031972b58d5Dd128F72",

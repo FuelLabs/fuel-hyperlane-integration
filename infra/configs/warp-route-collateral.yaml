@@ -1,0 +1,22 @@
+# A config for a Warp Route deployment
+# Typically used with the 'hyperlane deploy warp' command
+#
+# Token Types:
+#   native
+#   collateral
+#   synthetic
+#0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+# see comprehensive [list](https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/typescript/sdk/src/token/config.ts#L8)
+---
+test1:
+  type: collateral
+  token: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' # Collateral/vault address. Required for collateral types
+  owner: '0x03f16B5363CdC3A002e3b8c770273AD0EB034CaB' # Optional owner address for synthetic token
+  mailbox: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' # mailbox address route
+  # interchainGasPaymaster: "0x123" # Optional interchainGasPaymaster address
+  isNft: false # If the token is an NFT (ERC721), set to true
+  # You can optionally set the token metadata
+  name: 'CollateralTokenRoute'
+  symbol: 'CTR'
+  totalSupply: 10000000
+  decimals: 18
