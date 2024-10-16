@@ -5,7 +5,7 @@ use fuels::{
 
 use crate::{
     setup::{abis::*, deploy_mocks::*, get_loaded_wallet},
-    utils::constants::*,
+    utils::mocks::constants::*,
     utils::token::{get_native_asset, get_token_metadata, send_gas_to_contract},
 };
 
@@ -177,8 +177,6 @@ pub async fn initialize_all_contracts(wallet: &WalletUnlocked) -> ContractRegist
         .call()
         .await
         .unwrap();
-
-    //TODO: Check ISMS initialization
 
     let multisig_threshold = 1; // Example threshold
     message_id_multisig_ism

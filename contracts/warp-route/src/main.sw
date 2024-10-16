@@ -28,9 +28,9 @@ use std::{
     call_frames::msg_asset_id,
     constants::ZERO_B256,
     context::{
+        balance_of,
         msg_amount,
         this_balance,
-        balance_of,
     },
     contract_id::ContractId,
     convert::Into,
@@ -42,7 +42,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{mailbox::mailbox::*, ownable::Ownable,claimable::*, warp_route::*};
+use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -55,17 +55,16 @@ storage {
     default_hook: ContractId = ContractId::zero(),
     /// Mapping of message IDs to whether they have been delivered
     delivered_messages: StorageMap<b256, bool> = StorageMap {},
-    beneficiary:Identity = Identity::Address(Address::zero()),
-    
+    beneficiary: Identity = Identity::Address(Address::zero()),
     // TOKEN
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
     /// The sub ID of the token managed by the WarpRoute contract
     sub_id: SubId = SubId::zero(),
     /// The total number of unique assets minted by this contract.
-    total_assets: u64 = 0, 
+    total_assets: u64 = 0,
     /// The current total number of coins minted for a particular asset.
-    total_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    total_supply: StorageMap<AssetId, u64> = StorageMap {},
     /// The mapping of asset ID to the name of the token
     name: StorageMap<AssetId, StorageString> = StorageMap {},
     /// The mapping of asset ID to the symbol of the token
@@ -73,7 +72,7 @@ storage {
     /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
     /// The total number of coins ever minted for an asset.
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
 }
 
 configurable {
@@ -82,7 +81,7 @@ configurable {
 }
 
 impl WarpRoute for Contract {
-     /// Initializes the WarpRoute contract
+    /// Initializes the WarpRoute contract
     ///
     /// ### Arguments
     ///
@@ -199,9 +198,8 @@ impl WarpRoute for Contract {
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
-            coins: balance_of(ContractId::this(), asset),
+            coins: this_balance(AssetId::base()),
             asset_id: b256::from(AssetId::base()),
-            gas: this_balance(AssetId::base()),
         }(
             destination_domain,
             recipient,
@@ -310,7 +308,7 @@ impl WarpRoute for Contract {
     /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Returns
-    /// 
+    ///
     /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256 {
@@ -487,7 +485,9 @@ impl Claimable for Contract {
     fn set_beneficiary(beneficiary: Identity) {
         only_owner();
         storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent { beneficiary: beneficiary.bits() });
+        log(BeneficiarySetEvent {
+            beneficiary: beneficiary.bits(),
+        });
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
@@ -505,7 +505,6 @@ impl Claimable for Contract {
         });
     }
 }
-
 
 // ---------------  Internal Functions  ---------------
 

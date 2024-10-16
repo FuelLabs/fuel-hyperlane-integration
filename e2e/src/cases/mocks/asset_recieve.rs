@@ -5,9 +5,9 @@ use crate::{
     setup::*,
     utils::{
         _test_message,
-        constants::{TEST_MESSAGE_ID, TEST_RECIPIENT, TEST_REMOTE_DOMAIN},
         contract_registry::ContractRegistry,
         hyperlane_message_to_bytes,
+        mocks::constants::{TEST_MESSAGE_ID, TEST_RECIPIENT, TEST_REMOTE_DOMAIN},
         token::{get_balance, get_contract_balance, get_native_asset},
     },
 };

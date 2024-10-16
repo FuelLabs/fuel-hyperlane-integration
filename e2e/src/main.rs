@@ -1,15 +1,16 @@
 mod cases;
+mod evm;
 mod setup;
 mod utils;
 
 use cases::{pull_test_cases, FailedTestCase};
-use setup::{cleanup, setup};
-use tokio::{sync::mpsc, task, time::Instant};
+use setup::setup;
+use tokio::{sync::mpsc, time::Instant};
 use utils::summary;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let fuel_node = setup().await;
+    setup().await;
     println!("\nRunning E2E tests\n");
     let start = Instant::now();
 

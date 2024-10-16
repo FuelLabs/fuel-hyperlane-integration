@@ -1,26 +1,18 @@
 use crate::{
     cases::TestCase,
-    setup::abis::{GasOracle, IGPHook, InterchainGasPaymaster, RemoteGasData, RemoteGasDataConfig},
+    setup::{
+        abis::{GasOracle, IGPHook, InterchainGasPaymaster, RemoteGasData, RemoteGasDataConfig},
+        get_loaded_wallet,
+    },
     utils::local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
 };
-use fuels::{
-    accounts::{provider::Provider, wallet::WalletUnlocked},
-    crypto::SecretKey,
-    types::{Address, Bits256},
-};
-use std::str::FromStr;
+use fuels::types::{Address, Bits256};
 use tokio::time::Instant;
 
 async fn set_gas_configs() -> Result<f64, String> {
     let start = Instant::now();
 
-    println!("set_gas_configs test");
-
-    let fuel_provider = Provider::connect("127.0.0.1:4000").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(fuel_provider.clone()));
+    let wallet = get_loaded_wallet().await;
 
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("interchainGasPaymasterOracle");
@@ -46,15 +38,6 @@ async fn set_gas_configs() -> Result<f64, String> {
         .call()
         .await
         .map_err(|e| format!("Failed to initialize IGP: {:?}", e));
-
-    // let beneficiary = igp
-    //     .methods()
-    //     .beneficiary()
-    //     .call()
-    //     .await
-    //     .map_err(|e| format!("Failed to get beneficiary: {:?}", e))?;
-
-    // println!("Beneficiary: {:?}", beneficiary.value);
 
     let remote_domain = get_value_from_agent_config_json("test1", "domainId")
         .unwrap()

@@ -83,11 +83,11 @@
           "http": "http://127.0.0.1:4000/v1/graphql"
         }
       ],
-      "interchainGasPaymaster": "0xf0a5c7dcd9afff1cd4ee82b85da49fb9baf625b6ddb93b512b3fa00c716437eb",
-      "interchainSecurityModule": "0x24fb739934a5224f8e5e8b153752af3dd137721b68b0325d05ee1a4752a99eb8",
-      "mailbox": "0xd4bfb777b85375fb89ea0dd928d628f34c06cbfe1740d6f9ce0cfd9ba2a3d323",
-      "merkleTreeHook": "0x667533beac1479327f755809c3cef9a4f723bdf8253ac165e9c6292ab1383cfd",
-      "validatorAnnounce": "0xa4f72f046658d82d0aeadc80e9bd8dfb018202e1767b423422440040ff420ff7",
+      "interchainGasPaymaster": "0x71932af1fda3e90bf347e951316461481c7b4a0f80e1b37b61b3333cbeb16cd9",
+      "interchainSecurityModule": "0xe71cb101bcfdfd3a90bc24db185f401da28ea787932255b72bd66a730ef68ad1",
+      "mailbox": "0xdd8bc6247428ad3ac548e5c56ecf2077c509b3b18d4d881f8d840053ee5f38ee",
+      "merkleTreeHook": "0x44d05dcc345e3bbb8255e71a9fc977dc1cbc5571a94ce8f1263d88f63edaed61",
+      "validatorAnnounce": "0x31f144065ebfb1cdcaf7391eb3db8daccf57c9b51eb883a680b1c0c4780647a5",
       "index": {
         "from": 11798165
       }

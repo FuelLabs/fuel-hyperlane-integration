@@ -8,10 +8,7 @@ use fuels::prelude::*;
 use once_cell::sync::Lazy;
 use tokio::{process::Child, sync::Mutex};
 
-use crate::utils::{
-    mock_contracts_registry::initialize_contract_registry,
-    token::{get_collateral_asset, get_native_asset},
-};
+use crate::utils::token::{get_collateral_asset, get_native_asset};
 
 pub async fn setup() -> Option<Child> {
     dotenv().ok();
@@ -19,7 +16,7 @@ pub async fn setup() -> Option<Child> {
     let env = get_e2e_env();
     if let EnvE2E::Local = env {
         launch_local_node().await;
-        initialize_contract_registry().await;
+        // initialize_contract_registry().await;
     }
     // let env = get_e2e_env();
     // println!("Setting up {:?} E2E environment", env);
@@ -80,7 +77,7 @@ pub async fn get_loaded_wallet() -> WalletUnlocked {
         let env = get_e2e_env();
 
         match env {
-            EnvE2E::Local => {
+            EnvE2E::LocalMocked => {
                 let mut wallets = launch_custom_provider_and_get_wallets(
                     WalletsConfig::new_multiple_assets(
                         1,

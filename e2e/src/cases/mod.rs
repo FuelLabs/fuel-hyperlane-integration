@@ -1,14 +1,20 @@
+mod bridged_asset_recieve;
+mod bridged_asset_send;
+mod collateral_asset_recieve;
 mod collateral_asset_send;
-mod ism_test_something;
 mod mailbox_config;
-mod message_send;
+mod message_recieve;
 mod message_send_with_gas;
+mod remote_mailbox;
 mod set_gas_configs;
 
 use std::{future::Future, pin::Pin};
+
+type TestFn = Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>>>>>;
+
 pub struct TestCase {
     name: String,
-    test: Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>>>>>,
+    test: TestFn,
 }
 
 impl TestCase {
@@ -51,9 +57,12 @@ pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
         mailbox_config::test(),
         set_gas_configs::test(),
-        message_send::test(),
+        //remote_mailbox::test(),
+        //message_recieve::test(),
         message_send_with_gas::test(),
+        bridged_asset_send::test(),
+        bridged_asset_recieve::test(),
         collateral_asset_send::test(),
-        // ism_test_something::test(),
+        collateral_asset_recieve::test(),
     ]
 }

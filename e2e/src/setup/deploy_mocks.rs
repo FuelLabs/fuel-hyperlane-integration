@@ -20,26 +20,6 @@ pub async fn deploy(
     ))
 }
 
-// pub async fn deploy_with_wallet(
-//     variant: HyperlaneContractVariant,
-//     wallet: &WalletUnlocked,
-// ) -> Bech32ContractId {
-//     let binary_filepath = get_contract_data(variant).bin_path;
-
-//     let config = get_deployment_config();
-//     let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
-
-//     contract
-//         .deploy(wallet, TxPolicies::default())
-//         .await
-//         .unwrap()
-// }
-
-// pub async fn instantiate_mailbox() -> Result<(Mailbox<WalletUnlocked>, Bech32ContractId)> {
-//     let (contract_id, wallet) = deploy(HyperlaneContractVariant::Mailbox).await?;
-//     Ok((Mailbox::new(contract_id.clone(), wallet), contract_id))
-// }
-
 pub async fn deploy_test_contracts() -> MsgRecipient<WalletUnlocked> {
     let (contract_id, wallet) = deploy(HyperlaneContractVariant::MsgRecipient)
         .await

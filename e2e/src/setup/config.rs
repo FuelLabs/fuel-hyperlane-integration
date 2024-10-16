@@ -25,6 +25,7 @@ pub enum EnvE2E {
     Local,
     Testnet,
     Mainnet,
+    LocalMocked,
 }
 
 impl From<String> for EnvE2E {
@@ -33,6 +34,7 @@ impl From<String> for EnvE2E {
             "local" => EnvE2E::Local,
             "testnet" => EnvE2E::Testnet,
             "mainnet" => EnvE2E::Mainnet,
+            "local_mocked" => EnvE2E::LocalMocked,
             _ => EnvE2E::Local,
         }
     }
@@ -146,6 +148,10 @@ pub fn get_node_url() -> String {
         }),
         EnvE2E::Mainnet => {
             panic!("Mainnet not supported yet");
+        }
+        EnvE2E::LocalMocked => {
+            println!("LocalMocked not supported yet");
+            "127.0.0.1:4000".to_string()
         }
     }
 }

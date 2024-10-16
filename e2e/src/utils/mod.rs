@@ -1,6 +1,5 @@
-pub mod constants;
 pub mod local_contracts;
-pub mod mock_contracts_registry;
+pub mod mocks;
 pub mod token;
 
 use crate::cases::FailedTestCase;
@@ -11,10 +10,9 @@ use fuels::{
     types::{bech32::Bech32ContractId, Bits256, Bytes},
 };
 use hyperlane_core::{HyperlaneMessage, H256};
+use mocks::constants::*;
 use token::get_token_metadata;
 use tokio::time::Instant;
-
-use constants::*;
 
 pub fn summary(test_amount: usize, failed: Vec<FailedTestCase>, start: Instant) {
     println!("\nRan {} test cases", test_amount);

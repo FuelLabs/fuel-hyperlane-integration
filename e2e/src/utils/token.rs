@@ -1,23 +1,17 @@
 use fuels::prelude::*;
+use serde_json::Value;
+use std::fs;
 use std::str::FromStr;
 
-use crate::utils::constants::*;
+use crate::utils::mocks::constants::*;
 
+#[allow(dead_code)]
 pub struct TokenMetadata {
     pub name: String,
     pub symbol: String,
     pub decimals: u8,
     pub total_supply: u64,
 }
-//Token Metadata Example (COLLATERAL)
-//TokenMetadata {
-// name: "TestToken",
-// symbol: "TT",
-// decimals: 9,
-// total_supply: 100000000000000,
-// asset_id: 0000000000000000000000000000000000000000000000000000000000000000,
-// sub_id: Bits256([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-// },
 
 pub fn get_collateral_asset() -> AssetId {
     AssetId::from_str(BRIDGED_ASSET_ID).unwrap()
@@ -25,6 +19,19 @@ pub fn get_collateral_asset() -> AssetId {
 
 pub fn get_native_asset() -> AssetId {
     AssetId::default()
+}
+
+pub fn get_local_fuel_base_asset() -> AssetId {
+    let file_path = "../infra/configs/local-fuel-snapshot/chain_config.json";
+    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
+
+    let json: Value = serde_json::from_str(&contents).expect("JSON was not well-formatted");
+
+    let base_asset_id = json["consensus_parameters"]["V2"]["base_asset_id"]
+        .as_str()
+        .expect("base_asset_id should be a string");
+
+    AssetId::from_str(base_asset_id).unwrap()
 }
 
 pub fn get_token_metadata() -> TokenMetadata {
@@ -54,8 +61,20 @@ pub async fn get_contract_balance(
         .await
 }
 
+#[allow(dead_code)]
 pub async fn send_gas_to_contract(from: WalletUnlocked, to: &Bech32ContractId, amount: u64) {
     let _ = from
         .force_transfer_to_contract(to, amount, get_native_asset(), TxPolicies::default())
+        .await;
+}
+
+pub async fn send_gas_to_contract_2(
+    from: WalletUnlocked,
+    to: &Bech32ContractId,
+    amount: u64,
+    asset: AssetId,
+) {
+    let _ = from
+        .force_transfer_to_contract(to, amount, asset, TxPolicies::default())
         .await;
 }
