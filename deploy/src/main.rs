@@ -1,7 +1,6 @@
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::fmt::format;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::str::FromStr;
@@ -142,7 +141,9 @@ async fn main() {
     let env = DeploymentEnv::new();
     let provider = Provider::connect(env.rpc_url).await.unwrap();
     let wallet = WalletUnlocked::new_from_private_key(env.secret_key, Some(provider.clone()));
+    let block_number = provider.latest_block_height().await.unwrap();
     println!("Deployer: {}", Address::from(wallet.address()));
+    println!("Config sync block: {}", block_number);
 
     // Mailbox Contract Deployment
 

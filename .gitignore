@@ -7,3 +7,4 @@ hyperlane-monorepo
 output
 deploy-evm-local.sh
 addresses.yaml
+deployments
