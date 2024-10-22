@@ -2369,6 +2369,7 @@ dependencies = [
  "alloy-contract",
  "alloy-provider",
  "alloy-rpc-types",
+ "dotenv",
  "fuels",
  "futures-util",
  "hex",

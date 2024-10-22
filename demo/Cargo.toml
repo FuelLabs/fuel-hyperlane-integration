@@ -7,9 +7,9 @@ edition = "2021"
 hex = { workspace = true }
 fuels = { workspace = true }
 alloy = { version = "0.4.0", features = [
-    "providers",
-    "rpc-types",
-    "transport-ws",
+  "providers",
+  "rpc-types",
+  "transport-ws",
 
 ] }
 alloy-provider = { version = "0.4.0", features = ["ws"] }
@@ -17,6 +17,7 @@ alloy-contract = { version = "0.4.0" }
 alloy-rpc-types = { version = "0.4.2" }
 futures-util = "0.3"
 rand = "0.8.4"
+dotenv = "0.15.0"
 
 
 # alloy-signer = { workspace = true }

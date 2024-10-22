@@ -16,6 +16,7 @@ mod contracts;
 mod helper;
 
 use crate::contracts::load_contracts;
+use std::env;
 
 // 1. Bidirectional message sending - fuel to sepolia done
 // 2. Bidirectional token sending
@@ -24,10 +25,11 @@ use crate::contracts::load_contracts;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv::dotenv().ok();
+    let sepolia_http_url =
+        env::var("SEPOLIA_HTTP_RPC_URL").expect("SEPOLIA_HTTP_RPC_URL must be set");
     let fuel_provider = FuelProvider::connect("testnet.fuel.network").await.unwrap();
-    let sepolia_provider = ProviderBuilder::new()
-        .on_builtin("https://11155111.rpc.thirdweb.com")
-        .await?;
+    let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_http_url).await?;
 
     let fuel_block_number = fuel_provider.latest_block_height().await.unwrap();
     let sepolia_block_number = sepolia_provider.get_block_number().await.unwrap();
@@ -43,8 +45,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     contracts.fuel_send_dispatch().await;
 
-    let ws_rpc_url = "wss://11155111.rpc.thirdweb.com"; // TODO: change to valid sepolia WS RPC URL
-    let provider = ProviderBuilder::new().on_builtin(ws_rpc_url).await?;
+    let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
+    let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
 
     let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
     let filter = Filter::new()
@@ -52,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event("ReceivedMessage(uint32,bytes32,uint256,string)")
         .from_block(BlockNumberOrTag::Latest);
 
-    let sub = provider.subscribe_logs(&filter).await?;
+    let sub = sepolia_provider.subscribe_logs(&filter).await?;
     let mut stream = sub.into_stream();
 
     while let Some(log) = stream.next().await {
