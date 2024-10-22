@@ -5,6 +5,8 @@ use fuels::{
     macros::abigen,
     types::{Bits256, Bytes, ContractId},
 };
+use rand::{thread_rng, Rng};
+use serde_json::Value;
 
 use crate::helper::{get_contract_id_from_json, get_value_from_json};
 
@@ -55,7 +57,9 @@ impl Contracts {
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
 
-        let body = hex::encode("Hello from Fuel!").into_bytes();
+        let rnd_number = thread_rng().gen_range(0..10000);
+        let body_text = format!("Hello from Fuel! {}", rnd_number);
+        let body = hex::encode(body_text).into_bytes();
         let res = self
             .fuel
             .mailbox
@@ -73,21 +77,20 @@ impl Contracts {
             .call()
             .await;
 
-        if let Err(e) = res {
-            println!("Dispatch error: {:?}", e);
-        } else {
-            println!("Dispatch Success!");
+        match res {
+            Ok(res) => {
+                println!("Dispatch successful at: {:?}", res.tx_id);
+            }
+            Err(e) => {
+                println!("Dispatch error: {:?}", e);
+            }
         }
     }
 }
 
 pub fn load_contracts(wallet: WalletUnlocked) -> Contracts {
-    let mailbox_id =
-        ContractId::from_str("0xb8401ae1ffd5d6d719bc5496cd5016761a1f3ac0c363a3762cab84edd5286625")
-            .unwrap();
-
     // fuel contract addresses
-    //let mailbox_id = get_value_from_json("fueltestnet", &["mailbox"]);
+    let mailbox_id = get_value_from_json("fueltestnet", &["mailbox"]);
     let igp = get_contract_id_from_json("fueltestnet", &["interchainGasPaymaster"]);
     let ism = get_contract_id_from_json("fueltestnet", &["interchainSecurityModule"]);
     let merkle_tree_hook = get_contract_id_from_json("fueltestnet", &["merkleTreeHook"]);
@@ -97,10 +100,13 @@ pub fn load_contracts(wallet: WalletUnlocked) -> Contracts {
     let recipient = get_value_from_json("sepolia", &["testRecipient"]);
     let sepolia_mailbox = get_value_from_json("sepolia", &["mailbox"]);
 
-    let mailbox_instance = Mailbox::new(
-        ContractId::from_str(&mailbox_id.to_string()).unwrap(),
-        wallet.clone(),
-    );
+    let mailbox_id = match mailbox_id {
+        Value::String(s) => s,
+        _ => panic!("Mailbox ID not found"),
+    };
+
+    let mailbox_contract_id = ContractId::from_str(mailbox_id.as_str()).unwrap();
+    let mailbox_instance = Mailbox::new(mailbox_contract_id, wallet.clone());
 
     Contracts {
         fuel: FuelContracts {

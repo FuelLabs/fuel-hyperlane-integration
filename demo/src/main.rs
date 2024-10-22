@@ -3,7 +3,6 @@ use std::str::FromStr;
 use alloy::providers::{Provider as EthProvider, ProviderBuilder};
 use alloy::{
     primitives::address,
-    // providers::ws::WsConnect,
     rpc::types::{BlockNumberOrTag, Filter},
 };
 
@@ -18,7 +17,7 @@ mod helper;
 
 use crate::contracts::load_contracts;
 
-// 1. Bidirectional message sending
+// 1. Bidirectional message sending - fuel to sepolia done
 // 2. Bidirectional token sending
 // 3. Receive IGP payments
 // 4. All ISMS working
@@ -44,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     contracts.fuel_send_dispatch().await;
 
-    let ws_rpc_url = "wss://11155111.rpc.thirdweb.com"; // TODO: change if doesn't work
+    let ws_rpc_url = "wss://11155111.rpc.thirdweb.com"; // TODO: change to valid sepolia WS RPC URL
     let provider = ProviderBuilder::new().on_builtin(ws_rpc_url).await?;
 
     let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");

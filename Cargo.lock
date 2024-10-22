@@ -2372,6 +2372,7 @@ dependencies = [
  "fuels",
  "futures-util",
  "hex",
+ "rand",
  "serde",
  "serde_json",
  "tokio",
