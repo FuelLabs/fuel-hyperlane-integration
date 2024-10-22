@@ -71,8 +71,15 @@ struct ContractAddresses {
     igp_hook: String,
     #[serde(rename = "validatorAnnounce")]
     va: String,
+    #[serde(rename = "warpRoute")]
+    warp_route: String,
+    #[serde(rename = "warpRouteBridged")]
+    warp_route_bridged: String,
+    #[serde(rename = "interchainGasPaymasterOracle")]
+    gas_oracle: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl ContractAddresses {
     fn new(
         mailbox: ContractId,
@@ -83,16 +90,22 @@ impl ContractAddresses {
         igp: ContractId,
         igp_hook: ContractId,
         va: ContractId,
+        warp_route: ContractId,
+        warp_route_bridged: ContractId,
+        gas_oracle: ContractId,
     ) -> Self {
         Self {
-            mailbox: format!("0x{}", mailbox.to_string()),
-            post_dispatch: format!("0x{}", post_dispatch.to_string()),
-            recipient: format!("0x{}", recipient.to_string()),
-            ism: format!("0x{}", ism.to_string()),
-            merkle_tree_hook: format!("0x{}", merkle_tree_hook.to_string()),
-            igp: format!("0x{}", igp.to_string()),
-            igp_hook: format!("0x{}", igp_hook.to_string()),
-            va: format!("0x{}", va.to_string()),
+            mailbox: format!("0x{}", mailbox),
+            post_dispatch: format!("0x{}", post_dispatch),
+            recipient: format!("0x{}", recipient),
+            ism: format!("0x{}", ism),
+            merkle_tree_hook: format!("0x{}", merkle_tree_hook),
+            igp: format!("0x{}", igp),
+            igp_hook: format!("0x{}", igp_hook),
+            va: format!("0x{}", va),
+            warp_route: format!("0x{}", warp_route),
+            warp_route_bridged: format!("0x{}", warp_route_bridged),
+            gas_oracle: format!("0x{}", gas_oracle),
         }
     }
 }
@@ -307,6 +320,8 @@ async fn main() {
     let wallet_address = Bits256(Address::from(wallet.address()).into());
     let post_dispatch_mock_address = Bits256(ContractId::from(post_dispatch_mock.id()).into());
     let ism_address = Bits256(ContractId::from(ism_id.clone()).into());
+    let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
+    let igp_hook_address = Bits256(ContractId::from(igp_hook_id.clone()).into());
 
     let init_res = mailbox
         .methods()
@@ -426,6 +441,9 @@ async fn main() {
         igp_id.into(),
         igp_hook_id.into(),
         validator_id.into(),
+        warp_route_id.into(),
+        warp_route_bridged_id.into(),
+        gas_oracle_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

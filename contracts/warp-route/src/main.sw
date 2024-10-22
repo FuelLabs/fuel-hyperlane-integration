@@ -28,6 +28,7 @@ use std::{
     call_frames::msg_asset_id,
     constants::ZERO_B256,
     context::{
+        balance_of,
         msg_amount,
         this_balance,
     },
@@ -41,7 +42,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{mailbox::mailbox::*, ownable::Ownable, warp_route::*};
+use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -54,15 +55,16 @@ storage {
     default_hook: ContractId = ContractId::zero(),
     /// Mapping of message IDs to whether they have been delivered
     delivered_messages: StorageMap<b256, bool> = StorageMap {},
+    beneficiary: Identity = Identity::Address(Address::zero()),
     // TOKEN
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
     /// The sub ID of the token managed by the WarpRoute contract
     sub_id: SubId = SubId::zero(),
     /// The total number of unique assets minted by this contract.
-    total_assets: u64 = 0, 
+    total_assets: u64 = 0,
     /// The current total number of coins minted for a particular asset.
-    total_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    total_supply: StorageMap<AssetId, u64> = StorageMap {},
     /// The mapping of asset ID to the name of the token
     name: StorageMap<AssetId, StorageString> = StorageMap {},
     /// The mapping of asset ID to the symbol of the token
@@ -70,7 +72,7 @@ storage {
     /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
     /// The total number of coins ever minted for an asset.
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
 }
 
 configurable {
@@ -79,7 +81,7 @@ configurable {
 }
 
 impl WarpRoute for Contract {
-     /// Initializes the WarpRoute contract
+    /// Initializes the WarpRoute contract
     ///
     /// ### Arguments
     ///
@@ -117,6 +119,7 @@ impl WarpRoute for Contract {
 
         let owner_id = Identity::Address(Address::from(owner));
         initialize_ownership(owner_id);
+        storage.beneficiary.write(owner_id);
         storage.mailbox.write(ContractId::from(mailbox_address));
         storage.default_hook.write(ContractId::from(hook));
         storage.token_mode.write(mode);
@@ -182,7 +185,7 @@ impl WarpRoute for Contract {
                 _burn(storage.total_supply, storage.sub_id.read(), amount);
             }
             WarpRouteTokenMode::COLLATERAL => {
-                //TODO: should not be transfered to the contract in the future
+                //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
             }
         }
@@ -197,12 +200,11 @@ impl WarpRoute for Contract {
         let message_id = mailbox.dispatch {
             coins: this_balance(AssetId::base()),
             asset_id: b256::from(AssetId::base()),
-            gas: this_balance(AssetId::base()),
         }(
             destination_domain,
             recipient,
             message_body,
-            Bytes::new(), // TODO: check if metadata is required
+            Bytes::new(),
             hook_contract,
         );
 
@@ -306,7 +308,7 @@ impl WarpRoute for Contract {
     /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Returns
-    /// 
+    ///
     /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256 {
@@ -411,7 +413,7 @@ impl WarpRoute for Contract {
     }
 }
 
-// ---------------  Pausable and Ownable  ---------------
+// ---------------  Pausable, Claimable and Ownable  ---------------
 
 impl Pausable for Contract {
     #[storage(write)]
@@ -459,6 +461,51 @@ impl Ownable for Contract {
     }
 }
 
+impl Claimable for Contract {
+    /// Gets the current beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The new beneficiary.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        storage.beneficiary.write(beneficiary);
+        log(BeneficiarySetEvent {
+            beneficiary: beneficiary.bits(),
+        });
+    }
+
+    /// Sends all base asset funds to the beneficiary. Callable by anyone.
+    #[storage(read)]
+    fn claim() {
+        let asset = storage.asset_id.read();
+        let beneficiary = storage.beneficiary.read();
+        let balance = this_balance(asset);
+
+        transfer(beneficiary, asset, balance);
+
+        log(ClaimEvent {
+            beneficiary: beneficiary.bits(),
+            amount: balance,
+        });
+    }
+}
+
 // ---------------  Internal Functions  ---------------
 
 #[storage(read)]
@@ -493,7 +540,6 @@ fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64, TokenMetadata) {
     let amount = buffer_reader.read::<u64>();
     let decimals = buffer_reader.read::<u8>();
     let total_supply = buffer_reader.read::<u64>();
-
     let asset_id = storage.asset_id.read();
     let sub_id = storage.sub_id.read();
 

@@ -1,19 +1,27 @@
-mod example_test;
-mod ism_test_something;
-mod mailbox_get_domain;
+mod bridged_asset_recieve;
+mod bridged_asset_send;
+mod collateral_asset_recieve;
+mod collateral_asset_send;
+mod mailbox_config;
+mod message_recieve;
+mod message_send_with_gas;
+mod remote_mailbox;
+mod set_gas_configs;
 
 use std::{future::Future, pin::Pin};
 
+type TestFn = Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>>>>>;
+
 pub struct TestCase {
     name: String,
-    test: Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<f64, String>> + Send>> + Send>,
+    test: TestFn,
 }
 
 impl TestCase {
     pub fn new<F, Fut>(name: &str, test: F) -> Self
     where
-        F: Fn() -> Fut + 'static + Send,
-        Fut: Future<Output = Result<f64, String>> + 'static + Send,
+        F: Fn() -> Fut + 'static,
+        Fut: Future<Output = Result<f64, String>> + 'static,
     {
         Self {
             name: name.to_string(),
@@ -47,9 +55,14 @@ impl FailedTestCase {
 
 pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
-        mailbox_get_domain::test(),
-        mailbox_get_domain::test(),
-        ism_test_something::test(),
-        example_test::test(),
+        mailbox_config::test(),
+        set_gas_configs::test(),
+        //remote_mailbox::test(),
+        //message_recieve::test(),
+        message_send_with_gas::test(),
+        bridged_asset_send::test(),
+        bridged_asset_recieve::test(),
+        collateral_asset_send::test(),
+        collateral_asset_recieve::test(),
     ]
 }

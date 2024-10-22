@@ -47,8 +47,8 @@ fn message_id_test_data() -> (Vec<HyperlaneMessage>, Vec<Bytes>, Vec<H256>, Vec<
             .unwrap(),
     ];
 
-    let origins = vec![1000, 1232, 567];
-    let message_ids = vec![
+    let origins = [1000, 1232, 567];
+    let message_ids = [
         H256::from_str("0x87aef1eedec41cf03ce02f27f11c802c5931c52c8bd58d2aa194d2183f7c0d55")
             .unwrap(),
         H256::from_str("0x5c9aedf8714a9aefbc7f0386628c240ee2bf0e9c9c67821ea686bb9f472bf67d")
@@ -146,11 +146,11 @@ async fn sign_digest(digest: H256) -> (String, LocalSigner<SigningKey>, Bytes) {
     let s_hex = format!("{:064x}", signed_digest.s());
     let v_hex = format!(
         "{:02x}",
-        u8::try_from(signed_digest.v().y_parity_byte_non_eip155().unwrap()).unwrap()
+        (signed_digest.v().y_parity_byte_non_eip155().unwrap())
     );
     let v_not_hex = format!(
         "{:02}",
-        u8::try_from(signed_digest.v().y_parity_byte_non_eip155().unwrap()).unwrap()
+        (signed_digest.v().y_parity_byte_non_eip155().unwrap())
     );
 
     println!("r (hex): {}", r_hex);
@@ -336,7 +336,7 @@ async fn verify_single_validator_success() {
     println!("message id: {:?}", message.id());
     println!("message origin: {:?}", message.origin);
 
-    let digest = expected_digests[0].clone();
+    let digest = expected_digests[0];
     let digest_from_contract = ism
         .methods()
         .digest(metadata[0].clone(), message_bytes.clone())
@@ -357,7 +357,7 @@ async fn verify_single_validator_success() {
         )
     );
 
-    let (_, signer, metadata_with_signature) = sign_digest(digest.clone()).await;
+    let (_, signer, metadata_with_signature) = sign_digest(digest).await;
 
     println!("metadata_with_signature: {:?}", metadata_with_signature);
 
@@ -382,7 +382,7 @@ async fn verify_single_validator_success() {
     println!("address: {:?}", signer.address().into_word().0);
     println!("address: {:?}", address);
     ism.methods()
-        .enroll_validator(address.clone())
+        .enroll_validator(address)
         .call()
         .await
         .unwrap();
@@ -398,7 +398,7 @@ async fn verify_single_validator_success() {
         .unwrap()
         .value;
 
-    assert_eq!(result, true);
+    assert!(result);
 }
 
 #[tokio::test]
@@ -411,11 +411,11 @@ async fn verify_triple_validator_success() {
 
     let message = messages[0].clone();
     let message_bytes = Bytes(RawHyperlaneMessage::from(&message));
-    let digest = expected_digests[0].clone();
+    let digest = expected_digests[0];
 
-    let (signature_1, signer_1, _) = sign_digest(digest.clone()).await;
-    let (signature_2, signer_2, _) = sign_digest(digest.clone()).await;
-    let (signature_3, signer_3, _) = sign_digest(digest.clone()).await;
+    let (signature_1, signer_1, _) = sign_digest(digest).await;
+    let (signature_2, signer_2, _) = sign_digest(digest).await;
+    let (signature_3, signer_3, _) = sign_digest(digest).await;
 
     let metadata_with_signatures =
         append_signatures_to_test_metadata(vec![signature_1, signature_2, signature_3]);
@@ -424,11 +424,11 @@ async fn verify_triple_validator_success() {
     let address_2 = EvmAddress::from(Bits256(signer_2.address().into_word().0));
     let address_3 = EvmAddress::from(Bits256(signer_3.address().into_word().0));
 
-    let addresses = vec![address_1.clone(), address_2.clone(), address_3.clone()];
+    let addresses = vec![address_1, address_2, address_3];
 
     for address in addresses {
         ism.methods()
-            .enroll_validator(address.clone())
+            .enroll_validator(address)
             .call()
             .await
             .unwrap();
@@ -442,7 +442,7 @@ async fn verify_triple_validator_success() {
         .unwrap()
         .value;
 
-    assert_eq!(result, true);
+    assert!(result);
 }
 
 #[tokio::test]
@@ -451,13 +451,13 @@ async fn verify_no_threshold() {
 
     let (messages, _, expected_digests, _) = message_id_test_data();
 
-    let digest = expected_digests[0].clone();
+    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, metadata_with_signature) = sign_digest(digest.clone()).await;
+    let (_, signer, metadata_with_signature) = sign_digest(digest).await;
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address.clone())
+        .enroll_validator(address)
         .call()
         .await
         .unwrap();
@@ -485,13 +485,13 @@ async fn verify_invalid_metadata_len() {
 
     let (messages, _, expected_digests, _) = message_id_test_data();
 
-    let digest = expected_digests[0].clone();
+    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, _) = sign_digest(digest.clone()).await;
+    let (_, signer, _) = sign_digest(digest).await;
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address.clone())
+        .enroll_validator(address)
         .call()
         .await
         .unwrap();
@@ -519,13 +519,13 @@ async fn verify_invalid_metadata() {
 
     let (messages, _, expected_digests, _) = message_id_test_data();
 
-    let digest = expected_digests[0].clone();
+    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, mut metadata_with_signature) = sign_digest(digest.clone()).await;
+    let (_, signer, mut metadata_with_signature) = sign_digest(digest).await;
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address.clone())
+        .enroll_validator(address)
         .call()
         .await
         .unwrap();

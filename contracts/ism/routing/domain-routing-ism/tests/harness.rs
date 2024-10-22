@@ -290,7 +290,7 @@ async fn route_verify_success() {
             .unwrap()
             .value;
 
-        assert_eq!(success, true);
+        assert!(success);
     }
 }
 
@@ -329,7 +329,7 @@ async fn route_verify_fail() {
             .unwrap()
             .value;
 
-        assert_eq!(success, false);
+        assert!(!success);
     }
 }
 

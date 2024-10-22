@@ -1,15 +1,16 @@
 mod cases;
+mod evm;
 mod setup;
 mod utils;
 
 use cases::{pull_test_cases, FailedTestCase};
-use setup::{cleanup, setup};
-use tokio::{sync::mpsc, task, time::Instant};
+use setup::setup;
+use tokio::{sync::mpsc, time::Instant};
 use utils::summary;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let fuel_node = setup().await;
+    setup().await;
     println!("\nRunning E2E tests\n");
     let start = Instant::now();
 
@@ -21,10 +22,9 @@ async fn main() {
 
     for test in all_test_cases {
         let tx = tx.clone();
-        task::spawn(async move {
-            let result = (test.name(), test.run().await);
-            tx.send(result).await.unwrap();
-        });
+        let test_name = test.name().clone();
+        let result = test.run().await;
+        tx.send((test_name, result)).await.unwrap();
     }
     drop(tx);
 
@@ -43,3 +43,24 @@ async fn main() {
     summary(test_amount, failed_test_cases, start);
     // cleanup(fuel_node).await;
 }
+
+//For mock e2e tests
+//let registry = get_contract_registry();
+
+// let (tx, mut rx) = mpsc::channel(1); // Limit to 1 concurrent test
+
+// for test_case in all_test_cases {
+//     let tx = tx.clone();
+//     let registry = Arc::clone(&registry);
+//     task::spawn(async move {
+//         let name = test_case.name();
+//         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await; // Add a small delay
+
+//         // Reset wallet state here if needed
+//         setup::get_loaded_wallet().await;
+
+//         let result = test_case.run(registry).await;
+//         tx.send((name, result)).await.unwrap();
+//     });
+// }
+// drop(tx);

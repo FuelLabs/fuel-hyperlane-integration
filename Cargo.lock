@@ -1305,6 +1305,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
+name = "bech32"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d965446196e3b7decd44aa7ee49e31d630118f90ef12f97900f262eb915c951d"
+
+[[package]]
 name = "bigdecimal"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2597,12 +2603,18 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 name = "e2e"
 version = "0.1.0"
 dependencies = [
+ "bech32 0.11.0",
  "dotenv",
+ "ethers",
  "fuels",
  "futures",
+ "hex",
  "hyperlane-core",
  "once_cell",
  "rand",
+ "serde",
+ "serde_json",
+ "serde_yaml",
  "tokio",
 ]
 

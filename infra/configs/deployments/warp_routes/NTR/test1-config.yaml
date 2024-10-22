@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x9E545E3C0baAB3E08CdfD552C960A1050f373042"
+    chainName: test1
+    decimals: 18
+    name: NativeTokenRoute
+    standard: EvmHypNative
+    symbol: NTR

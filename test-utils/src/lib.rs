@@ -18,8 +18,7 @@ use fuels::{
     },
 };
 use hyperlane_core::{
-    HyperlaneMessage, HyperlaneSigner, HyperlaneSignerExt, RawHyperlaneMessage, Signable,
-    Signature as HyperlaneSignature, H256,
+    HyperlaneMessage, RawHyperlaneMessage, Signature as HyperlaneSignature, H256,
 };
 // use hyperlane_ethereum::Signers;
 
@@ -289,7 +288,7 @@ pub fn to_eip_191_payload(message: &str) -> String {
 
 pub fn get_eip_191_prefix_for_hashes() -> &'static str {
     // same as format!("\x19Ethereum Signed Message:\n32")
-    return "19457468657265756d205369676e6564204d6573736167653a0a3332";
+    "19457468657265756d205369676e6564204d6573736167653a0a3332"
 }
 
 /// Reads merkle root ism test case json file and returns `TestCase` with the required data

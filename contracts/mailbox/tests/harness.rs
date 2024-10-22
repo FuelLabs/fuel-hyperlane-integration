@@ -127,7 +127,7 @@ async fn get_contract_instance() -> (
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
-fn test_message(
+pub fn test_message(
     mailbox: &Mailbox<WalletUnlocked>,
     recipient: &Bech32ContractId,
     outbound: bool,

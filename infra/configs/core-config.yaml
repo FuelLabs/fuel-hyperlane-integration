@@ -1,5 +1,5 @@
 # A config to define the core contract deployments
-owner: '0x03f16B5363CdC3A002e3b8c770273AD0EB034CaB'
+owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 defaultIsm:
   type: 'testIsm'
   threshold: 1 # Number: Signatures required to approve a message
@@ -12,4 +12,4 @@ requiredHook:
   maxProtocolFee: '1000000000000000000' # in wei (string)
   protocolFee: '200000000000000' # in wei (string)
   beneficiary: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-  owner: '0x03f16B5363CdC3A002e3b8c770273AD0EB034CaB'
+  owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
