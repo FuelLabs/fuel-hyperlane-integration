@@ -12,6 +12,7 @@ use fuels::{
 };
 
 use futures_util::stream::StreamExt;
+use helper::get_native_balance;
 mod contracts;
 mod helper;
 
@@ -43,7 +44,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let contracts = load_contracts(wallet.clone());
 
+    let wallet_balance_before = get_native_balance(&fuel_provider, wallet.address()).await;
+
+    let gas_payment_quote = contracts.fuel_quote_dispatch().await;
     contracts.fuel_send_dispatch().await;
+
+    let wallet_balance_after = get_native_balance(&fuel_provider, wallet.address()).await;
+
+    // Wallet balance after should be more than gas_payment_quote
+    if wallet_balance_before - wallet_balance_after < gas_payment_quote {
+        panic!("Wallet balance difference is less than gas payment quote");
+    }
 
     let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
     let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
