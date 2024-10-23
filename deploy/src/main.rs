@@ -71,11 +71,7 @@ struct ContractAddresses {
     igp_hook: String,
     #[serde(rename = "validatorAnnounce")]
     va: String,
-    #[serde(rename = "warpRoute")]
-    warp_route: String,
-    #[serde(rename = "warpRouteBridged")]
-    warp_route_bridged: String,
-    #[serde(rename = "interchainGasPaymasterOracle")]
+    #[serde(rename = "gasOracle")]
     gas_oracle: String,
 }
 
@@ -90,8 +86,6 @@ impl ContractAddresses {
         igp: ContractId,
         igp_hook: ContractId,
         va: ContractId,
-        warp_route: ContractId,
-        warp_route_bridged: ContractId,
         gas_oracle: ContractId,
     ) -> Self {
         Self {
@@ -103,8 +97,6 @@ impl ContractAddresses {
             igp: format!("0x{}", igp),
             igp_hook: format!("0x{}", igp_hook),
             va: format!("0x{}", va),
-            warp_route: format!("0x{}", warp_route),
-            warp_route_bridged: format!("0x{}", warp_route_bridged),
             gas_oracle: format!("0x{}", gas_oracle),
         }
     }
@@ -275,6 +267,11 @@ async fn main() {
     .await
     .unwrap();
 
+    println!(
+        "Gas Oracle deployed with ID: {}",
+        ContractId::from(gas_oracle_id.clone())
+    );
+
     // IGP deployment
     let igp_id = Contract::load_from(
         "../contracts/igp/gas-paymaster/out/debug/gas-paymaster.bin",
@@ -320,8 +317,6 @@ async fn main() {
     let wallet_address = Bits256(Address::from(wallet.address()).into());
     let post_dispatch_mock_address = Bits256(ContractId::from(post_dispatch_mock.id()).into());
     let ism_address = Bits256(ContractId::from(ism_id.clone()).into());
-    let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
-    let igp_hook_address = Bits256(ContractId::from(igp_hook_id.clone()).into());
 
     let init_res = mailbox
         .methods()
@@ -349,12 +344,20 @@ async fn main() {
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize Gas Oracle.");
+
     let init_res = igp
         .methods()
-        .initialize_ownership(owner_identity)
+        .initialize(
+            wallet_address,
+            wallet_address,
+            15000000000 * 850000000, // added * 850000000 for requiring less fuel test token
+            18,
+            5000,
+        )
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
+
     let init_res = igp_hook
         .methods()
         .initialize(igp.contract_id())
@@ -363,14 +366,13 @@ async fn main() {
     assert!(init_res.is_ok(), "Failed to initialize IGP Hook.");
 
     // Set contract values //
-
     // Gas Oracle
     let set_gas_data_res = gas_oracle
         .methods()
         .set_remote_gas_data_configs(vec![RemoteGasDataConfig {
             domain: 11155111,
             remote_gas_data: RemoteGasData {
-                // Numbers from BSC and Optimism testnets
+                // Numbers from BSC and Optimism testnets - 15000000000
                 token_exchange_rate: 15000000000,
                 gas_price: 37999464941,
                 token_decimals: 18,
@@ -378,11 +380,15 @@ async fn main() {
         }])
         .call()
         .await;
+    assert!(set_gas_data_res.is_ok(), "Failed to set gas data.");
+
     // IGP
     let set_beneficiary_res = igp.methods().set_beneficiary(owner_identity).call().await;
+    assert!(set_beneficiary_res.is_ok(), "Failed to set beneficiary.");
+
     let set_gas_oracle_res = igp
         .methods()
-        .set_gas_oracle(11155111, Bits256(gas_oracle.contract_id().hash.into()))
+        .set_gas_oracle(11155111, Bits256(gas_oracle_id.hash().into()))
         .call()
         .await;
 
@@ -441,8 +447,6 @@ async fn main() {
         igp_id.into(),
         igp_hook_id.into(),
         validator_id.into(),
-        warp_route_id.into(),
-        warp_route_bridged_id.into(),
         gas_oracle_id.into(),
     );
 
