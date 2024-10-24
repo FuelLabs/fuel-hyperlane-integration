@@ -1,14 +1,18 @@
 use std::str::FromStr;
 
-use alloy::providers::{Provider as EthProvider, ProviderBuilder};
 use alloy::{
+    network::EthereumWallet,
     primitives::address,
-    rpc::types::{BlockNumberOrTag, Filter},
+    providers::{Provider as EthProvider, ProviderBuilder},
+    signers::{
+        k256::{ecdsa::SigningKey, SecretKey as SepoliaPrivateKey},
+        local::PrivateKeySigner,
+    },
 };
-
+use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::{provider::Provider as FuelProvider, wallet::WalletUnlocked},
-    crypto::SecretKey,
+    crypto::SecretKey as FuelPrivateKey,
 };
 
 use futures_util::stream::StreamExt;
@@ -19,7 +23,7 @@ mod helper;
 use crate::contracts::load_contracts;
 use std::env;
 
-// 1. Bidirectional message sending - fuel to sepolia done
+// 1. Bidirectional message sending - done
 // 2. Bidirectional token sending
 // 3. Receive IGP payments
 // 4. All ISMS working
@@ -30,26 +34,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sepolia_http_url =
         env::var("SEPOLIA_HTTP_RPC_URL").expect("SEPOLIA_HTTP_RPC_URL must be set");
     let fuel_provider = FuelProvider::connect("testnet.fuel.network").await.unwrap();
-    let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_http_url).await?;
+
+    let sepolia_pk = SepoliaPrivateKey::from_slice(
+        &hex::decode(env::var("SEPOLIA_PRIVATE_KEY").expect("SEPOLIA_HTTP_RPC_URL must be set"))
+            .unwrap(),
+    )
+    .unwrap();
+    let sepolia_pk = SigningKey::from(sepolia_pk);
+    let signer = PrivateKeySigner::from_signing_key(sepolia_pk);
+    let eth_wallet = EthereumWallet::from(signer);
+    let sepolia_provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(eth_wallet)
+        .on_builtin(&sepolia_http_url)
+        .await?;
 
     let fuel_block_number = fuel_provider.latest_block_height().await.unwrap();
     let sepolia_block_number = sepolia_provider.get_block_number().await.unwrap();
     println!("Latest fuel block number: {}", fuel_block_number);
     println!("Latest sepolia block number: {}", sepolia_block_number);
 
-    let secret_key =
-        SecretKey::from_str("0x5d80cd4fdacb3f5099311a197bb0dc6eb311dfd08e2c8ac3d901ff78629e2e28")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(fuel_provider.clone()));
+    let secret_key = FuelPrivateKey::from_str(
+        &env::var("FUEL_PRIVATE_KEY").expect("FUEL_PRIVATE_KEY must be set"),
+    )
+    .unwrap();
+    let fuel_wallet = WalletUnlocked::new_from_private_key(secret_key, Some(fuel_provider.clone()));
 
-    let contracts = load_contracts(wallet.clone());
+    let contracts = load_contracts(fuel_wallet.clone(), sepolia_provider.clone()).await;
 
-    let wallet_balance_before = get_native_balance(&fuel_provider, wallet.address()).await;
+    ///////////////////////////////////////////////
+    // Case 1: Send message from Sepolia to Fuel //
+    ///////////////////////////////////////////////
+
+    let message_id = contracts.sepolia_send_dispatch().await;
+    println!("Message ID: {:?}", message_id);
+
+    contracts.monitor_fuel_for_delivery(message_id).await;
+
+    ///////////////////////////////////////////////
+    // Case 2: Send message from Fuel to Sepolia //
+    ///////////////////////////////////////////////
+
+    contracts.fuel_send_dispatch(false).await;
+
+    contracts.monitor_sepolia_for_delivery().await;
+
+    panic!("Done");
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ⬇️ TODO move to clean case, actually check if we send/claim the right amount ⬇️ //
+    ////////////////////////////////////////////////////////////////////////////////////
 
     let gas_payment_quote = contracts.fuel_quote_dispatch().await;
-    contracts.fuel_send_dispatch().await;
-
-    let wallet_balance_after = get_native_balance(&fuel_provider, wallet.address()).await;
+    let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
+    let wallet_balance_after = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
 
     // Wallet balance after should be more than gas_payment_quote
     if wallet_balance_before - wallet_balance_after < gas_payment_quote {

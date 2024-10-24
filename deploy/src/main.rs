@@ -1,4 +1,6 @@
+use core::panic;
 use fuels::types::Identity;
+use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
@@ -44,6 +46,10 @@ abigen!(
         name = "GasPaymaster",
         abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
+    Contract(
+        name = "TestRecipient",
+        abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
+    )
 );
 
 struct DeploymentEnv {
@@ -152,9 +158,6 @@ impl DeploymentEnv {
 
 #[tokio::main]
 async fn main() {
-    // trigger_dispatch().await;
-    // panic!("Done");
-
     // Wallet Initialization
     let env = DeploymentEnv::new();
     let provider = Provider::connect(env.rpc_url).await.unwrap();
@@ -309,6 +312,19 @@ async fn main() {
     let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
     let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
     let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
+    let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
+
+    /////////////////////////
+    // Test Recipiet Setup //
+    /////////////////////////
+
+    let set_res = test_recipient
+        .methods()
+        .set_ism(ism_id.clone())
+        .call()
+        .await;
+
+    assert!(set_res.is_ok(), "Failed to set ISM in Test Recipient.");
 
     ////////////////////////////////
     // Initalize Mailbox Contract //
@@ -542,6 +558,112 @@ async fn trigger_dispatch() {
     } else {
         println!("Dispatch result: {:?}", res);
     }
+}
+
+/// Recipient test
+async fn recipient_test() {
+    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
+    let secret_key =
+        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
+            .unwrap();
+    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
+
+    // Send dispatch
+    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
+    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
+    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
+    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
+
+    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
+    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
+
+    println!(
+        "{:?}",
+        rec_instance.methods().handled().call().await.unwrap().value
+    );
+
+    let contract_id = ContractId::from_str(&recipient_addr).unwrap();
+
+    println!(
+        "Recipient formatted: {:?}",
+        Bech32ContractId::from(contract_id)
+    );
+
+    let res = mailbox_instance
+        .methods()
+        .recipient_ism(Bech32ContractId::from(contract_id))
+        .determine_missing_contracts(Some(3))
+        .await
+        .unwrap()
+        .simulate(Execution::StateReadOnly)
+        .await
+        .unwrap();
+
+    println!("ISM: {:?}", res.value);
+}
+
+/// Est gas test
+async fn est_gas_test() {
+    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
+    let secret_key =
+        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
+            .unwrap();
+    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
+
+    // Send dispatch
+    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
+    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
+    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
+    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
+
+    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
+    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
+
+    let message = HyperlaneMessage::default();
+
+    let process_call = mailbox_instance
+        .methods()
+        .process(Bytes(vec![0]), Bytes(RawHyperlaneMessage::from(&message)));
+    let ism_call = rec_instance.methods().interchain_security_module();
+
+    let est = CallHandler::new_multi_call(wallet.clone())
+        .add_call(process_call)
+        .add_call(ism_call)
+        .estimate_transaction_cost(Some(1.0), Some(1))
+        .await
+        .unwrap();
+
+    println!("Estimate: {:?}", est);
+}
+
+/// Check Delivery
+async fn check_if_delivered() {
+    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
+    let secret_key =
+        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
+            .unwrap();
+    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
+
+    // Send dispatch
+    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
+    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
+    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
+    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
+
+    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
+    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
+
+    let message_id =
+        Bits256::from_hex_str("0x2d04e7c14bbea23e972766763c92503bccb86058ec536c16c27b103e6a47aca8")
+            .unwrap();
+    let delivered_res = mailbox_instance
+        .methods()
+        .delivered(message_id)
+        .call()
+        .await
+        .unwrap();
+
+    println!("Delivered: {:?}", delivered_res.value);
 }
 
 /// Pagination test
