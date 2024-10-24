@@ -38,16 +38,16 @@
         }
       ],
       "domainRoutingIsmFactory": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "interchainAccountIsm": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-      "interchainAccountRouter": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-      "mailbox": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-      "proxyAdmin": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "interchainAccountIsm": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+      "interchainAccountRouter": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+      "mailbox": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "proxyAdmin": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
       "staticAggregationHookFactory": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
       "staticAggregationIsmFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
       "staticMerkleRootMultisigIsmFactory": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
       "staticMessageIdMultisigIsmFactory": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "testRecipient": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
-      "validatorAnnounce": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
+      "testRecipient": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+      "validatorAnnounce": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"
     },
     "fueltest1": {
       "blockExplorers": [
@@ -83,11 +83,11 @@
           "http": "http://127.0.0.1:4000/v1/graphql"
         }
       ],
-      "interchainGasPaymaster": "0x622bd25cd936628283a1877a3cb12213954c1162cc93d7cf210648c6c9db5139",
-      "interchainSecurityModule": "0x429d1c98763d53185bdc507359d23ee1c4fe437e977b1afeee27c405bc612833",
-      "mailbox": "0x11b31261b194badde3147743e22d0566cf5dfcba35f7a30ecd6caaede8a95bd7",
-      "merkleTreeHook": "0xed42c8915bb11ea7060667b784f3577cac2c1915e3fd89ace2b951a41f6502e7",
-      "validatorAnnounce": "0x09cf3ffe9979ec7ea40717180c4c088812229577b6e18954870bb07f800cd6f3",
+      "interchainGasPaymaster": "0x71932af1fda3e90bf347e951316461481c7b4a0f80e1b37b61b3333cbeb16cd9",
+      "interchainSecurityModule": "0xe71cb101bcfdfd3a90bc24db185f401da28ea787932255b72bd66a730ef68ad1",
+      "mailbox": "0xdd8bc6247428ad3ac548e5c56ecf2077c509b3b18d4d881f8d840053ee5f38ee",
+      "merkleTreeHook": "0x44d05dcc345e3bbb8255e71a9fc977dc1cbc5571a94ce8f1263d88f63edaed61",
+      "validatorAnnounce": "0x31f144065ebfb1cdcaf7391eb3db8daccf57c9b51eb883a680b1c0c4780647a5",
       "index": {
         "from": 11798165
       }

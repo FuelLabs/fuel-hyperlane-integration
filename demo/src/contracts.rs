@@ -1,15 +1,12 @@
-use std::{str::FromStr, thread::sleep};
+use std::{env, str::FromStr};
 
-use abigen_bindings::mailbox_mod::interfaces::mailbox;
 use alloy::{
     network::{Ethereum, EthereumWallet},
     primitives::{address, Bytes as AlloyBytes, FixedBytes, U256},
     providers::ProviderBuilder,
     sol,
-    sol_types::SolCall,
     transports::BoxTransport,
 };
-use alloy_contract::ContractInstance;
 use alloy_provider::{
     fillers::{
         BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
@@ -20,14 +17,15 @@ use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::wallet::WalletUnlocked,
     macros::abigen,
-    types::{Bits256, Bytes, ContractId},
+    programs::calls::CallParameters,
+    types::{bech32::Bech32ContractId, Bits256, Bytes, ContractId},
 };
 use futures_util::StreamExt;
 use rand::{thread_rng, Rng};
 use serde_json::Value;
-use SepoliaMailbox::{localDomainCall, SepoliaMailboxInstance};
+use SepoliaMailbox::SepoliaMailboxInstance;
 
-use crate::helper::{get_contract_id_from_json, get_value_from_json};
+use crate::helper::{get_contract_id_from_json, get_native_asset, get_value_from_json};
 
 abigen!(
     Contract(
@@ -49,6 +47,14 @@ abigen!(
     Contract(
         name = "ValidatorAnnounce",
         abi = "contracts/validator-announce/out/debug/validator-announce-abi.json",
+    ),
+    Contract(
+        name = "GasOracle",
+        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
+    ),
+    Contract(
+        name = "GasPaymaster",
+        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
 );
 
@@ -84,10 +90,12 @@ pub struct SepoliaContracts {
 
 pub struct FuelContracts {
     pub mailbox: Mailbox<WalletUnlocked>,
-    pub igp: ContractId,
     pub ism: ContractId,
     pub merkle_tree_hook: ContractId,
     pub validator_announce: ContractId,
+    pub igp: GasPaymaster<WalletUnlocked>,
+    pub gas_oracle: ContractId,
+    pub igp_hook: IGPHook<WalletUnlocked>,
 }
 
 pub struct Contracts {
@@ -109,13 +117,34 @@ pub type EvmProvider = FillProvider<
 >;
 
 impl Contracts {
-    pub async fn fuel_send_dispatch(&self) {
+    pub async fn fuel_quote_dispatch(&self) -> u64 {
+        let gas_payment_quote = self
+            .fuel
+            .igp
+            .methods()
+            .quote_gas_payment(11155111, 5000)
+            .with_contract_ids(&[self.fuel.gas_oracle.into()])
+            .call()
+            .await
+            .map_err(|e| println!("Fuel quote gas payment error: {:?}", e))
+            .unwrap();
+
+        gas_payment_quote.value
+    }
+
+    pub async fn fuel_send_dispatch(&self, with_igp: bool) {
         let recipient_address = hex::decode("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9").unwrap();
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
 
         let rnd_number = thread_rng().gen_range(0..10000);
         let body_text = format!("Hello from Fuel! {}", rnd_number);
+
+        let hook = match with_igp {
+            true => self.fuel.igp_hook.contract_id(),
+            false => &Bech32ContractId::default(),
+        };
+
         let body = hex::encode(body_text).into_bytes();
         let res = self
             .fuel
@@ -126,9 +155,12 @@ impl Contracts {
                 Bits256(address_array),
                 Bytes(body),
                 Bytes(vec![0]),
-                ContractId::zeroed(),
+                hook,
             )
-            .determine_missing_contracts(Some(3))
+            .call_params(CallParameters::new(223526, get_native_asset(), 223526))
+            .unwrap()
+            .with_contracts(&[&self.fuel.igp, &self.fuel.igp_hook])
+            .determine_missing_contracts(Some(5))
             .await
             .unwrap()
             .call()
@@ -209,8 +241,11 @@ impl Contracts {
     }
 
     pub async fn monitor_sepolia_for_delivery(&self) {
-        let ws_rpc_url = "";
-        let provider = ProviderBuilder::new().on_builtin(ws_rpc_url).await.unwrap();
+        let ws_rpc_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
+        let provider = ProviderBuilder::new()
+            .on_builtin(ws_rpc_url.as_str())
+            .await
+            .unwrap();
 
         let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
         let filter = Filter::new()
@@ -230,42 +265,43 @@ impl Contracts {
 
 pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvider) -> Contracts {
     // fuel contract addresses
-    let mailbox_id = get_value_from_json("fueltestnet", &["mailbox"]);
+    let mailbox_id = get_contract_id_from_json("fueltestnet", &["mailbox"]);
     let igp = get_contract_id_from_json("fueltestnet", &["interchainGasPaymaster"]);
     let ism = get_contract_id_from_json("fueltestnet", &["interchainSecurityModule"]);
     let merkle_tree_hook = get_contract_id_from_json("fueltestnet", &["merkleTreeHook"]);
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
+    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["igpHook"]);
+    let gas_oracle = get_contract_id_from_json("fueltestnet", &["gasOracle"]);
 
     // sepolia contract addresses
     let recipient = get_value_from_json("sepolia", &["testRecipient"]);
     let sepolia_mailbox = get_value_from_json("sepolia", &["mailbox"]);
 
-    let fuel_mailbox_id = match mailbox_id {
-        Value::String(s) => s,
-        _ => panic!("Mailbox ID not found - Fuel"),
-    };
-    let sepolia_mailbox_id = match sepolia_mailbox {
+    let _sepolia_mailbox_id = match sepolia_mailbox {
         Value::String(s) => s,
         _ => panic!("Mailbox ID not found - Sepolia"),
     };
 
     // Fuel instances
-    let mailbox_contract_id = ContractId::from_str(fuel_mailbox_id.as_str()).unwrap();
-    let mailbox_instance_fuel = Mailbox::new(mailbox_contract_id, fuel_wallet.clone());
+    let mailbox_instance_fuel = Mailbox::new(mailbox_id, fuel_wallet.clone());
+    let igp_hook_instance = IGPHook::new(igp_hook_id, fuel_wallet.clone());
+    let igp_instance = GasPaymaster::new(igp, fuel_wallet.clone());
 
     // Sepolia instances
     let mailbox_instance_sepolia = SepoliaMailbox::new(
-        address!("fFAEF09B3cd11D9b20d1a19bECca54EEC2884766"),
+        address!("fFAEF09B3cd11D9b20d1a19bECca54EEC2884766"), //fix
         evm_provider,
     );
 
     Contracts {
         fuel: FuelContracts {
             mailbox: mailbox_instance_fuel,
-            igp,
+            igp: igp_instance,
             ism,
             merkle_tree_hook,
             validator_announce,
+            gas_oracle,
+            igp_hook: igp_hook_instance,
         },
         sepolia: SepoliaContracts {
             mailbox: mailbox_instance_sepolia,

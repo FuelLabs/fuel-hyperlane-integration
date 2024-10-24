@@ -16,6 +16,8 @@ pub enum HyperlaneContract {
     MerkleRootMultisigISM,
     DomainRoutingISM,
     DefaultFallbackDomainRoutingISM,
+    WarpRoute,
+    MsgRecipient,
 }
 
 #[derive(Debug)]
@@ -23,6 +25,7 @@ pub enum EnvE2E {
     Local,
     Testnet,
     Mainnet,
+    LocalMocked,
 }
 
 impl From<String> for EnvE2E {
@@ -31,6 +34,7 @@ impl From<String> for EnvE2E {
             "local" => EnvE2E::Local,
             "testnet" => EnvE2E::Testnet,
             "mainnet" => EnvE2E::Mainnet,
+            "local_mocked" => EnvE2E::LocalMocked,
             _ => EnvE2E::Local,
         }
     }
@@ -50,43 +54,56 @@ const MAILBOX_DATA: ContractData = ContractData {
 };
 const INTERCHAIN_GAS_PAYMASTER_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::InterchainGasPaymaster,
-    bin_path: "",
+    bin_path: "../contracts/igp/gas-paymaster/out/debug/gas-paymaster.bin",
 };
 const GAS_ORACLE_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::GasOracle,
-    bin_path: "",
+    bin_path: "../contracts/igp/gas-oracle/out/debug/gas-oracle.bin",
 };
 const IGP_HOOK_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::IGPHook,
-    bin_path: "",
+    bin_path: "../contracts/hooks/igp/out/debug/igp-hook.bin",
+};
+const WARP_ROUTE_DATA: ContractData = ContractData {
+    _variant: HyperlaneContract::WarpRoute,
+    bin_path: "../contracts/warp-route/out/debug/warp-route.bin",
 };
 const MERKLE_TREE_HOOK_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::MerkleTreeHook,
-    bin_path: "",
+    bin_path: "../contracts/hooks/merkle-tree-hook/out/debug/merkle-tree-hook.bin",
 };
 const VALIDATOR_ANNOUNCE_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::ValidatorAnnounce,
-    bin_path: "",
+    bin_path: "../contracts/validator-announce/out/debug/validator-announce.bin",
 };
 const AGGREGATION_ISM_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::AggregationISM,
-    bin_path: "",
+    bin_path: "../contracts/ism/aggregation-ism/out/debug/aggregation-ism.bin",
 };
 const MESSAGE_ID_MULTISIG_ISM_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::MessageIdMultisigISM,
-    bin_path: "",
+    bin_path:
+        "../contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism.bin",
 };
 const MERKLE_ROOT_MULTISIG_ISM_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::MerkleRootMultisigISM,
-    bin_path: "",
+    bin_path:
+        "../contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism.bin",
 };
 const DOMAIN_ROUTING_ISM_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::DomainRoutingISM,
-    bin_path: "",
+    bin_path: "../contracts/ism/routing/domain-routing-ism/out/debug/domain-routing-ism.bin",
 };
+
 const DEFAULT_FALLBACK_DOMAIN_ROUTING_ISM_DATA: ContractData = ContractData {
     _variant: HyperlaneContract::DefaultFallbackDomainRoutingISM,
-    bin_path: "",
+    bin_path: "../contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism.bin",
+};
+
+//TODO:
+const TEST_MSG_RECIPIENT_DATA: ContractData = ContractData {
+    _variant: HyperlaneContract::MsgRecipient,
+    bin_path: "../contracts/test/msg-recipient-test/out/debug/msg-recipient-test.bin",
 };
 
 pub fn get_contract_data(variant: HyperlaneContract) -> ContractData {
@@ -101,6 +118,8 @@ pub fn get_contract_data(variant: HyperlaneContract) -> ContractData {
         HyperlaneContract::MessageIdMultisigISM => MESSAGE_ID_MULTISIG_ISM_DATA,
         HyperlaneContract::MerkleRootMultisigISM => MERKLE_ROOT_MULTISIG_ISM_DATA,
         HyperlaneContract::DomainRoutingISM => DOMAIN_ROUTING_ISM_DATA,
+        HyperlaneContract::WarpRoute => WARP_ROUTE_DATA,
+        HyperlaneContract::MsgRecipient => TEST_MSG_RECIPIENT_DATA,
         HyperlaneContract::DefaultFallbackDomainRoutingISM => {
             DEFAULT_FALLBACK_DOMAIN_ROUTING_ISM_DATA
         }
@@ -110,7 +129,7 @@ pub fn get_contract_data(variant: HyperlaneContract) -> ContractData {
 pub fn get_e2e_env() -> EnvE2E {
     let env = env::var("E2E_ENV")
         .ok()
-        .map(|env| EnvE2E::from(env))
+        .map(EnvE2E::from)
         .expect("Failed to get E2E_ENV");
 
     println!("env read: {:?}", env);
@@ -129,6 +148,10 @@ pub fn get_node_url() -> String {
         }),
         EnvE2E::Mainnet => {
             panic!("Mainnet not supported yet");
+        }
+        EnvE2E::LocalMocked => {
+            println!("LocalMocked not supported yet");
+            "127.0.0.1:4000".to_string()
         }
     }
 }

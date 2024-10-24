@@ -1,0 +1,34 @@
+# From hyperlane-monorepo/typescript/infra/config/environments/testnet4
+core:  
+  Mailbox: "0x62b2203d0757d1845Ab2422Eb61ab30D4Ad3c515"
+  MerkleTreeHook: "0x4917a9746A7B6E0A57159cCb7F5a6744247f2d0d"
+  StorageGasOracle: "0x71775B071F77F1ce52Ece810ce084451a3045FFe"
+  InterchainGasPaymaster: "0x3f09709b9865993f0320C3e836f3a3F4ff83eA9b"
+  ProtocolFee: "0x13AC3349Cb159fE86A22cf42DdA803D9f7309DB5"
+  ValidatorAnnounce: "0xE6105C59480a1B7DD3E4f28153aFdbE12F4CfCD9"
+  FallbackRoutingHook: "0x7CE74319699165430fC651F6b99406eEbee95493"
+  PausableHook: "0xa68022e53Fd28119D07C8336a8eC84A298Fd38Fd"
+  TransparentUpgradeableProxy: "0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766"
+  ProxyAdmin: "0x97Bbc6bBaFa5Ce3b2FA966c121Af63bD09e940f8"
+  WarpRoute: "0xd99eA1D8b9542D35252504DDd59EDe8C43FB15fd"
+
+ism:
+  StaticMultisigIsmFactory: "0xD356C996277eFb7f75Ee8bd61b31cC781A12F54f"
+  StaticAggregationIsmFactory: "0x01812D60958798695391dacF092BAc4a715B1718"
+  DomainRoutingIsmFactory: "0xE67CfA164cDa449Ae38a0a09391eF6bCDf8e4e2c"
+  StaticMerkleRootMultisigIsmFactory: "0xA9999B4abC373FF2BB95B8725FABC96CA883d811"
+  StaticMessageIdMultisigIsmFactory: "0xCCC126d96efcc342BF2781A7d224D3AB1F25B19C"
+  StaticAggregationIsmFactory: "0xC83e12EF2627ACE445C298e6eC418684918a6002"
+  StaticAggregationIsm: "0x3dD1aB6B71EBfEd239869365FE5B8b47E0507d89"
+  StaticAggregationHookFactory: "0x160C28C92cA453570aD7C031972b58d5Dd128F72"
+  StaticMerkleRootMultisigIsm: "0xbe94Cd5d0973dB4A6E63Cb9e6b2b2042D99F9Bcd"
+  StaticMessageIdMultisigIsm: "0x218C5DFb7C2bC1e051FCFebBa8C6D66Dda28617E"
+  StaticAggregationHook: "0x4BC580FF77Dd1Eb320E96D34FddC97F0F04D3feD"
+  DomaingRoutingIsm: "0x67543F48DBe592F1A15FD9aE37b1AbD104c70cf3"
+  
+validators:
+  - "0xb22b65f202558adf86a8bb2847b76ae1036686a5",
+  - "0x469f0940684d147defc44f3647146cb90dd0bc8e",
+  - "0xd3c75dcf15056012a4d74c483a0c6ea11d8c2b83"
+
+# Test Values 

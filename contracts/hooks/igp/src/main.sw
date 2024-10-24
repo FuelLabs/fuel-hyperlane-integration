@@ -79,13 +79,18 @@ impl PostDispatchHook for Contract {
         let message_id = message.id();
         let destination_domain = message.destination();
         let sender = message.sender();
-        let gas_amount = 1000; //TODO: Must be changed to DEFAULT_GAS_VALUE
-        igp_contract.pay_for_gas(
-            message_id,
-            destination_domain,
-            gas_amount,
-            Identity::Address(Address::from(sender)),
-        );
+        let gas_amount = igp_contract.get_current_domain_gas();
+
+        igp_contract
+            .pay_for_gas {
+                asset_id: b256::from(AssetId::base()),
+                coins: msg_amount(),
+            }(
+                message_id,
+                destination_domain,
+                gas_amount,
+                Identity::Address(Address::from(sender)),
+            );
     }
 
     /// Compute the payment required by the postDispatch call
@@ -112,7 +117,9 @@ impl PostDispatchHook for Contract {
         let message = EncodedMessage::from_bytes(message);
         let domain = message.destination();
 
-        igp_contract.quote_gas_payment(domain, 1000)
+        let current_domain_gas = igp_contract.get_current_domain_gas();
+
+        igp_contract.quote_gas_payment(domain, current_domain_gas)
     }
 }
 

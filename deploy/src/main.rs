@@ -77,8 +77,11 @@ struct ContractAddresses {
     igp_hook: String,
     #[serde(rename = "validatorAnnounce")]
     va: String,
+    #[serde(rename = "gasOracle")]
+    gas_oracle: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl ContractAddresses {
     fn new(
         mailbox: ContractId,
@@ -89,16 +92,18 @@ impl ContractAddresses {
         igp: ContractId,
         igp_hook: ContractId,
         va: ContractId,
+        gas_oracle: ContractId,
     ) -> Self {
         Self {
-            mailbox: format!("0x{}", mailbox.to_string()),
-            post_dispatch: format!("0x{}", post_dispatch.to_string()),
-            recipient: format!("0x{}", recipient.to_string()),
-            ism: format!("0x{}", ism.to_string()),
-            merkle_tree_hook: format!("0x{}", merkle_tree_hook.to_string()),
-            igp: format!("0x{}", igp.to_string()),
-            igp_hook: format!("0x{}", igp_hook.to_string()),
-            va: format!("0x{}", va.to_string()),
+            mailbox: format!("0x{}", mailbox),
+            post_dispatch: format!("0x{}", post_dispatch),
+            recipient: format!("0x{}", recipient),
+            ism: format!("0x{}", ism),
+            merkle_tree_hook: format!("0x{}", merkle_tree_hook),
+            igp: format!("0x{}", igp),
+            igp_hook: format!("0x{}", igp_hook),
+            va: format!("0x{}", va),
+            gas_oracle: format!("0x{}", gas_oracle),
         }
     }
 }
@@ -265,6 +270,11 @@ async fn main() {
     .await
     .unwrap();
 
+    println!(
+        "Gas Oracle deployed with ID: {}",
+        ContractId::from(gas_oracle_id.clone())
+    );
+
     // IGP deployment
     let igp_id = Contract::load_from(
         "../contracts/igp/gas-paymaster/out/debug/gas-paymaster.bin",
@@ -350,12 +360,20 @@ async fn main() {
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize Gas Oracle.");
+
     let init_res = igp
         .methods()
-        .initialize_ownership(owner_identity)
+        .initialize(
+            wallet_address,
+            wallet_address,
+            15000000000 * 850000000, // added * 850000000 for requiring less fuel test token
+            18,
+            5000,
+        )
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
+
     let init_res = igp_hook
         .methods()
         .initialize(igp.contract_id())
@@ -364,14 +382,13 @@ async fn main() {
     assert!(init_res.is_ok(), "Failed to initialize IGP Hook.");
 
     // Set contract values //
-
     // Gas Oracle
     let set_gas_data_res = gas_oracle
         .methods()
         .set_remote_gas_data_configs(vec![RemoteGasDataConfig {
             domain: 11155111,
             remote_gas_data: RemoteGasData {
-                // Numbers from BSC and Optimism testnets
+                // Numbers from BSC and Optimism testnets - 15000000000
                 token_exchange_rate: 15000000000,
                 gas_price: 37999464941,
                 token_decimals: 18,
@@ -379,11 +396,15 @@ async fn main() {
         }])
         .call()
         .await;
+    assert!(set_gas_data_res.is_ok(), "Failed to set gas data.");
+
     // IGP
     let set_beneficiary_res = igp.methods().set_beneficiary(owner_identity).call().await;
+    assert!(set_beneficiary_res.is_ok(), "Failed to set beneficiary.");
+
     let set_gas_oracle_res = igp
         .methods()
-        .set_gas_oracle(11155111, Bits256(gas_oracle.contract_id().hash.into()))
+        .set_gas_oracle(11155111, Bits256(gas_oracle_id.hash().into()))
         .call()
         .await;
 
@@ -442,6 +463,7 @@ async fn main() {
         igp_id.into(),
         igp_hook_id.into(),
         validator_id.into(),
+        gas_oracle_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();
