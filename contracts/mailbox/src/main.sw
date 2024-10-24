@@ -370,10 +370,10 @@ impl Mailbox for Contract {
             version == VERSION,
             MailboxError::InvalidProtocolVersion(version),
         );
-        let domain = message.origin();
+        let origin_domain = message.origin();
         require(
-            domain == LOCAL_DOMAIN,
-            MailboxError::InvalidMessageOrigin(domain),
+            origin_domain != LOCAL_DOMAIN,
+            MailboxError::InvalidMessageOrigin(origin_domain),
         );
         let id = message.id();
         require(!_delivered(id), MailboxError::MessageAlreadyDelivered);
@@ -395,11 +395,11 @@ impl Mailbox for Contract {
         );
 
         let sender = message.sender();
-        msg_recipient.handle(domain, sender, message.body());
+        msg_recipient.handle(origin_domain, sender, message.body());
 
         log(ProcessEvent {
             message_id: id,
-            origin: domain,
+            origin: origin_domain,
             sender,
             recipient,
         });
@@ -442,7 +442,6 @@ fn _build_message(
     let sender: b256 = match msg_sender().unwrap() {
         Identity::Address(address) => address.into(),
         Identity::ContractId(contract_id) => contract_id.into(),
-        _ => revert(0x111),
     };
 
     EncodedMessage::new(

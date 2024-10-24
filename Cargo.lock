@@ -127,8 +127,11 @@ dependencies = [
  "alloy-rpc-client",
  "alloy-rpc-types",
  "alloy-serde",
+ "alloy-signer",
+ "alloy-signer-local",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
  "alloy-transport-ws",
 ]
 
@@ -228,6 +231,7 @@ checksum = "ea59dc42102bc9a1905dc57901edc6dd48b9f38115df86c7d252acba70d71d04"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
+ "k256 0.13.3",
  "serde",
 ]
 
@@ -365,6 +369,7 @@ dependencies = [
  "alloy-rpc-types-eth",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
  "alloy-transport-ws",
  "async-stream",
  "async-trait",
@@ -435,6 +440,7 @@ dependencies = [
  "alloy-pubsub",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
  "alloy-transport-ws",
  "futures",
  "pin-project",
@@ -559,6 +565,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b96ce28d2fde09abb6135f410c41fad670a3a770b6776869bd852f1df102e6f"
 dependencies = [
+ "alloy-json-abi",
  "alloy-sol-macro-input",
  "const-hex",
  "heck 0.5.0",
@@ -577,11 +584,13 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "906746396a8296537745711630d9185746c0b50c033d5e9d18b0a6eba3d53f90"
 dependencies = [
+ "alloy-json-abi",
  "const-hex",
  "dunce",
  "heck 0.5.0",
  "proc-macro2",
  "quote",
+ "serde_json",
  "syn 2.0.74",
  "syn-solidity",
 ]
@@ -641,6 +650,25 @@ dependencies = [
  "tower 0.5.1",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "alloy-transport-ipc"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b90cf9cde7f2fce617da52768ee28f522264b282d148384a4ca0ea85af04fa3a"
+dependencies = [
+ "alloy-json-rpc",
+ "alloy-pubsub",
+ "alloy-transport",
+ "bytes",
+ "futures",
+ "interprocess",
+ "pin-project",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tracing",
 ]
 
 [[package]]
@@ -2369,6 +2397,7 @@ dependencies = [
  "alloy-contract",
  "alloy-provider",
  "alloy-rpc-types",
+ "alloy-transport-ipc",
  "fuels",
  "futures-util",
  "hex",
@@ -2384,6 +2413,7 @@ version = "0.1.0"
 dependencies = [
  "fuels",
  "hex",
+ "hyperlane-core",
  "rand",
  "serde",
  "serde_yaml",
@@ -2557,6 +2587,12 @@ dependencies = [
  "quote",
  "syn 2.0.74",
 ]
+
+[[package]]
+name = "doctest-file"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aac81fa3e28d21450aa4d2ac065992ba96a1d7303efbce51a95f4fd175b67562"
 
 [[package]]
 name = "domain-routing-ism"
@@ -5070,6 +5106,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "interprocess"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f4e4a06d42fab3e85ab1b419ad32b09eab58b901d40c57935ff92db3287a13"
+dependencies = [
+ "doctest-file",
+ "futures-core",
+ "libc",
+ "recvmsg",
+ "tokio",
+ "widestring",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "ip_network"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7185,6 +7236,12 @@ dependencies = [
  "time",
  "yasna",
 ]
+
+[[package]]
+name = "recvmsg"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3edd4d5d42c92f0a659926464d4cce56b562761267ecf0f469d85b7de384175"
 
 [[package]]
 name = "redox_syscall"

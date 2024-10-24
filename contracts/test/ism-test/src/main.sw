@@ -27,6 +27,6 @@ impl InterchainSecurityModule for Contract {
     }
 
     fn module_type() -> ModuleType {
-        ModuleType::UNUSED
+        ModuleType::NULL
     }
 }

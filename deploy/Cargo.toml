@@ -10,3 +10,4 @@ hex = { workspace = true }
 rand = "0.8.4"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_yaml = "0.9"
+hyperlane-core = { workspace = true }

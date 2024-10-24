@@ -4,17 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hex = { workspace = true }
-fuels = { workspace = true }
 alloy = { version = "0.4.0", features = [
+    "full",
     "providers",
     "rpc-types",
     "transport-ws",
 
 ] }
+hex = { workspace = true }
+fuels = { workspace = true }
 alloy-provider = { version = "0.4.0", features = ["ws"] }
 alloy-contract = { version = "0.4.0" }
 alloy-rpc-types = { version = "0.4.2" }
+alloy-transport-ipc = { version = "0.4.2" }
 futures-util = "0.3"
 rand = "0.8.4"
 
