@@ -17,7 +17,8 @@ use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::wallet::WalletUnlocked,
     macros::abigen,
-    programs::calls::CallParameters,
+    programs::calls::{CallParameters, Execution},
+    tx,
     types::{bech32::Bech32ContractId, Bits256, Bytes, ContractId},
 };
 use futures_util::StreamExt;
@@ -132,7 +133,7 @@ impl Contracts {
         gas_payment_quote.value
     }
 
-    pub async fn fuel_send_dispatch(&self, with_igp: bool) {
+    pub async fn fuel_send_dispatch(&self, with_igp: bool) -> (String, String) {
         let recipient_address = hex::decode("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9").unwrap();
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
@@ -168,17 +169,24 @@ impl Contracts {
 
         match res {
             Ok(res) => {
-                println!("Dispatch from Fuel successful at: {:?}", res.tx_id);
+                let message_id = format!("0x{}", hex::encode(res.value.0));
+                let tx_id = res.tx_id.unwrap();
+                println!(
+                    "Dispatch from Fuel successful at: 0x{:?}",
+                    res.tx_id.unwrap()
+                );
+                (message_id, format!("0x{:?}", tx_id))
             }
             Err(e) => {
                 println!("Dispatch error: {:?}", e);
+                panic!();
             }
         }
     }
 
-    pub async fn sepolia_send_dispatch(&self) -> FixedBytes<32> {
+    pub async fn sepolia_send_dispatch(&self) -> (FixedBytes<32>, FixedBytes<32>) {
         let recipient_address =
-            hex::decode("a347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3")
+            hex::decode("45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b")
                 .unwrap();
         let parsed_address: FixedBytes<32> = FixedBytes::from_slice(&recipient_address.as_slice());
         let rnd_number = thread_rng().gen_range(0..10000);
@@ -197,7 +205,7 @@ impl Contracts {
             .await;
 
         match res {
-            Ok(_) => {
+            Ok(tx_id) => {
                 println!("Dispatch from Sepolia successful");
                 let message_id = self
                     .sepolia
@@ -208,7 +216,7 @@ impl Contracts {
                     .unwrap()
                     ._0;
 
-                message_id
+                (message_id, tx_id)
             }
             Err(e) => {
                 println!("Dispatch error: {:?}", e);
@@ -227,7 +235,7 @@ impl Contracts {
                 .mailbox
                 .methods()
                 .delivered(message_id)
-                .call()
+                .simulate(Execution::StateReadOnly)
                 .await
                 .unwrap();
 
@@ -236,11 +244,11 @@ impl Contracts {
             if delivered_res.value {
                 break;
             }
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
         }
     }
 
-    pub async fn monitor_sepolia_for_delivery(&self) {
+    pub async fn monitor_sepolia_for_delivery(&self) -> FixedBytes<32> {
         let ws_rpc_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
         let provider = ProviderBuilder::new()
             .on_builtin(ws_rpc_url.as_str())
@@ -256,10 +264,13 @@ impl Contracts {
         let sub = provider.subscribe_logs(&filter).await.unwrap();
         let mut stream = sub.into_stream();
 
+        let mut tx_id = FixedBytes::default();
         while let Some(log) = stream.next().await {
-            println!("Mailbox logs: {log:?}");
+            tx_id = log.transaction_hash.unwrap();
+            println!("Sepolia Mailbox received message at: {:?}", tx_id);
             break;
         }
+        tx_id
     }
 }
 
@@ -270,8 +281,8 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let ism = get_contract_id_from_json("fueltestnet", &["interchainSecurityModule"]);
     let merkle_tree_hook = get_contract_id_from_json("fueltestnet", &["merkleTreeHook"]);
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
-    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["igpHook"]);
-    let gas_oracle = get_contract_id_from_json("fueltestnet", &["gasOracle"]);
+    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
+    let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
 
     // sepolia contract addresses
     let recipient = get_value_from_json("sepolia", &["testRecipient"]);

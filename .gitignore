@@ -9,3 +9,4 @@ deploy-evm-local.sh
 addresses.yaml
 deployments
 agent-config copy.json
+demo-run.log

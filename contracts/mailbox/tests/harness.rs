@@ -294,7 +294,7 @@ async fn test_dispatch_reverts_if_paused() {
 async fn test_process_event() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     let process_call = mailbox
         .methods()
@@ -327,7 +327,7 @@ async fn test_process_event() {
 async fn test_process_handled() {
     let (mailbox, _, recipient, _, ism_id) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     mailbox
         .methods()
@@ -352,7 +352,7 @@ async fn test_process_handled() {
 async fn test_process_deliver_twice() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     mailbox
         .methods()
@@ -393,7 +393,7 @@ async fn test_process_deliver_twice() {
 async fn test_process_ism_reject() {
     let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     let test_ism = TestInterchainSecurityModule::new(default_ism.clone(), mailbox.account());
     test_ism.methods().set_accept(false).call().await.unwrap();

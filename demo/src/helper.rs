@@ -3,6 +3,9 @@ use fuels::{
     types::{bech32::Bech32Address, AssetId, ContractId},
 };
 use serde_json::Value;
+use std::fs::{create_dir_all, File};
+use std::io::Write;
+use std::path::Path;
 use std::{fs, str::FromStr};
 
 pub fn get_native_asset() -> AssetId {
@@ -41,4 +44,17 @@ pub fn stip_address_prefix(value: Value) -> ContractId {
 pub async fn get_native_balance(provider: &Provider, address: &Bech32Address) -> u64 {
     let asset = get_native_asset();
     provider.get_asset_balance(address, asset).await.unwrap()
+}
+
+pub fn write_demo_run_to_file(entires: Vec<String>) {
+    let full_path = format!("./demo-run.log");
+    let path = Path::new(&full_path);
+
+    if let Some(parent) = path.parent() {
+        create_dir_all(parent).unwrap();
+    }
+    let mut file = File::create(full_path.clone()).unwrap();
+    for entry in entires {
+        writeln!(file, "{}", entry).unwrap();
+    }
 }

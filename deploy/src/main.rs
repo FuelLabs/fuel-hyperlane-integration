@@ -49,6 +49,26 @@ abigen!(
     Contract(
         name = "TestRecipient",
         abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
+    ),
+    Contract(
+        name = "AggregationISM",
+        abi = "contracts/ism/aggregation-ism/out/debug/aggregation-ism-abi.json",
+    ),
+    Contract(
+        name = "DomainRoutingISM",
+        abi = "contracts/ism/routing/domain-routing-ism/out/debug/domain-routing-ism-abi.json",
+    ),
+    Contract(
+        name = "FallbackDomainRoutingISM",
+        abi = "contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism-abi.json",
+    ),
+    Contract(
+        name = "MessageIdMultisigISM",
+        abi = "contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism-abi.json",
+    ),
+    Contract(
+        name = "MerkleRootMultisigISM",
+        abi = "contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism-abi.json",
     )
 );
 
@@ -139,7 +159,7 @@ impl DeploymentEnv {
             }
             "TESTNET" => {
                 let secret_key = SecretKey::from_str(
-                    "0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711",
+                    "0xd2f8342f13e67814a05e35dc966d84734849ad7e8037387e5fc07e4a2ff6d405",
                 )
                 .unwrap();
                 let testnet_rpc: &str = "testnet.fuel.network";

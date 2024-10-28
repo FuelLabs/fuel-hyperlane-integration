@@ -1,28 +1,24 @@
-use std::str::FromStr;
+mod contracts;
+mod helper;
 
+use crate::contracts::load_contracts;
 use alloy::{
     network::EthereumWallet,
-    primitives::address,
     providers::{Provider as EthProvider, ProviderBuilder},
     signers::{
         k256::{ecdsa::SigningKey, SecretKey as SepoliaPrivateKey},
         local::PrivateKeySigner,
     },
 };
-use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::{provider::Provider as FuelProvider, wallet::WalletUnlocked},
     crypto::SecretKey as FuelPrivateKey,
 };
-
-use futures_util::stream::StreamExt;
-use helper::get_native_balance;
-mod contracts;
-mod helper;
-
-use crate::contracts::load_contracts;
+use helper::write_demo_run_to_file;
 use std::env;
+use std::str::FromStr;
 
+// Demo cases:
 // 1. Bidirectional message sending - done
 // 2. Bidirectional token sending
 // 3. Receive IGP payments
@@ -66,48 +62,65 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Case 1: Send message from Sepolia to Fuel //
     ///////////////////////////////////////////////
 
-    let message_id = contracts.sepolia_send_dispatch().await;
-    println!("Message ID: {:?}", message_id);
+    let (sent_to_fuel_msg_id, sent_to_fuel_tx) = contracts.sepolia_send_dispatch().await;
+    println!("Sent to Fuel Message ID: {:?}", sent_to_fuel_msg_id);
 
-    contracts.monitor_fuel_for_delivery(message_id).await;
+    contracts
+        .monitor_fuel_for_delivery(sent_to_fuel_msg_id)
+        .await;
 
     ///////////////////////////////////////////////
     // Case 2: Send message from Fuel to Sepolia //
     ///////////////////////////////////////////////
 
-    contracts.fuel_send_dispatch(false).await;
+    let (sent_to_sepolia_msg_id, sent_to_sepolia_tx) = contracts.fuel_send_dispatch(false).await;
+    println!("Sent to Sepolia Message ID: {:?}", sent_to_sepolia_msg_id);
 
-    contracts.monitor_sepolia_for_delivery().await;
+    let delivered_to_sepolia_tx = contracts.monitor_sepolia_for_delivery().await;
 
-    panic!("Done");
+    write_demo_run_to_file(vec![
+        format!(
+            "Sent message id {:?} to Fuel - tx {:?}",
+            sent_to_fuel_msg_id, sent_to_fuel_tx
+        ),
+        format!(
+            "Sent message id 0x{:?} to Sepolia - tx {:?}",
+            sent_to_sepolia_msg_id.as_str(),
+            sent_to_sepolia_tx
+        ),
+        format!("Delivered to Sepolia - tx {:?}", delivered_to_sepolia_tx),
+    ]);
+
+    Ok(())
+
     ////////////////////////////////////////////////////////////////////////////////////
     // ⬇️ TODO move to clean case, actually check if we send/claim the right amount ⬇️ //
     ////////////////////////////////////////////////////////////////////////////////////
 
-    let gas_payment_quote = contracts.fuel_quote_dispatch().await;
-    let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
-    let wallet_balance_after = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
+    // let gas_payment_quote = contracts.fuel_quote_dispatch().await;
+    // let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
+    // let wallet_balance_after = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
 
-    // Wallet balance after should be more than gas_payment_quote
-    if wallet_balance_before - wallet_balance_after < gas_payment_quote {
-        panic!("Wallet balance difference is less than gas payment quote");
-    }
+    // // Wallet balance after should be more than gas_payment_quote
+    // if wallet_balance_before - wallet_balance_after < gas_payment_quote {
+    //     panic!("Wallet balance difference is less than gas payment quote");
+    // }
 
-    let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
-    let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
+    // let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
+    // let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
 
-    let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
-    let filter = Filter::new()
-        .address(mailbox_address)
-        .event("ReceivedMessage(uint32,bytes32,uint256,string)")
-        .from_block(BlockNumberOrTag::Latest);
+    // let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
+    // let filter = Filter::new()
+    //     .address(mailbox_address)
+    //     .event("ReceivedMessage(uint32,bytes32,uint256,string)")
+    //     .from_block(BlockNumberOrTag::Latest);
 
-    let sub = sepolia_provider.subscribe_logs(&filter).await?;
-    let mut stream = sub.into_stream();
+    // let sub = sepolia_provider.subscribe_logs(&filter).await?;
+    // let mut stream = sub.into_stream();
 
-    while let Some(log) = stream.next().await {
-        println!("Mailbox logs: {log:?}");
-    }
+    // while let Some(log) = stream.next().await {
+    //     println!("Mailbox logs: {log:?}");
+    // }
 
-    Ok(())
+    // Ok(())
 }
