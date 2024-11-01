@@ -71,17 +71,6 @@ abi WarpRoute {
     #[storage(read, write)]
     fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64);
 
-    /// Handles a transfer from a remote domain
-    ///
-    /// ### Arguments
-    ///
-    /// * `id`: [b256] - The ID of the message
-    /// * `origin`: [u32] - The domain of the origin
-    /// * `sender`: [b256] - The address of the sender
-    /// * `message_body`: [bytes] - The message body
-    #[storage(read, write)]
-    fn handle_message(id: b256, origin: u32, sender: b256, message_body: Bytes);
-
     /// Gets the token mode of the WarpRoute contract
     ///
     /// ### Returns
@@ -101,7 +90,7 @@ abi WarpRoute {
     /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Returns
-    /// 
+    ///
     /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256;
@@ -148,7 +137,15 @@ abi WarpRoute {
     ///
     /// * [u64] - The total number of coins ever minted for an asset.
     #[storage(read)]
-    fn get_cumulative_supply() -> u64; 
+    fn get_cumulative_supply() -> u64;
+
+    /// Sets the default ISM
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - The ISM contract ID
+    #[storage(read, write)]
+    fn set_ism(module: ContractId);
 
     // TODO: must be removed after unit and E2E testing 
     #[storage(read, write)]
@@ -157,16 +154,24 @@ abi WarpRoute {
 
 // --------------- Events ---------------
 
-/// Event emitted when tokens are transferred to a remote domain
-pub struct TransferRemoteEvent {
-    pub destination_domain: u32,
-    pub hook_contract: ContractId,
-    pub message_id: b256,
+/// Event emitted when tokens are transferred to a remote domain.
+/// This event contains information about the destination chain, recipient, and amount.
+pub struct SentTransferRemoteEvent {
+    /// The identifier of the destination chain
+    pub destination: u32,
+    /// The address of the recipient on the destination chain
+    pub recipient: b256,
+    /// The amount of tokens being transferred
+    pub amount: u64,
 }
 
-/// Event emitted when a message is handled
-pub struct HandleMessageEvent {
+/// Event emitted when tokens are received from a remote domain.
+/// This event contains information about the origin chain, recipient, and amount.
+pub struct ReceivedTransferRemoteEvent {
+    /// The identifier of the origin chain
+    pub origin: u32,
+    /// The address of the recipient on this chain
     pub recipient: b256,
+    /// The amount of tokens received
     pub amount: u64,
-    pub token_metadata: TokenMetadata,
 }

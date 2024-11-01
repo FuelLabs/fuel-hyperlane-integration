@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod warp_route {
-    use fuels::{prelude::*, types::Bits256};
+    use fuels::{
+        prelude::*,
+        types::{Bits256, U256},
+    };
     use once_cell::sync::Lazy;
     use std::str::FromStr;
     use test_utils::{funded_wallet_with_private_key, get_revert_reason};
@@ -33,15 +36,13 @@ mod warp_route {
     const TEST_NON_OWNER_PRIVATE_KEY: &str =
         "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
-    const TEST_MESSAGE_ID: &str =
-        "0x00000000000000000000000000000000000000000000000000000000deadbeef";
     const TEST_HOOK_ADDRESS: &str =
         "0x00000000000000000000000000000000000000000000000000000000deadbeef";
 
     const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
     const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
     const TEST_RECIPIENT: &str =
-        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
 
     const TOKEN_NAME: &str = "TestToken";
     const TOKEN_SYMBOL: &str = "TT";
@@ -61,14 +62,18 @@ mod warp_route {
         AssetId::default()
     }
 
-    fn build_message_body(recipient: Bits256, amount: u64, metadata: TokenMetadata) -> Bytes {
-        let mut buffer = Vec::new();
+    fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
+        // let mut buffer = Vec::new();
 
-        buffer.extend(&recipient.0);
-        buffer.extend(&amount.to_be_bytes());
-        buffer.extend(&metadata.decimals.to_be_bytes());
-        buffer.extend(&metadata.total_supply.to_be_bytes());
-        fuels::types::Bytes(buffer)
+        // let amount_u256 = U256::from(amount);
+        // let mut amount_bytes = [0u8; 32];
+        // amount_u256.to_big_endian(&mut amount_bytes);
+
+        // buffer.extend(&recipient.0);
+        // buffer.extend(&amount_bytes);
+
+        // Bytes(buffer)
+        Bytes::from_hex_str("0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c30000000000000000000000000000000000000000000000000000000000000001").unwrap()
     }
 
     async fn get_balance(
@@ -89,7 +94,7 @@ mod warp_route {
             .await
     }
 
-    fn get_token_metadata(config: WarpRouteConfig) -> TokenMetadata {
+    fn _get_token_metadata(config: WarpRouteConfig) -> TokenMetadata {
         TokenMetadata {
             name: config.token_name,
             symbol: config.token_symbol,
@@ -229,6 +234,14 @@ mod warp_route {
             .await;
         assert!(set_ism_res.is_ok(), "Failed to set default ISM.");
 
+        //For both cases warp route requires a remote mailbox adress to send assets
+        let enroll_router_res = warp_route
+            .methods()
+            .enroll_remote_router(TEST_REMOTE_DOMAIN, mailbox_address)
+            .call()
+            .await;
+        assert!(enroll_router_res.is_ok(), "Failed to enroll remote router.");
+
         (
             warp_route,
             warp_route_id.into(),
@@ -290,7 +303,6 @@ mod warp_route {
             assert_eq!(token_info.symbol, config.token_symbol);
             assert_eq!(token_info.decimals, config.decimals);
             assert_eq!(token_info.total_supply, config.total_supply);
-            println!("{:?}", token_info);
         }
 
         /// ============ get_token_mode ============
@@ -459,10 +471,13 @@ mod warp_route {
                 .await
                 .unwrap();
 
-            let logs = call.decode_logs_with_type::<TransferRemoteEvent>().unwrap();
+            let logs = call
+                .decode_logs_with_type::<SentTransferRemoteEvent>()
+                .unwrap();
             let log = logs[0].clone();
-            assert_eq!(log.destination_domain, TEST_REMOTE_DOMAIN);
-            assert_eq!(log.hook_contract, post_dispatch_id);
+            assert_eq!(log.destination, TEST_REMOTE_DOMAIN);
+            assert_eq!(log.recipient, recipient);
+            assert_eq!(log.amount, amount);
 
             let contract_balance_after =
                 get_contract_balance(provider, warp_route.contract_id(), asset)
@@ -480,17 +495,15 @@ mod warp_route {
         /// ============ handle_message_collateral ============
         #[tokio::test]
         async fn test_handle_message() {
-            let (config, warp_route, _, _, _) = get_collateral_contract_instance().await;
+            let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
 
             let wallet = warp_route.account();
             let sender = Bits256(Address::from(wallet.address()).into());
-            let amount = 1550;
-
-            let token_metadata = get_token_metadata(config);
+            let amount = 1;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
-            let body = build_message_body(recipient, amount, token_metadata.clone());
+            let body = build_message_body(recipient, amount);
 
             let (_, _) = wallet
                 .force_transfer_to_contract(
@@ -514,26 +527,11 @@ mod warp_route {
 
             let call = warp_route
                 .methods()
-                .handle_message(
-                    Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap(),
-                    TEST_LOCAL_DOMAIN,
-                    sender,
-                    body,
-                )
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+                .handle(TEST_LOCAL_DOMAIN, sender, body)
+                .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await
                 .unwrap();
-
-            let logs = call.decode_logs_with_type::<HandleMessageEvent>().unwrap();
-            assert_eq!(
-                logs,
-                vec![HandleMessageEvent {
-                    recipient,
-                    amount,
-                    token_metadata
-                }]
-            );
 
             let recipient_balance =
                 get_balance(provider, &recipient_address.into(), get_collateral_asset())
@@ -546,6 +544,18 @@ mod warp_route {
 
             assert_eq!(recipient_balance_before + amount, recipient_balance);
             assert_eq!(contract_balance_before, contract_balance + amount);
+
+            let logs = call
+                .decode_logs_with_type::<ReceivedTransferRemoteEvent>()
+                .unwrap();
+            assert_eq!(
+                logs,
+                vec![ReceivedTransferRemoteEvent {
+                    origin: TEST_LOCAL_DOMAIN,
+                    recipient,
+                    amount,
+                }]
+            );
         }
 
         /// ============ transfer_remote_with_wrong_asset ============
@@ -596,74 +606,6 @@ mod warp_route {
             assert_eq!(get_revert_reason(call.unwrap_err()), "InsufficientFunds");
         }
 
-        /// ============ message_delivered_state_updates ============
-        #[tokio::test]
-        async fn test_is_message_delivered() {
-            let (config, warp_route, _, _, _) = get_collateral_contract_instance().await;
-
-            let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
-            let amount = 1550;
-
-            let token_metadata = get_token_metadata(config);
-
-            let (_, _) = wallet
-                .force_transfer_to_contract(
-                    warp_route.contract_id(),
-                    amount * 5,
-                    get_collateral_asset(),
-                    TxPolicies::default(),
-                )
-                .await
-                .unwrap();
-
-            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-            let body = build_message_body(recipient, amount, token_metadata);
-
-            let message_id = Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap();
-
-            let delivered_before = warp_route
-                .methods()
-                .is_message_delivered(message_id)
-                .call()
-                .await
-                .unwrap()
-                .value;
-
-            assert!(!delivered_before);
-
-            warp_route
-                .methods()
-                .handle_message(message_id, TEST_LOCAL_DOMAIN, sender, body.clone())
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .call()
-                .await
-                .unwrap();
-
-            let delivered_after = warp_route
-                .methods()
-                .is_message_delivered(message_id)
-                .call()
-                .await
-                .unwrap()
-                .value;
-
-            assert!(delivered_after);
-
-            //Second call should give error
-            let call = warp_route
-                .methods()
-                .handle_message(message_id, TEST_LOCAL_DOMAIN, sender, body)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .call()
-                .await;
-
-            assert!(call.is_err());
-            assert_eq!(
-                get_revert_reason(call.unwrap_err()),
-                "MessageAlreadyDelivered"
-            );
-        }
         #[tokio::test]
         async fn test_zero_and_negative_amount_transfer_remote() {
             let (config, warp_route, _, _, _) = get_collateral_contract_instance().await;
@@ -838,11 +780,12 @@ mod warp_route {
                 .await
                 .unwrap();
 
-            let logs = call.decode_logs_with_type::<TransferRemoteEvent>().unwrap();
+            let logs = call
+                .decode_logs_with_type::<SentTransferRemoteEvent>()
+                .unwrap();
             let log = logs[0].clone();
-            assert_eq!(log.destination_domain, TEST_REMOTE_DOMAIN);
-            assert_eq!(log.hook_contract, post_dispatch_id);
-            println!("Message ID: {:?}", log.message_id);
+            assert_eq!(log.destination, TEST_REMOTE_DOMAIN);
+            assert_eq!(log.recipient, recipient);
 
             let wallet_balance_after = get_balance(provider, wallet.address(), asset)
                 .await
@@ -858,12 +801,11 @@ mod warp_route {
 
             let wallet = warp_route.account();
             let sender = Bits256(Address::from(wallet.address()).into());
-            let amount = 1550;
-            let token_metadata = get_token_metadata(config.clone());
+            let amount = 1;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
-            let body = build_message_body(recipient, amount, token_metadata.clone());
+            let body = build_message_body(recipient, amount);
 
             let provider = wallet.provider().unwrap();
             let recipient_balance_before =
@@ -873,24 +815,21 @@ mod warp_route {
 
             let call = warp_route
                 .methods()
-                .handle_message(
-                    Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap(),
-                    TEST_LOCAL_DOMAIN,
-                    sender,
-                    body,
-                )
+                .handle(TEST_LOCAL_DOMAIN, sender, body)
                 .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
                 .call()
                 .await
                 .unwrap();
 
-            let logs = call.decode_logs_with_type::<HandleMessageEvent>().unwrap();
+            let logs = call
+                .decode_logs_with_type::<ReceivedTransferRemoteEvent>()
+                .unwrap();
             assert_eq!(
                 logs,
-                vec![HandleMessageEvent {
+                vec![ReceivedTransferRemoteEvent {
+                    origin: TEST_LOCAL_DOMAIN,
                     recipient,
                     amount,
-                    token_metadata
                 }]
             );
 
@@ -901,65 +840,6 @@ mod warp_route {
                     .unwrap();
 
             assert_eq!(recipient_balance_before + amount, recipient_balance);
-        }
-
-        /// ============ message_delivered_state_updates ============
-        #[tokio::test]
-        async fn test_is_message_delivered() {
-            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
-
-            let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
-            let amount = 1550;
-
-            // Use the config values for token metadata
-            let token_metadata = get_token_metadata(config.clone());
-
-            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-            let body = build_message_body(recipient, amount, token_metadata);
-            let message_id = Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap();
-
-            let delivered_before = warp_route
-                .methods()
-                .is_message_delivered(message_id)
-                .call()
-                .await
-                .unwrap()
-                .value;
-
-            assert!(!delivered_before);
-
-            warp_route
-                .methods()
-                .handle_message(message_id, TEST_LOCAL_DOMAIN, sender, body.clone())
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .call()
-                .await
-                .unwrap();
-
-            let delivered_after = warp_route
-                .methods()
-                .is_message_delivered(message_id)
-                .call()
-                .await
-                .unwrap()
-                .value;
-
-            assert!(delivered_after);
-
-            // Second call should give an error
-            let call = warp_route
-                .methods()
-                .handle_message(message_id, TEST_LOCAL_DOMAIN, sender, body)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .call()
-                .await;
-
-            assert!(call.is_err());
-            assert_eq!(
-                get_revert_reason(call.unwrap_err()),
-                "MessageAlreadyDelivered"
-            );
         }
 
         #[tokio::test]

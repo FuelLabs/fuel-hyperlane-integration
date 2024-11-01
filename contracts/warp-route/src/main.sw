@@ -42,7 +42,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*};
+use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*, warp_router::*, message_recipient::MessageRecipient};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -55,7 +55,14 @@ storage {
     default_hook: ContractId = ContractId::zero(),
     /// Mapping of message IDs to whether they have been delivered
     delivered_messages: StorageMap<b256, bool> = StorageMap {},
+    
     beneficiary: Identity = Identity::Address(Address::zero()),
+    
+    default_ism: ContractId = ContractId::zero(),
+    /// Mapping of domain identifiers to their corresponding router addresses
+    /// Each domain has a unique router that handles token transfers
+    routers: StorageMap<u32, b256> = StorageMap {},
+
     // TOKEN
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
@@ -173,11 +180,17 @@ impl WarpRoute for Contract {
         reentrancy_guard();
         require_not_paused();
 
-        require(msg_amount() >= amount, WarpRouteError::InsufficientFunds);
+        require(msg_amount() == amount, WarpRouteError::InsufficientFunds);
+
+        let remote_domain_router = _get_router(destination_domain);
+        require(
+            remote_domain_router != b256::zero(),
+            TokenRouterError::RouterNotSet,
+        );
 
         let asset = storage.asset_id.read();
         require(msg_asset_id() == asset, WarpRouteError::PaymentError);
-
+        
         // Depending on the mode, handle the token transfer
         match storage.token_mode.read() {
             WarpRouteTokenMode::BRIDGED => {
@@ -193,8 +206,7 @@ impl WarpRoute for Contract {
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let hook_contract = storage.default_hook.read();
 
-        let asset_metadata = _get_metadata_of_asset(asset);
-        let message_body = _build_token_metadata_bytes(recipient, amount, asset_metadata);
+        let message_body = _build_token_metadata_bytes(recipient, amount);
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
@@ -202,84 +214,16 @@ impl WarpRoute for Contract {
             asset_id: b256::from(AssetId::base()),
         }(
             destination_domain,
-            recipient,
+            remote_domain_router,
             message_body,
             Bytes::new(),
             hook_contract,
         );
 
-        log(TransferRemoteEvent {
-            destination_domain,
-            hook_contract,
-            message_id,
-        });
-    }
-
-    /// Handles a transfer from a remote domain
-    ///
-    /// ### Arguments
-    ///
-    /// * `id`: [b256] - The ID of the message
-    /// * `origin`: [u32] - The domain of the origin
-    /// * `sender`: [b256] - The address of the sender
-    /// * `message_body`: [bytes] - The message body
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is paused
-    /// * If the message has already been delivered
-    /// * If the cumulative supply exceeds the maximum supply
-    #[storage(read, write)]
-    fn handle_message(id: b256, _origin: u32, _sender: b256, message_body: Bytes) {
-        require_not_paused();
-        require(
-            !storage
-                .delivered_messages
-                .get(id)
-                .try_read()
-                .unwrap_or(false),
-            WarpRouteError::MessageAlreadyDelivered,
-        );
-
-        storage.delivered_messages.insert(id, true);
-
-        let (recipient, amount, token_metadata) = _extract_asset_data_from_body(message_body);
-        let recipient_identity = Identity::Address(Address::from(recipient));
-        let asset = storage.asset_id.read();
-
-        match storage.token_mode.read() {
-            WarpRouteTokenMode::BRIDGED => {
-                let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-                require(
-                    cumulative_supply + amount <= MAX_SUPPLY,
-                    WarpRouteError::MaxMinted,
-                );
-                storage
-                    .cumulative_supply
-                    .insert(asset, cumulative_supply + amount);
-                let _ = _mint(
-                    storage
-                        .total_assets,
-                    storage
-                        .total_supply,
-                    recipient_identity,
-                    storage
-                        .sub_id
-                        .read(),
-                    amount,
-                );
-            }
-            WarpRouteTokenMode::COLLATERAL => {
-                transfer(recipient_identity, asset, amount);
-            }
-        }
-
-        // Log the successful message handling
-        log(HandleMessageEvent {
+        log(SentTransferRemoteEvent {
+            destination: destination_domain,
             recipient,
             amount,
-            token_metadata,
         });
     }
 
@@ -384,6 +328,17 @@ impl WarpRoute for Contract {
         storage.delivered_messages.get(message_id).try_read().unwrap_or(false)
     }
 
+
+    /// Sets the default ISM
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - The ISM contract ID
+    #[storage(read, write)]
+    fn set_ism(module: ContractId) {
+        storage.default_ism.write(module)
+    }
+
     // TODO: must be removed after unit and E2E testing 
     #[storage(read, write)]
     fn mint_tokens(recipient: Address, amount: u64) {
@@ -410,6 +365,138 @@ impl WarpRoute for Contract {
                 .read(),
             amount,
         );
+    }
+}
+
+impl TokenRouter for Contract {
+     /// Gets the router address for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to query
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The router address (zero address if not set)
+    #[storage(read)]
+    fn router(domain: u32) -> b256 {
+        _get_router(domain)
+    }
+
+    /// Removes a router for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to remove the router for
+    #[storage(read, write)]
+    fn unenroll_remote_router(domain: u32) {
+        storage.routers.remove(domain);
+    }
+
+    /// Enrolls a new router for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to enroll
+    /// * `router`: [b256] - The router address to enroll
+    #[storage(read, write)]
+    fn enroll_remote_router(domain: u32, router: b256) {
+        _insert_route_to_state(domain, router);
+    }
+
+    /// Batch enrolls multiple routers for multiple domains
+    ///
+    /// ### Arguments
+    ///
+    /// * `domains`: [Vec<u32>] - The domains to enroll
+    /// * `routers`: [Vec<b256>] - The router addresses to enroll
+    ///
+    /// ### Reverts
+    ///
+    /// * If the lengths of domains and routers arrays don't match
+    #[storage(read, write)]
+    fn enroll_remote_routers(domains: Vec<u32>, routers: Vec<b256>) {
+        require(
+            domains.len() == routers.len(),
+            TokenRouterError::RouterLengthMismatch,
+        );
+
+        let mut domains = domains;
+        let mut routers = routers;
+
+        while true {
+            let domain = domains.pop();
+            let router = routers.pop();
+            if domain.is_some() && router.is_some() {
+                _insert_route_to_state(domain.unwrap(), router.unwrap());
+            } else {
+                break;
+            }
+        }
+    }
+
+}
+
+impl MessageRecipient for Contract {
+    /// Handles a transfer from a remote domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `origin`: [u32] - The domain of the origin
+    /// * `sender`: [b256] - The address of the sender
+    /// * `message_body`: [bytes] - The message body
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is paused
+    /// * If the message has already been delivered
+    /// * If the cumulative supply exceeds the maximum supply
+    #[storage(read, write)]
+    fn handle(origin: u32, _sender: b256, message_body: Bytes) {
+        require_not_paused();
+
+        let (recipient, amount) = _extract_asset_data_from_body(message_body);
+        let recipient_identity = Identity::Address(Address::from(recipient));
+        let asset = storage.asset_id.read();
+
+        match storage.token_mode.read() {
+            WarpRouteTokenMode::BRIDGED => {
+                let cumulative_supply = storage.cumulative_supply.get(asset).read();
+
+                require(
+                    cumulative_supply + amount <= MAX_SUPPLY,
+                    WarpRouteError::MaxMinted,
+                );
+                storage
+                    .cumulative_supply
+                    .insert(asset, cumulative_supply + amount);
+                let _ = _mint(
+                    storage
+                        .total_assets,
+                    storage
+                        .total_supply,
+                    recipient_identity,
+                    storage
+                        .sub_id
+                        .read(),
+                    amount,
+                );
+            }
+            WarpRouteTokenMode::COLLATERAL => {
+                transfer(recipient_identity, asset, amount);
+            }
+        }
+
+        log(ReceivedTransferRemoteEvent {
+            origin,
+            recipient,
+            amount,
+        });
+    }
+
+    #[storage(read)]
+    fn interchain_security_module() -> ContractId {
+        storage.default_ism.read()
     }
 }
 
@@ -506,7 +593,9 @@ impl Claimable for Contract {
     }
 }
 
-// ---------------  Internal Functions  ---------------
+// ------------------------------------------------------------
+// ------------------ Internal Functions ----------------------
+// ------------------------------------------------------------
 
 #[storage(read)]
 fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
@@ -520,36 +609,54 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
     }
 }
 
-fn _build_token_metadata_bytes(recipient: b256, amount: u64, metadata: TokenMetadata) -> Bytes {
+fn _build_token_metadata_bytes(recipient: b256, amount: u64) -> Bytes {
     let mut buffer = Buffer::new();
 
     buffer = recipient.abi_encode(buffer);
-    buffer = amount.abi_encode(buffer);
-    buffer = metadata.decimals.abi_encode(buffer);
-    buffer = metadata.total_supply.abi_encode(buffer);
+
+    let amount_u256 = u256::from(amount); // Convert `u64` to `U256` for 32-byte padding
+    buffer = amount_u256.abi_encode(buffer);
+
+    let metadata = Bytes::new();  // Or `Bytes(vec![])` if `Bytes::new()` is unavailable
+    buffer = metadata.abi_encode(buffer);
 
     let bytes = Bytes::from(buffer.as_raw_slice());
     bytes
 }
 
 #[storage(read)]
-fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64, TokenMetadata) {
+fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
     let mut buffer_reader = BufferReader::from_parts(body.ptr(), body.len());
 
     let recipient = buffer_reader.read::<b256>();
-    let amount = buffer_reader.read::<u64>();
-    let decimals = buffer_reader.read::<u8>();
-    let total_supply = buffer_reader.read::<u64>();
-    let asset_id = storage.asset_id.read();
-    let sub_id = storage.sub_id.read();
+    let amount_u256 = buffer_reader.read::<u256>();
+    
+    let amount = <u64 as TryFrom<u256>>::try_from(amount_u256).expect("Amount exceeds u64 range");
+    
+    (recipient, amount)
+}
 
-    let metadata = TokenMetadata {
-        name: _name(storage.name, asset_id).unwrap_or(String::new()),
-        symbol: _symbol(storage.symbol, asset_id).unwrap_or(String::new()),
-        decimals,
-        total_supply,
-        asset_id,
-        sub_id,
-    };
-    (recipient, amount, metadata)
+/// Gets the router address for a specific domain
+///
+/// ### Arguments
+///
+/// * `domain`: [u32] - The domain to query
+///
+/// ### Returns
+///
+/// * [b256] - The router address (zero address if not set)
+#[storage(read)]
+fn _get_router(domain: u32) -> b256 {
+    storage.routers.get(domain).try_read().unwrap_or(b256::zero())
+}
+
+/// Stores a router address for a domain in the contract storage
+///
+/// ### Arguments
+///
+/// * `domain`: [u32] - The domain to set the router for
+/// * `router`: [b256] - The router address to store
+#[storage(read, write)]
+fn _insert_route_to_state(domain: u32, router: b256) {
+    storage.routers.insert(domain, router);
 }

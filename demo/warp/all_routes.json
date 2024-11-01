@@ -1,0 +1,64 @@
+{
+    "collateral": {
+        "sepolia": {
+            "type": "collateral",
+            "name": "USDC",
+            "symbol": "USDC",
+            "totalSupply": 409521401958845568,
+            "decimals": 6,
+            "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+            "warpRoute": "0x78026106472a7FB10668fED0301Af9dD321cf16B",
+            "standard": "EvmHypCollateral"
+        },
+        "fuel": {
+            "type": "collateral",
+            "name": "Ethereum",
+            "symbol": "ETH",
+            "totalSupply": 10000000,
+            "decimals": 18,
+            "token": "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
+            "warpRoute": "WarpRouteNative"
+        }
+    },
+    "bridged": {
+        "fuel": {
+            "type": "bridged",
+            "name": "FuelSepoliaUSDC",
+            "symbol": "FST",
+            "totalSupply": 10000000,
+            "decimals": 18,
+            "token": "DeterminedDuringDeployment",
+            "warpRoute": "WarpRouteBridged",
+            "standard": "EvmHypSynthetic"
+        },
+        "sepolia": {
+            "type": "bridged",
+            "name": "FuelSepoliaUSDC",
+            "symbol": "FST",
+            "totalSupply": 10000000,
+            "decimals": 18,
+            "warpRoute": "0xb018793a4Bed2b5e859286786DFCD7eC0322a34E"
+        }
+    },
+    "mixed": {
+        "fuel": {
+            "type": "bridged",
+            "name": "FuelSepoliaUSDC",
+            "symbol": "FST",
+            "totalSupply": 10000000,
+            "decimals": 18,
+            "token": "DeterminedDuringDeployment",
+            "warpRoute": "WarpRouteBridged"
+        },
+        "sepolia": {
+            "type": "collateral",
+            "name": "USDC",
+            "symbol": "USDC",
+            "totalSupply": 409521401958845568,
+            "decimals": 6,
+            "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+            "warpRoute": "0x78026106472a7FB10668fED0301Af9dD321cf16B",
+            "standard": "EvmHypSynthetic"
+        }
+    }
+}

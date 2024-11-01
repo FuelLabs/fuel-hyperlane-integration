@@ -49,7 +49,11 @@ abigen!(
     Contract(
         name = "TestRecipient",
         abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
-    )
+    ),
+    Contract(
+        name = "WarpRoute",
+        abi = "contracts/warp-route/out/debug/warp-route-abi.json",
+    ),
 );
 
 struct DeploymentEnv {
@@ -79,6 +83,10 @@ struct ContractAddresses {
     va: String,
     #[serde(rename = "gasOracle")]
     gas_oracle: String,
+    #[serde(rename = "warpRoute")]
+    warp_route: String,
+    #[serde(rename = "warpRouteBridged")]
+    warp_route_bridged: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -93,6 +101,8 @@ impl ContractAddresses {
         igp_hook: ContractId,
         va: ContractId,
         gas_oracle: ContractId,
+        warp_route: ContractId,
+        warp_route_bridged: ContractId,
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -104,6 +114,8 @@ impl ContractAddresses {
             igp_hook: format!("0x{}", igp_hook),
             va: format!("0x{}", va),
             gas_oracle: format!("0x{}", gas_oracle),
+            warp_route: format!("0x{}", warp_route),
+            warp_route_bridged: format!("0x{}", warp_route_bridged),
         }
     }
 }
@@ -185,7 +197,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Mailbox deployed with ID: {}",
+        "mailbox: 0x{}",
         ContractId::from(mailbox_contract_id.clone())
     );
 
@@ -201,7 +213,7 @@ async fn main() {
         .unwrap();
 
     println!(
-        "Post Dispatch Contract deployed with ID: {}",
+        "postDispatch: 0x{}",
         ContractId::from(post_dispatch_mock_id.clone())
     );
 
@@ -218,10 +230,7 @@ async fn main() {
     .await
     .unwrap();
 
-    println!(
-        "Recipient deployed with ID: {}",
-        ContractId::from(recipient_id.clone())
-    );
+    println!("recipient: 0x{}", ContractId::from(recipient_id.clone()));
 
     /////////////////////////
     // Test ISM deployment //
@@ -236,7 +245,10 @@ async fn main() {
     .await
     .unwrap();
 
-    println!("ISM deployed with ID: {}", ContractId::from(ism_id.clone()));
+    println!(
+        "interchainSecurityModule: 0x{}",
+        ContractId::from(ism_id.clone())
+    );
 
     /////////////////////////////////
     // Merkle Tree hook deployment //
@@ -252,7 +264,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Merkle Tree Hook deployed with ID: {}",
+        "merkleTreeHook: 0x{}",
         ContractId::from(merkle_tree_id.clone())
     );
 
@@ -270,10 +282,7 @@ async fn main() {
     .await
     .unwrap();
 
-    println!(
-        "Gas Oracle deployed with ID: {}",
-        ContractId::from(gas_oracle_id.clone())
-    );
+    println!("gasOracle: 0x{}", ContractId::from(gas_oracle_id.clone()));
 
     // IGP deployment
     let igp_id = Contract::load_from(
@@ -285,7 +294,10 @@ async fn main() {
     .await
     .unwrap();
 
-    println!("IGP deployed with ID: {}", ContractId::from(igp_id.clone()));
+    println!(
+        "interchainGasPaymaster: 0x{}",
+        ContractId::from(igp_id.clone())
+    );
 
     // IGP Hook deployment
     let igp_hook_id = Contract::load_from(
@@ -297,9 +309,42 @@ async fn main() {
     .await
     .unwrap();
 
+    println!("igpHook: 0x{}", ContractId::from(igp_hook_id.clone()));
+
+    ///////////////////////////
+    // Warp Route Deployment //
+    ///////////////////////////
+
+    // Native
+    let native_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let warp_route_id = Contract::load_from(
+        "../contracts/warp-route/out/debug/warp-route.bin",
+        config.clone().with_salt(native_salt),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
     println!(
-        "IGP Hook deployed with ID: {}",
-        ContractId::from(igp_hook_id.clone())
+        "warpRouteNative: 0x{}",
+        ContractId::from(warp_route_id.clone())
+    );
+
+    // Bridged
+    let bridged_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let warp_route_bridged_id = Contract::load_from(
+        "../contracts/warp-route/out/debug/warp-route.bin",
+        config.clone().with_salt(bridged_salt),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "warpRouteBridged: 0x{}",
+        ContractId::from(warp_route_bridged_id.clone())
     );
 
     ///////////////////////////
@@ -313,6 +358,8 @@ async fn main() {
     let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
     let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
     let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
+    let warp_route = WarpRoute::new(warp_route_id.clone(), wallet.clone());
+    let warp_route_bridged = WarpRoute::new(warp_route_bridged_id.clone(), wallet.clone());
 
     /////////////////////////
     // Test Recipiet Setup //
@@ -434,7 +481,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "VA deployed with ID: {}",
+        "validatorAnnounce: 0x{}",
         ContractId::from(validator_id.clone())
     );
 
@@ -450,6 +497,71 @@ async fn main() {
     assert!(init_res.is_ok(), "Failed to initialize Merkle Tree Hook.");
     println!("Merkle Tree Hook initialized.");
 
+    ///////////////////////////////
+    // Warp Route Initialization //
+    /////////////////////////////
+
+    // Initalize Warp Routes
+    let init_res = warp_route
+        .methods()
+        .initialize(
+            wallet_address,
+            Bits256(mailbox_contract_id.hash().into()),
+            WarpRouteTokenMode::COLLATERAL,
+            post_dispatch_mock_address, //igp_hook.id(),
+            "Ether".to_string(),
+            "ETH".to_string(),
+            18,
+            10_000_000,
+            Some(
+                AssetId::from_str(
+                    "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
+                )
+                .unwrap(),
+            ),
+        )
+        .call()
+        .await;
+
+    assert!(init_res.is_ok(), "Failed to initialize Warp Route Native.");
+
+    let bridged_init_res = warp_route_bridged
+        .methods()
+        .initialize(
+            wallet_address,
+            Bits256(mailbox_contract_id.hash().into()),
+            WarpRouteTokenMode::BRIDGED,
+            post_dispatch_mock_address, //igp_hook.id(),
+            "FuelSepoliaUSDC".to_string(),
+            "FST".to_string(),
+            18,
+            10_000_000,
+            None,
+        )
+        .call()
+        .await;
+
+    assert!(
+        bridged_init_res.is_ok(),
+        "Failed to initialize Warp Route Bridged."
+    );
+
+    let set_ism_res = warp_route_bridged
+        .methods()
+        .set_ism(ism_id.clone())
+        .call()
+        .await;
+
+    assert!(
+        set_ism_res.is_ok(),
+        "Failed to set ISM in Warp Route Bridged."
+    );
+
+    let set_ism_res = warp_route.methods().set_ism(ism_id.clone()).call().await;
+    assert!(
+        set_ism_res.is_ok(),
+        "Failed to set ISM in Warp Route Collateral"
+    );
     /////////////////////////////
     // Save contract addresses //
     /////////////////////////////
@@ -464,6 +576,8 @@ async fn main() {
         igp_hook_id.into(),
         validator_id.into(),
         gas_oracle_id.into(),
+        warp_route_id.into(),
+        warp_route_bridged_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

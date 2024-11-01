@@ -27,4 +27,5 @@ members = [
   "contracts/igp/gas-paymaster",
   "contracts/igp/gas-oracle",
   "contracts/hooks/igp",
+  "contracts/hooks/token-router",
 ]

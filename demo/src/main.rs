@@ -13,10 +13,14 @@ use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::{provider::Provider as FuelProvider, wallet::WalletUnlocked},
     crypto::SecretKey as FuelPrivateKey,
+    types::{
+        bech32::{Bech32Address, Bech32ContractId},
+        Address,
+    },
 };
 
 use futures_util::stream::StreamExt;
-use helper::get_native_balance;
+use helper::*;
 mod contracts;
 mod helper;
 
@@ -66,23 +70,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Case 1: Send message from Sepolia to Fuel //
     ///////////////////////////////////////////////
 
-    let message_id = contracts.sepolia_send_dispatch().await;
-    println!("Message ID: {:?}", message_id);
+    // let message_id = contracts.sepolia_send_dispatch().await;
+    // println!("Message ID: {:?}", message_id);
 
-    contracts.monitor_fuel_for_delivery(message_id).await;
+    // contracts.monitor_fuel_for_delivery(message_id).await;
 
     ///////////////////////////////////////////////
     // Case 2: Send message from Fuel to Sepolia //
     ///////////////////////////////////////////////
 
-    contracts.fuel_send_dispatch(false).await;
+    // contracts.fuel_send_dispatch(false).await;
 
-    contracts.monitor_sepolia_for_delivery().await;
+    // contracts.monitor_sepolia_for_delivery().await;
 
-    panic!("Done");
+    // panic!("Done");
+
+    ////////////////////////////////////////////////////
+    // Case 3: Send native token from Fuel to Sepolia //
+    ////////////////////////////////////////////////////
+
+    //contracts.sepolia_transfer_remote_collateral().await; // need update in hyperlane-monorepo
+
+    //println!("Transferring remote collateral");
+    //contracts.fuel_transfer_remote_collateral().await;
+    // println!("Transferring remote bridged");
+    contracts
+        .fuel_transfer_remote_bridged(fuel_wallet.clone())
+        .await;
+
+    ////////////////////////////////////////////////////
+    // Case 4: Send native token from Sepolia to Fuel //
+    ////////////////////////////////////////////////////
+
+    // let recipient_address = contracts.fuel.recipient;
+
+    // let balance_before: u64 = get_contract_balance(&fuel_provider, recipient_address).await;
+    // println!("Balance before: {}", balance_before);
+
+    // contracts.sepolia_transfer_remote_bridged().await;
+
+    // let balance_after = get_contract_balance(&fuel_provider, recipient_address).await;
+    // println!("Balance after: {}", balance_after);
+
+    // println!("Difference: {}", balance_after - balance_before);
+
     ////////////////////////////////////////////////////////////////////////////////////
     // ⬇️ TODO move to clean case, actually check if we send/claim the right amount ⬇️ //
     ////////////////////////////////////////////////////////////////////////////////////
+
+    panic!("Done");
 
     let gas_payment_quote = contracts.fuel_quote_dispatch().await;
     let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;

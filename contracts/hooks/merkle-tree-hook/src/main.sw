@@ -155,4 +155,3 @@ fn _count() -> u32 {
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
 }
-

@@ -1,10 +1,16 @@
-use std::{env, str::FromStr};
+use std::env;
+
+use crate::{
+    contracts::sepolia_mailbox::SepoliaMailbox::SepoliaMailboxInstance, get_bridged_asset,
+};
+use sepolia_mailbox::SepoliaMailbox;
+use sepolia_warp_route_bridged::SepoliaWarpRouteBridged::SepoliaWarpRouteBridgedInstance;
+use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
     primitives::{address, Bytes as AlloyBytes, FixedBytes, U256},
     providers::ProviderBuilder,
-    sol,
     transports::BoxTransport,
 };
 use alloy_provider::{
@@ -18,12 +24,15 @@ use fuels::{
     accounts::wallet::WalletUnlocked,
     macros::abigen,
     programs::calls::CallParameters,
-    types::{bech32::Bech32ContractId, Bits256, Bytes, ContractId},
+    types::{
+        bech32::Bech32ContractId, transaction_builders::VariableOutputPolicy, Address, Bits256,
+        Bytes, ContractId,
+    },
 };
 use futures_util::StreamExt;
 use rand::{thread_rng, Rng};
+
 use serde_json::Value;
-use SepoliaMailbox::SepoliaMailboxInstance;
 
 use crate::helper::{get_contract_id_from_json, get_native_asset, get_value_from_json};
 
@@ -56,16 +65,44 @@ abigen!(
         name = "GasPaymaster",
         abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
+    Contract(
+        name = "WarpRoute",
+        abi = "contracts/warp-route/out/debug/warp-route-abi.json",
+    ),
 );
 
-// Codegen from embedded Solidity code and precompiled bytecode.
-sol!(
-    #[allow(missing_docs)]
-    #[sol(rpc)]
-    SepoliaMailbox,
-    "evm-abis/Mailbox.json"
-);
+mod sepolia_mailbox {
+    use alloy::sol;
 
+    sol!(
+        #[allow(missing_docs)]
+        #[sol(rpc)]
+        SepoliaMailbox,
+        "evm-abis/Mailbox.json"
+    );
+}
+
+mod sepolia_warp_route_bridged {
+    use alloy::sol;
+    sol!(
+        #[allow(missing_docs)]
+        #[sol(rpc)]
+        SepoliaWarpRouteBridged,
+        "evm-abis/HypERC20.json",
+    );
+}
+
+mod sepolia_warp_route_collateral {
+    use alloy::sol;
+    sol!(
+        #[allow(missing_docs)]
+        #[sol(rpc)]
+        SepoliaWarpRouteCollateral,
+        "evm-abis/HypERC20Collateral.json",
+    );
+}
+
+#[allow(clippy::type_complexity)]
 pub struct SepoliaContracts {
     pub mailbox: SepoliaMailboxInstance<
         BoxTransport,
@@ -86,6 +123,42 @@ pub struct SepoliaContracts {
         >,
     >,
     pub recipient: String,
+    pub warp_route_collateral: SepoliaWarpRouteCollateralInstance<
+        BoxTransport,
+        FillProvider<
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
+            RootProvider<BoxTransport>,
+            BoxTransport,
+            Ethereum,
+        >,
+    >,
+    pub warp_route_bridged: SepoliaWarpRouteBridgedInstance<
+        BoxTransport,
+        FillProvider<
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
+            RootProvider<BoxTransport>,
+            BoxTransport,
+            Ethereum,
+        >,
+    >,
 }
 
 pub struct FuelContracts {
@@ -96,6 +169,9 @@ pub struct FuelContracts {
     pub igp: GasPaymaster<WalletUnlocked>,
     pub gas_oracle: ContractId,
     pub igp_hook: IGPHook<WalletUnlocked>,
+    pub warp_route_collateral: WarpRoute<WalletUnlocked>,
+    pub warp_route_bridged: WarpRoute<WalletUnlocked>,
+    pub recipient: ContractId,
 }
 
 pub struct Contracts {
@@ -176,11 +252,169 @@ impl Contracts {
         }
     }
 
+    /// Fuel (ETH) -> Sepolia (USDC)
+    pub async fn fuel_transfer_remote_collateral(&self) {
+        let recipient_address = hex::decode("031AD9c560D37baC7d6Bd2d27A2443bAfd10101A").unwrap();
+        let mut address_array = [0u8; 32];
+        address_array[12..].copy_from_slice(&recipient_address);
+
+        let remote_wr = hex::decode("78026106472a7FB10668fED0301Af9dD321cf16B").unwrap();
+        let mut remote_wr_array = [0u8; 32];
+        remote_wr_array[12..].copy_from_slice(&remote_wr);
+
+        let add_router_res = self
+            .fuel
+            .warp_route_collateral
+            .methods()
+            .enroll_remote_router(11155111, Bits256(remote_wr_array))
+            .call()
+            .await
+            .unwrap();
+
+        println!("Enrolled remote router: {:?}", add_router_res.value);
+
+        let token_info = self
+            .fuel
+            .warp_route_collateral
+            .methods()
+            .get_token_info()
+            .call()
+            .await
+            .unwrap();
+
+        let amount = 8;
+
+        let res = self
+            .fuel
+            .warp_route_collateral
+            .methods()
+            .transfer_remote(11155111, Bits256(address_array), amount)
+            .call_params(CallParameters::new(amount, get_native_asset(), 223_526))
+            .unwrap()
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .determine_missing_contracts(Some(8))
+            .await
+            .unwrap()
+            .call()
+            .await;
+
+        match res {
+            Ok(res) => {
+                println!(
+                    "Transfer remote collateral (ETH) from fuel successful: 0x{:?}",
+                    res.tx_id.unwrap()
+                );
+            }
+            Err(e) => {
+                println!("Transfer remote collateral (ETH) from fuel error: {:?}", e);
+            }
+        }
+    }
+
+    /// Fuel (FST) -> Sepolia (FST)
+    pub async fn fuel_transfer_remote_bridged(&self, wallet: WalletUnlocked) {
+        let recipient_address = hex::decode("031AD9c560D37baC7d6Bd2d27A2443bAfd10101A").unwrap();
+        let mut address_array = [0u8; 32];
+        address_array[12..].copy_from_slice(&recipient_address);
+
+        let wr_address = hex::decode("b018793a4Bed2b5e859286786DFCD7eC0322a34E").unwrap();
+        let mut wr_address_array = [0u8; 32];
+        wr_address_array[12..].copy_from_slice(&wr_address);
+
+        let add_router_res = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .enroll_remote_router(11155111, Bits256(wr_address_array))
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .call()
+            .await
+            .unwrap();
+
+        println!(
+            "Enrolled Sepolia as remote router: {:?}",
+            add_router_res.value
+        );
+
+        let router_address = self.fuel.warp_route_bridged.contract_id().hash();
+        let parsed_router_address: FixedBytes<32> =
+            FixedBytes::from_slice(router_address.as_slice());
+
+        let res = self
+            .sepolia
+            .warp_route_bridged
+            .enrollRemoteRouter(1717982312, parsed_router_address)
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await;
+
+        println!("Enrolled Fuel as remote router: {:?}", res);
+
+        let token_info = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .get_token_info()
+            .call()
+            .await
+            .unwrap();
+
+        let amount = 9;
+
+        let _token_mint_res = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .mint_tokens(Address::from(wallet.address()), 10000)
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .determine_missing_contracts(Some(5))
+            .await
+            .unwrap()
+            .call()
+            .await
+            .unwrap();
+
+        // println!("Token minted: {:?}", _token_mint_res.value);
+        println!("Bridged Asset ID in fuel: {:?}", token_info.value.asset_id);
+
+        let res = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .transfer_remote(11155111, Bits256(address_array), amount)
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .call_params(CallParameters::new(
+                amount,
+                token_info.value.asset_id,
+                223_526,
+            ))
+            .unwrap()
+            .determine_missing_contracts(Some(5))
+            .await
+            .unwrap()
+            .call()
+            .await;
+
+        match res {
+            Ok(res) => {
+                println!(
+                    "Transfer remote bridged from fuel successful: 0x{:?}",
+                    res.tx_id.unwrap()
+                );
+            }
+            Err(e) => {
+                println!("Transfer remote bridged from fuel error: {:?}", e);
+            }
+        }
+    }
+
     pub async fn sepolia_send_dispatch(&self) -> FixedBytes<32> {
         let recipient_address =
             hex::decode("a347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3")
                 .unwrap();
-        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(&recipient_address.as_slice());
+        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(recipient_address.as_slice());
         let rnd_number = thread_rng().gen_range(0..10000);
         let body_text = format!("Hello from sepolia! {}", rnd_number);
         let body = AlloyBytes::copy_from_slice(body_text.as_bytes());
@@ -213,6 +447,94 @@ impl Contracts {
             Err(e) => {
                 println!("Dispatch error: {:?}", e);
                 panic!();
+            }
+        }
+    }
+
+    /// Sepolia (FST) -> Fuel (FST)
+    pub async fn sepolia_transfer_remote_bridged(&self) {
+        let recipient_address =
+            hex::decode("a347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3")
+                .unwrap();
+        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(recipient_address.as_slice());
+
+        let router_address = self.fuel.warp_route_bridged.contract_id().hash();
+        let parsed_router_address: FixedBytes<32> =
+            FixedBytes::from_slice(router_address.as_slice());
+
+        let res = self
+            .sepolia
+            .warp_route_bridged
+            .enrollRemoteRouter(1717982312, parsed_router_address)
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await;
+
+        println!("Enrolled remote router: {:?}", res);
+
+        let res = self
+            .sepolia
+            .warp_route_bridged
+            .transferRemote_1(1717982312, parsed_address, U256::from(1))
+            .value(U256::from(1)) // qoute dispatch result
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await;
+
+        match res {
+            Ok(res) => {
+                println!("Transfer remote native successful: {:?}", res);
+            }
+            Err(e) => {
+                println!("Transfer remote native error: {:?}", e);
+            }
+        }
+    }
+
+    /// Sepolia (USDC) -> Fuel (ETH)
+    pub async fn sepolia_transfer_remote_collateral(&self) {
+        let recipient_address =
+            hex::decode("a347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3")
+                .unwrap();
+        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(recipient_address.as_slice());
+
+        let router_address = self.fuel.warp_route_bridged.contract_id().hash();
+        let parsed_router_address: FixedBytes<32> =
+            FixedBytes::from_slice(router_address.as_slice());
+
+        let res = self
+            .sepolia
+            .warp_route_collateral
+            .enrollRemoteRouter(1717982312, parsed_router_address)
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await;
+
+        println!("Enrolled remote router: {:?}", res);
+
+        let res = self
+            .sepolia
+            .warp_route_collateral
+            .transferRemote_1(1717982312, parsed_address, U256::from(1))
+            .value(U256::from(1)) // qoute dispatch result
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await;
+
+        match res {
+            Ok(res) => {
+                println!("Transfer remote collateral successful: {:?}", res);
+            }
+            Err(e) => {
+                println!("Transfer remote native error: {:?}", e);
             }
         }
     }
@@ -272,10 +594,14 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
     let igp_hook_id = get_contract_id_from_json("fueltestnet", &["igpHook"]);
     let gas_oracle = get_contract_id_from_json("fueltestnet", &["gasOracle"]);
+    let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
+    let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteBridged"]);
+    let recipient = get_contract_id_from_json("fueltestnet", &["recipient"]);
 
     // sepolia contract addresses
-    let recipient = get_value_from_json("sepolia", &["testRecipient"]);
+    let sepolia_recipient = get_value_from_json("sepolia", &["testRecipient"]);
     let sepolia_mailbox = get_value_from_json("sepolia", &["mailbox"]);
+    let _sepolia_warp_route_collateral = get_value_from_json("sepolia", &["nativeWarpRoute"]);
 
     let _sepolia_mailbox_id = match sepolia_mailbox {
         Value::String(s) => s,
@@ -286,11 +612,23 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let mailbox_instance_fuel = Mailbox::new(mailbox_id, fuel_wallet.clone());
     let igp_hook_instance = IGPHook::new(igp_hook_id, fuel_wallet.clone());
     let igp_instance = GasPaymaster::new(igp, fuel_wallet.clone());
+    let warp_route_collateral_instance = WarpRoute::new(warp_route_collateral, fuel_wallet.clone());
+    let warp_route_bridged_instance = WarpRoute::new(warp_route_bridged, fuel_wallet.clone());
 
     // Sepolia instances
     let mailbox_instance_sepolia = SepoliaMailbox::new(
         address!("fFAEF09B3cd11D9b20d1a19bECca54EEC2884766"), //fix
-        evm_provider,
+        evm_provider.clone(),
+    );
+
+    let warp_route_collateral_instance_sepolia = SepoliaWarpRouteCollateralInstance::new(
+        address!("78026106472a7FB10668fED0301Af9dD321cf16B"),
+        evm_provider.clone(),
+    );
+
+    let warp_route_bridged_instance_sepolia = SepoliaWarpRouteBridgedInstance::new(
+        address!("b018793a4Bed2b5e859286786DFCD7eC0322a34E"),
+        evm_provider.clone(),
     );
 
     Contracts {
@@ -302,10 +640,15 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
             validator_announce,
             gas_oracle,
             igp_hook: igp_hook_instance,
+            warp_route_collateral: warp_route_collateral_instance,
+            warp_route_bridged: warp_route_bridged_instance,
+            recipient,
         },
         sepolia: SepoliaContracts {
             mailbox: mailbox_instance_sepolia,
-            recipient: recipient.to_string(),
+            recipient: sepolia_recipient.to_string(),
+            warp_route_collateral: warp_route_collateral_instance_sepolia,
+            warp_route_bridged: warp_route_bridged_instance_sepolia,
         },
     }
 }

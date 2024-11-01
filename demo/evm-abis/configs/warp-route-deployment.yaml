@@ -1,0 +1,19 @@
+sepolia:
+    mailbox: '0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766'
+    owner: '0x0aE30543a22C74123D9c64F64B9Cb9bBB7268eEa'
+    interchainSecurityModule:
+        address: '0x7856078C4881e236660Be82fdb12473B4a33cCFf'
+        type: staticAggregationIsm
+        modules:
+            - owner: '0x0aE30543a22C74123D9c64F64B9Cb9bBB7268eEa'
+              address: '0x17Dc724B7a2F09141C13b8AC33B396073785c2BC'
+              type: defaultFallbackRoutingIsm
+              domains: {}
+        threshold: 1
+    name: 'USDC'
+    symbol: 'USDC'
+    totalSupply: 10000
+    decimals: 6
+    isNft: false
+    token: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238'
+    type: collateral
