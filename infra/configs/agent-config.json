@@ -34,19 +34,19 @@
                     "http": "https://testnet.fuel.network/v1/graphql"
                 }
             ],
-            "mailbox": "0x2f02dec9daf06d3bf98dffe9ba42c61000ce6a173813c727dfea13346b612a0a",
-            "postDispatch": "0x3640503b60cc86731d804b0afc5ec5091af7a64dd063282812038776007ce52a",
-            "recipient": "0xb8b4beaa28816e3a3ab877cfaff7849fad62e9c8c14fe44e2d2bbf00ae3ce5a7",
-            "interchainSecurityModule": "0x5a260464d1ffe2756597f3f565d06f0e2e07106b689d90d8594c009ab37f4e5a",
-            "merkleTreeHook": "0x4d57b58e2b451c90ce02432d2bcf4f8727140eaed3bfd8dd1159735d73ad52a3",
-            "gasOracle": "0xa71a6f0595879cda8c5a3e548880a0721e03845ad5ba497eafc13643376730ec",
-            "interchainGasPaymaster": "0xdc08a073ff8348f9a9dd3e4846514e3b396f8a0ca32df939c69751bb5974e56d",
-            "igpHook": "0x0dfbe7288fa512fa06a4c0f848706566bf8fffa8e742db30d02dd1c0d9acc2de",
-            "warpRouteNative": "0x578e823957bcfe89b0dab828ebcd5d1c1992b593f8f2f7e9be29e85fb9a8ccc8",
-            "warpRouteBridged": "0x4cd0339832352d052740d28017b9819e804c4c29851526d1e60a5d723e766d21",
-            "validatorAnnounce": "0x3ae5af29ac575641fe6ce56ee0752dc3f68080cc1dcaa4c8e8518502b6f4b886",
+            "mailbox": "0xbf7b8365bcb3773cd414b24cd10b0d0b57fadb95977a4c95bb22fe931571695d",
+            "postDispatch": "0x4f058bbf568edaea4b228ae2a08d584fb1ff368ca77d3fc0cd349721bd478578",
+            "recipient": "0xfbe3ba62b00d8238c2493cee660a04d9f651328a74f15da2e100e818151be764",
+            "interchainSecurityModule": "0x0ed9f50f8ddd96e253366b54460e92137b8057bc4a8dd1357e8350725996d5b5",
+            "merkleTreeHook": "0x36abb36cf0c42ff394663b775d3a26086b85ad4d2a86b14286a6ff8f03a8b88d",
+            "gasOracle": "0xd70e5beb9b3cd13b5cde9ca2d8be2be6fc372c7f5f1d4f68aa86f7c0708df311",
+            "interchainGasPaymaster": "0x9b8fa2bea021049da099d953d1f25d136667dca8451a80cc8249a67d4124828e",
+            "igpHook": "0xd8e3bbb0584bdc31cc8ffb8392c7f8d4e348ab58944bc9e9ec2f226909092e1e",
+            "warpRouteNative": "0x9db0cbc3e0c5cd01f2f8868d461010dbe211e3c5e4b941c7088936c8bc39d460",
+            "warpRouteBridged": "0x4fbbe89e5ad90c2e172dc3ef697db3633e3d1a04f8f180da6479fcb473d12d5f",
+            "validatorAnnounce": "0x85721453248bb7e990f057699f5033e348182758153b78b062662db383a52dfa",
             "index": {
-                "from": 14462724,
+                "from": 14706541,
                 "chunk": 10
             }
         },
@@ -77,7 +77,7 @@
             "fallbackRoutingHook": "0x17Dc724B7a2F09141C13b8AC33B396073785c2BC",
             "gnosisSafeTransactionServiceUrl": "https://safe-transaction-sepolia.safe.global",
             "index": {
-                "from": 6989801
+                "from": 7006566
             },
             "interchainAccountIsm": "0x83a3068B719F764d413625dA77468ED74789ae02",
             "interchainAccountRouter": "0x8e131c8aE5BF1Ed38D05a00892b6001a7d37739d",

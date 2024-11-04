@@ -42,7 +42,7 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*, warp_router::*, message_recipient::MessageRecipient};
+use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*, token_router::*, message_recipient::MessageRecipient};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -176,7 +176,7 @@ impl WarpRoute for Contract {
     /// * If any external call fails
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) {
+    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) -> b256 {
         reentrancy_guard();
         require_not_paused();
 
@@ -191,7 +191,6 @@ impl WarpRoute for Contract {
         let asset = storage.asset_id.read();
         require(msg_asset_id() == asset, WarpRouteError::PaymentError);
         
-        // Depending on the mode, handle the token transfer
         match storage.token_mode.read() {
             WarpRouteTokenMode::BRIDGED => {
                 //Burn has checks inside along with decreasing total supply
@@ -200,6 +199,10 @@ impl WarpRoute for Contract {
             WarpRouteTokenMode::COLLATERAL => {
                 //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
+                log(TokensLockedEvent {
+                    amount,
+                    asset,
+                });
             }
         }
 
@@ -225,6 +228,8 @@ impl WarpRoute for Contract {
             recipient,
             amount,
         });
+
+        message_id
     }
 
     /// Gets the token mode of the WarpRoute contract
@@ -388,9 +393,9 @@ impl TokenRouter for Contract {
     /// ### Arguments
     ///
     /// * `domain`: [u32] - The domain to remove the router for
-    #[storage(read, write)]
-    fn unenroll_remote_router(domain: u32) {
-        storage.routers.remove(domain);
+    #[storage(write)]
+    fn unenroll_remote_router(domain: u32)->bool {
+        storage.routers.remove(domain)
     }
 
     /// Enrolls a new router for a specific domain
@@ -624,7 +629,6 @@ fn _build_token_metadata_bytes(recipient: b256, amount: u64) -> Bytes {
     bytes
 }
 
-#[storage(read)]
 fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
     let mut buffer_reader = BufferReader::from_parts(body.ptr(), body.len());
 

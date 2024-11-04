@@ -63,17 +63,16 @@ mod warp_route {
     }
 
     fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
-        // let mut buffer = Vec::new();
+        let mut buffer = Vec::new();
 
-        // let amount_u256 = U256::from(amount);
-        // let mut amount_bytes = [0u8; 32];
-        // amount_u256.to_big_endian(&mut amount_bytes);
+        let amount_u256 = U256::from(amount);
+        let mut amount_bytes = [0u8; 32];
+        amount_u256.to_big_endian(&mut amount_bytes);
 
-        // buffer.extend(&recipient.0);
-        // buffer.extend(&amount_bytes);
+        buffer.extend(&recipient.0);
+        buffer.extend(&amount_bytes);
 
-        // Bytes(buffer)
-        Bytes::from_hex_str("0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c30000000000000000000000000000000000000000000000000000000000000001").unwrap()
+        Bytes(buffer)
     }
 
     async fn get_balance(

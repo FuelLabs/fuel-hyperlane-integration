@@ -1,31 +1,23 @@
-use std::str::FromStr;
+mod contracts;
+mod helper;
+
+use std::{env, str::FromStr};
 
 use alloy::{
     network::EthereumWallet,
-    primitives::address,
     providers::{Provider as EthProvider, ProviderBuilder},
     signers::{
         k256::{ecdsa::SigningKey, SecretKey as SepoliaPrivateKey},
         local::PrivateKeySigner,
     },
 };
-use alloy_rpc_types::{BlockNumberOrTag, Filter};
 use fuels::{
     accounts::{provider::Provider as FuelProvider, wallet::WalletUnlocked},
     crypto::SecretKey as FuelPrivateKey,
-    types::{
-        bech32::{Bech32Address, Bech32ContractId},
-        Address,
-    },
 };
 
-use futures_util::stream::StreamExt;
-use helper::*;
-mod contracts;
-mod helper;
-
 use crate::contracts::load_contracts;
-use std::env;
+use helper::*;
 
 // 1. Bidirectional message sending - done
 // 2. Bidirectional token sending
@@ -57,6 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sepolia_block_number = sepolia_provider.get_block_number().await.unwrap();
     println!("Latest fuel block number: {}", fuel_block_number);
     println!("Latest sepolia block number: {}", sepolia_block_number);
+    println!("-----------------------------------------------------------");
 
     let secret_key = FuelPrivateKey::from_str(
         &env::var("FUEL_PRIVATE_KEY").expect("FUEL_PRIVATE_KEY must be set"),
@@ -70,80 +63,100 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Case 1: Send message from Sepolia to Fuel //
     ///////////////////////////////////////////////
 
-    // let message_id = contracts.sepolia_send_dispatch().await;
-    // println!("Message ID: {:?}", message_id);
+    let message_id = contracts.sepolia_send_dispatch().await;
+    println!("Message ID: {:?}", message_id);
 
-    // contracts.monitor_fuel_for_delivery(message_id).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
 
     ///////////////////////////////////////////////
     // Case 2: Send message from Fuel to Sepolia //
     ///////////////////////////////////////////////
 
-    // contracts.fuel_send_dispatch(false).await;
+    contracts.fuel_send_dispatch(false).await;
 
-    // contracts.monitor_sepolia_for_delivery().await;
-
-    // panic!("Done");
+    contracts.monitor_sepolia_for_delivery().await;
 
     ////////////////////////////////////////////////////
-    // Case 3: Send native token from Fuel to Sepolia //
+    // Case 3: Collateral Sepolia (USDC) -> Fuel (ETH)//
     ////////////////////////////////////////////////////
 
-    //contracts.sepolia_transfer_remote_collateral().await; // need update in hyperlane-monorepo
+    println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
 
-    //println!("Transferring remote collateral");
-    //contracts.fuel_transfer_remote_collateral().await;
-    // println!("Transferring remote bridged");
+    let amount = 6;
+    println!("transfer amount is {}", amount);
+
+    send_token_to_contract(
+        fuel_wallet.clone(),
+        contracts.fuel.warp_route_collateral.contract_id(),
+        amount,
+    )
+    .await;
+
+    let initial_balance = get_native_balance(&fuel_provider).await;
+    println!("Initial recipient balance: {}", initial_balance);
+
+    let message_id = contracts.sepolia_transfer_remote_collateral(amount).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
+
+    let final_balance = get_native_balance(&fuel_provider).await;
+    println!("Final recipient balance: {}", final_balance);
+    println!("Difference: {}", final_balance - initial_balance);
+    println!(
+        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b/transactions",
+    );
+    println!("-----------------------------------------------------------");
+
+    ////////////////////////////////////////////////////
+    // Case 4: Bridged Fuel (FST) to Sepolia (FST) //
+    ////////////////////////////////////////////////////
+
+    let amount = 300_000;
+    println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
+    println!("-----------------------------------------------------------");
+    println!("transfer amount is {}", amount);
+
     contracts
-        .fuel_transfer_remote_bridged(fuel_wallet.clone())
+        .fuel_transfer_remote_bridged(fuel_wallet.clone(), amount)
         .await;
 
+    contracts.monitor_sepolio_for_asset_delivery(true).await;
+    println!("-----------------------------------------------------------");
+
     ////////////////////////////////////////////////////
-    // Case 4: Send native token from Sepolia to Fuel //
+    // Case 5: Bridged Sepolia (FST) to Fuel (FST) //
     ////////////////////////////////////////////////////
 
-    // let recipient_address = contracts.fuel.recipient;
+    println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
 
-    // let balance_before: u64 = get_contract_balance(&fuel_provider, recipient_address).await;
-    // println!("Balance before: {}", balance_before);
+    let amount = 470;
+    println!("transfer amount is {}", amount);
+    let asset_id = contracts.fuel_get_minted_asset_id().await;
 
-    // contracts.sepolia_transfer_remote_bridged().await;
+    let balance_before: u64 = get_bridged_balance(&fuel_provider, asset_id).await;
+    println!("Balance before: {}", balance_before);
 
-    // let balance_after = get_contract_balance(&fuel_provider, recipient_address).await;
-    // println!("Balance after: {}", balance_after);
+    let message_id = contracts.sepolia_transfer_remote_bridged(amount).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
 
-    // println!("Difference: {}", balance_after - balance_before);
+    let balance_after = get_bridged_balance(&fuel_provider, asset_id).await;
+    println!("Balance after: {}", balance_after);
+    println!(
+        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x{}/transactions",
+        TEST_RECIPIENT_IN_FUEL
+    );
+    println!("-----------------------------------------------------------");
 
-    ////////////////////////////////////////////////////////////////////////////////////
-    // ⬇️ TODO move to clean case, actually check if we send/claim the right amount ⬇️ //
-    ////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
+    // Case 6: Collateral Fuel (ETH) to Sepolia (USDC)//
+    ////////////////////////////////////////////////////
 
-    panic!("Done");
+    println!("Case: Transferring Fuel (ETH) to Sepolia (USDC)");
 
-    let gas_payment_quote = contracts.fuel_quote_dispatch().await;
-    let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
-    let wallet_balance_after = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
+    let amount = 1;
+    println!("transfer amount is {}", amount);
 
-    // Wallet balance after should be more than gas_payment_quote
-    if wallet_balance_before - wallet_balance_after < gas_payment_quote {
-        panic!("Wallet balance difference is less than gas payment quote");
-    }
-
-    let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
-    let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
-
-    let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
-    let filter = Filter::new()
-        .address(mailbox_address)
-        .event("ReceivedMessage(uint32,bytes32,uint256,string)")
-        .from_block(BlockNumberOrTag::Latest);
-
-    let sub = sepolia_provider.subscribe_logs(&filter).await?;
-    let mut stream = sub.into_stream();
-
-    while let Some(log) = stream.next().await {
-        println!("Mailbox logs: {log:?}");
-    }
+    contracts.fuel_transfer_remote_collateral(amount).await;
+    contracts.monitor_sepolio_for_asset_delivery(false).await;
 
     Ok(())
 }

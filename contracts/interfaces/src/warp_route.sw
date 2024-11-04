@@ -69,7 +69,11 @@ abi WarpRoute {
     /// * `amount`: [u64] - The amount of tokens to transfer
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64);
+    fn transfer_remote(
+        destination_domain: u32,
+        recipient: b256,
+        amount: u64,
+    ) -> b256;
 
     /// Gets the token mode of the WarpRoute contract
     ///
@@ -174,4 +178,10 @@ pub struct ReceivedTransferRemoteEvent {
     pub recipient: b256,
     /// The amount of tokens received
     pub amount: u64,
+}
+
+/// Event emitted when tokens are locked in the WarpRoute contract
+pub struct TokensLockedEvent {
+    pub amount: u64,
+    pub asset: AssetId,
 }

@@ -459,6 +459,17 @@ async fn main() {
     assert!(set_beneficiary_res.is_ok(), "Failed to set beneficiary.");
     assert!(set_gas_oracle_res.is_ok(), "Failed to set gas oracle.");
 
+    // let mailbox_set_hook = mailbox
+    //     .methods()
+    //     .set_required_hook(igp_hook.id())
+    //     .call()
+    //     .await;
+
+    // assert!(
+    //     mailbox_set_hook.is_ok(),
+    //     "Failed to set required hook in Mailbox."
+    // );
+
     ////////////////////////
     // Validator Announce //
     ////////////////////////
@@ -508,7 +519,7 @@ async fn main() {
             wallet_address,
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::COLLATERAL,
-            post_dispatch_mock_address, //igp_hook.id(),
+            post_dispatch_mock_address,
             "Ether".to_string(),
             "ETH".to_string(),
             18,
@@ -531,7 +542,7 @@ async fn main() {
             wallet_address,
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::BRIDGED,
-            post_dispatch_mock_address, //igp_hook.id(),
+            post_dispatch_mock_address,
             "FuelSepoliaUSDC".to_string(),
             "FST".to_string(),
             18,

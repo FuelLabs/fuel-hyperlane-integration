@@ -251,15 +251,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "token-router"
-source = "member"
-dependencies = [
-    "interfaces",
-    "message",
-    "std",
-]
-
-[[package]]
 name = "validator-announce"
 source = "member"
 dependencies = [
