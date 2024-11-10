@@ -55,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &env::var("FUEL_PRIVATE_KEY").expect("FUEL_PRIVATE_KEY must be set"),
     )
     .unwrap();
+
     let fuel_wallet = WalletUnlocked::new_from_private_key(secret_key, Some(fuel_provider.clone()));
 
     let contracts = load_contracts(fuel_wallet.clone(), sepolia_provider.clone()).await;

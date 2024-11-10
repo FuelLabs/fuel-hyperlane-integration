@@ -98,7 +98,7 @@ mod sepolia_warp_route_collateral {
     );
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, dead_code)]
 pub struct SepoliaContracts {
     pub mailbox: SepoliaMailboxInstance<
         BoxTransport,
@@ -157,6 +157,7 @@ pub struct SepoliaContracts {
     >,
 }
 
+#[allow(dead_code)]
 pub struct FuelContracts {
     pub mailbox: Mailbox<WalletUnlocked>,
     pub ism: ContractId,
@@ -189,20 +190,20 @@ pub type EvmProvider = FillProvider<
 >;
 
 impl Contracts {
-    pub async fn fuel_quote_dispatch(&self) -> u64 {
-        let gas_payment_quote = self
-            .fuel
-            .igp
-            .methods()
-            .quote_gas_payment(11155111, 5000)
-            .with_contract_ids(&[self.fuel.gas_oracle.into()])
-            .call()
-            .await
-            .map_err(|e| println!("Fuel quote gas payment error: {:?}", e))
-            .unwrap();
+    // pub async fn fuel_quote_dispatch(&self) -> u64 {
+    //     let gas_payment_quote = self
+    //         .fuel
+    //         .igp
+    //         .methods()
+    //         .quote_gas_payment(11155111, 5000)
+    //         .with_contract_ids(&[self.fuel.gas_oracle.into()])
+    //         .call()
+    //         .await
+    //         .map_err(|e| println!("Fuel quote gas payment error: {:?}", e))
+    //         .unwrap();
 
-        gas_payment_quote.value
-    }
+    //     gas_payment_quote.value
+    // }
 
     pub async fn fuel_get_minted_asset_id(&self) -> AssetId {
         self.fuel
@@ -443,16 +444,14 @@ impl Contracts {
         match res {
             Ok(_) => {
                 println!("Dispatch from Sepolia successful");
-                let message_id = self
-                    .sepolia
+
+                self.sepolia
                     .mailbox
                     .latestDispatchedId()
                     .call()
                     .await
                     .unwrap()
-                    ._0;
-
-                message_id
+                    ._0
             }
             Err(e) => {
                 println!("Dispatch error: {:?}", e);
@@ -604,9 +603,8 @@ impl Contracts {
         let sub = provider.subscribe_logs(&filter).await.unwrap();
         let mut stream = sub.into_stream();
 
-        while let Some(log) = stream.next().await {
+        if let Some(log) = stream.next().await {
             println!("Mailbox logs: {log:?}");
-            break;
         }
     }
 

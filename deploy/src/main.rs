@@ -1,20 +1,16 @@
 use core::panic;
 use fuels::types::Identity;
-use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use serde_yaml;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::ops::RangeInclusive;
 use std::str::FromStr;
 use std::{env, path::Path};
 
 use fuels::{
-    client::{PageDirection, PaginationRequest},
     crypto::SecretKey,
     prelude::*,
-    types::{Bits256, BlockHeight, ContractId, Salt},
+    types::{Bits256, ContractId, Salt},
 };
 
 abigen!(
@@ -613,7 +609,7 @@ fn get_deployment_config() -> LoadConfiguration {
 
     LoadConfiguration::default().with_salt(salt)
 }
-
+/*
 /// Deploy new VA contract
 async fn deploy_new_va(wallet: WalletUnlocked, config: LoadConfiguration) {
     let mailbox_id =
@@ -905,3 +901,5 @@ async fn test_pagination() {
         println!("block cursor for next query: {:?}", blocks.cursor);
     }
 }
+
+ */
