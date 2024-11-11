@@ -52,7 +52,6 @@ abigen!(
         abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
     ),
     Contract(
-<<<<<<< HEAD
         name = "AggregationISM",
         abi = "contracts/ism/aggregation-ism/out/debug/aggregation-ism-abi.json",
     ),
@@ -79,12 +78,11 @@ abigen!(
     Contract(
         name = "MerkleRootMultisigISMTest",
         abi = "contracts/test/merkle-root-multisig-ism-test/out/debug/merkle-root-multisig-ism-test-abi.json",
-    )
-=======
+    ),
+    Contract(
         name = "WarpRoute",
         abi = "contracts/warp-route/out/debug/warp-route-abi.json",
     ),
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
 );
 
 struct DeploymentEnv {
@@ -114,7 +112,6 @@ struct ContractAddresses {
     va: String,
     #[serde(rename = "gasOracle")]
     gas_oracle: String,
-<<<<<<< HEAD
     #[serde(rename = "aggregationISM")]
     aggregation_ism: String,
     #[serde(rename = "domainRoutingISM")]
@@ -125,12 +122,10 @@ struct ContractAddresses {
     message_id_multisig_ism: String,
     #[serde(rename = "merkleRootMultisigISM")]
     merkle_root_multisig_ism: String,
-=======
     #[serde(rename = "warpRoute")]
     warp_route: String,
     #[serde(rename = "warpRouteBridged")]
     warp_route_bridged: String,
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -145,16 +140,13 @@ impl ContractAddresses {
         igp_hook: ContractId,
         va: ContractId,
         gas_oracle: ContractId,
-<<<<<<< HEAD
         aggregation_ism: ContractId,
         domain_routing_ism: ContractId,
         fallback_domain_routing_ism: ContractId,
         message_id_multisig_ism: ContractId,
         merkle_root_multisig_ism: ContractId,
-=======
         warp_route: ContractId,
         warp_route_bridged: ContractId,
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -166,16 +158,13 @@ impl ContractAddresses {
             igp_hook: format!("0x{}", igp_hook),
             va: format!("0x{}", va),
             gas_oracle: format!("0x{}", gas_oracle),
-<<<<<<< HEAD
             aggregation_ism: format!("0x{}", aggregation_ism),
             domain_routing_ism: format!("0x{}", domain_routing_ism),
             fallback_domain_routing_ism: format!("0x{}", fallback_domain_routing_ism),
             message_id_multisig_ism: format!("0x{}", message_id_multisig_ism),
             merkle_root_multisig_ism: format!("0x{}", merkle_root_multisig_ism),
-=======
             warp_route: format!("0x{}", warp_route),
             warp_route_bridged: format!("0x{}", warp_route_bridged),
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
         }
     }
 }
@@ -311,7 +300,6 @@ async fn main() {
     .unwrap();
 
     println!(
-<<<<<<< HEAD
         "Test ISM deployed with ID: {}",
         ContractId::from(test_ism_id.clone())
     );
@@ -384,10 +372,6 @@ async fn main() {
     println!(
         "Merkle Root Multisig ISM deployed with ID: {}",
         ContractId::from(merkle_root_multisig_ism_id.clone())
-=======
-        "interchainSecurityModule: 0x{}",
-        ContractId::from(ism_id.clone())
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
     );
 
     /////////////////////////////////
@@ -462,7 +446,7 @@ async fn main() {
         config.clone().with_salt(native_salt),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -478,7 +462,7 @@ async fn main() {
         config.clone().with_salt(bridged_salt),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -491,7 +475,6 @@ async fn main() {
     // Instantiate Contracts //
     ///////////////////////////
 
-<<<<<<< HEAD
     let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), fuel_wallet.clone());
     let mailbox = Mailbox::new(mailbox_contract_id.clone(), fuel_wallet.clone());
     let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), fuel_wallet.clone());
@@ -508,6 +491,8 @@ async fn main() {
         MessageIdMultisigISM::new(message_id_multisig_ism_id.clone(), fuel_wallet.clone());
     let merkle_root_multisig_ism =
         MerkleRootMultisigISM::new(merkle_root_multisig_ism_id.clone(), fuel_wallet.clone());
+    let warp_route = WarpRoute::new(warp_route_id.clone(), fuel_wallet.clone());
+    let warp_route_bridged = WarpRoute::new(warp_route_bridged_id.clone(), fuel_wallet.clone());
 
     let wallet_address = Bits256(Address::from(fuel_wallet.address()).into());
     let test_ism_address = Bits256(ContractId::from(test_ism_id.clone()).into());
@@ -597,17 +582,13 @@ async fn main() {
         .await;
 
     assert!(set_res.is_ok(), "Failed to enroll validator.");
-=======
-    let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), wallet.clone());
-    let mailbox = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-    let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), wallet.clone());
-    let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
-    let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
-    let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
-    let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
-    let warp_route = WarpRoute::new(warp_route_id.clone(), wallet.clone());
-    let warp_route_bridged = WarpRoute::new(warp_route_bridged_id.clone(), wallet.clone());
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
+    // let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), wallet.clone());
+    // let mailbox = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
+    // let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), wallet.clone());
+    // let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
+    // let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
+    // let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
+    // let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
 
     /////////////////////////
     // Test Recipiet Setup //
@@ -805,7 +786,7 @@ async fn main() {
 
     let set_ism_res = warp_route_bridged
         .methods()
-        .set_ism(ism_id.clone())
+        .set_ism(test_ism_id.clone())
         .call()
         .await;
 
@@ -814,7 +795,11 @@ async fn main() {
         "Failed to set ISM in Warp Route Bridged."
     );
 
-    let set_ism_res = warp_route.methods().set_ism(ism_id.clone()).call().await;
+    let set_ism_res = warp_route
+        .methods()
+        .set_ism(test_ism_id.clone())
+        .call()
+        .await;
     assert!(
         set_ism_res.is_ok(),
         "Failed to set ISM in Warp Route Collateral"
@@ -833,16 +818,13 @@ async fn main() {
         igp_hook_id.into(),
         validator_id.into(),
         gas_oracle_id.into(),
-<<<<<<< HEAD
         aggregation_ism_id.into(),
         domain_routing_ism_id.into(),
         fallback_domain_routing_ism_id.into(),
         message_id_multisig_ism_id.into(),
         merkle_root_multisig_ism_id.into(),
-=======
         warp_route_id.into(),
         warp_route_bridged_id.into(),
->>>>>>> aca010ac2b0f273da1a137c7d6be4a08654d0d34
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();
