@@ -12,7 +12,7 @@
       "blocks": {
         "confirmations": 1,
         "estimateBlockTime": 1,
-        "reorgPeriod": 0
+        "reorgPeriod": 1
       },
       "chainId": 1717982312,
       "deployer": {
@@ -34,13 +34,16 @@
           "http": "https://testnet.fuel.network/v1/graphql"
         }
       ],
-      "interchainGasPaymaster": "0x27d8edf61f7eb6b5cea9a17b6abd0189ee99b4fddb661ded7b6738580d65e2c2",
-      "interchainSecurityModule": "0x1dd45a465874d8a2524c4507123941d3e76fed18166539ac7d3433a329c9d1ac",
-      "mailbox": "0x0b5da5eba44aa5473da4defe65194a83e3dc2b0357a006dfbe57771e20ce4d83",
-      "merkleTreeHook": "0x157cebff4280e815373e6b7f36a957fecb007fcd116f9322302c77ab7eee7853",
-      "validatorAnnounce": "0xe24c8b325fbde1d77b27e3f69dc1f60fcb23340c0249074e977b27f839b53210",
+      "interchainGasPaymaster": "0xe2dea3a8e8eb6dd1b380d540c33b98ad640b8fa8093920a1e83a4a765a935e0e",
+      "interchainSecurityModule": "0x762fee4f1c7af315595af715521439295b77f63780d4ccfe63b1c74ecd1d614c",
+      "mailbox": "0x238f1e43dc373e17b83048d9b5155e6842b1c9165ee563f1d8c0f210eb2867e8",
+      "merkleTreeHook": "0x0587597548b53a33bf9272273799234a3cc5faaa1c977904078cddce8cfcd720",
+      "validatorAnnounce": "0xe234c4858be967284dae17589f5369864f41231ab4c02064c5e83688f59256bd",
+      "storageGasOracle": "0xd749539c1b4540c7a3362fb32b712d7e9ee63d13db7a11555d59dcd16ed2561c",
+      "interchainGasPaymasterHook": "0x6f20262a2dfaff456bbdd728995068f249d1a20a2d930db01d7a26790745c5a1",
       "index": {
-        "from": 12059210
+        "from": 15065376,
+        "chunk": 10
       }
     },
     "sepolia": {
@@ -70,7 +73,8 @@
       "fallbackRoutingHook": "0x17Dc724B7a2F09141C13b8AC33B396073785c2BC",
       "gnosisSafeTransactionServiceUrl": "https://safe-transaction-sepolia.safe.global",
       "index": {
-        "from": 6803464
+        "from": 4517401,
+        "chunk": 5000
       },
       "interchainAccountIsm": "0x83a3068B719F764d413625dA77468ED74789ae02",
       "interchainAccountRouter": "0x8e131c8aE5BF1Ed38D05a00892b6001a7d37739d",
@@ -95,6 +99,11 @@
           "http": "https://11155111.rpc.thirdweb.com"
         }
       ],
+      "placeHolder": [
+        {
+          "http": "https://11155111.rpc.thirdweb.com"
+        }
+      ],
       "staticAggregationHookFactory": "0x160C28C92cA453570aD7C031972b58d5Dd128F72",
       "staticAggregationIsm": "0x7856078C4881e236660Be82fdb12473B4a33cCFf",
       "staticAggregationIsmFactory": "0xC83e12EF2627ACE445C298e6eC418684918a6002",
@@ -107,6 +116,88 @@
       "validatorAnnounce": "0xE6105C59480a1B7DD3E4f28153aFdbE12F4CfCD9",
       "staticMerkleRootWeightedMultisigIsmFactory": "0x4afB48e864d308409d0D80E98fB7d5d6aA5b245f",
       "staticMessageIdWeightedMultisigIsmFactory": "0x196Ce28ED1Afdf015849ddEE82F03a903Bee9E94"
+    },
+    "basesepolia": {
+      "aggregationHook": "0xccA408a6A9A6dc405C3278647421eb4317466943",
+      "blockExplorers": [
+        {
+          "apiUrl": "https://api-sepolia.basescan.org/api",
+          "family": "etherscan",
+          "name": "BaseScan",
+          "url": "https://sepolia.basescan.org"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 2,
+        "reorgPeriod": 1
+      },
+      "chainId": 84532,
+      "deployer": {
+        "name": "Abacus Works",
+        "url": "https://www.hyperlane.xyz"
+      },
+      "displayName": "Base Sepolia",
+      "domainId": 84532,
+      "domainRoutingIsm": "0x4ac19e0bafc2aF6B98094F0a1B817dF196551219",
+      "domainRoutingIsmFactory": "0x16B710b86CAd07E6F1C531861a16F5feC29dba37",
+      "fallbackRoutingHook": "0xddf4C3e791caCaFd26D7fb275549739B38ae6e75",
+      "index": {
+        "from": 13851043,
+        "chunk": 5000
+      },
+      "interchainGasPaymaster": "0x28B02B97a850872C4D33C3E024fab6499ad96564",
+      "interchainSecurityModule": "0x3E857CB33b76f680F3dB557Ce3BBf2591A98d92d",
+      "isTestnet": true,
+      "mailbox": "0x6966b0E55883d49BFB24539356a2f8A673E02039",
+      "merkleTreeHook": "0x86fb9F1c124fB20ff130C41a79a432F770f67AFD",
+      "name": "basesepolia",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Ether",
+        "symbol": "ETH"
+      },
+      "pausableHook": "0x19Be55D859368e02d7b9C00803Eb677BDC1359Bd",
+      "pausableIsm": "0xAD34A66Bf6dB18E858F6B686557075568c6E031C",
+      "protocol": "ethereum",
+      "protocolFee": "0x1b33611fCc073aB0737011d5512EF673Bff74962",
+      "proxyAdmin": "0x44b764045BfDC68517e10e783E69B376cef196B2",
+      "rpcUrls": [
+        {
+          "http": "https://84532.rpc.thirdweb.com/"
+        },
+        {
+          "http": "https://sepolia.base.org"
+        },
+        {
+          "http": "https://base-sepolia-rpc.publicnode.com"
+        }
+      ],
+      "placeHolder": [
+        {
+          "http": "https://84532.rpc.thirdweb.com/"
+        },
+        {
+          "http": "https://sepolia.base.org"
+        },
+        {
+          "http": "https://base-sepolia-rpc.publicnode.com"
+        }
+      ],
+      "staticAggregationHookFactory": "0xeb6f11189197223c656807a83B0DD374f9A6dF44",
+      "staticAggregationIsm": "0x815a9642497Ee1E9F061f8b828C85Eb7193DecfC",
+      "staticAggregationIsmFactory": "0x275aCcCa81cAD931dC6fB6E49ED233Bc99Bed4A7",
+      "staticMerkleRootMultisigIsmFactory": "0x6E7b29CB2A7617405B4d30C6f84bBD51b4Bb4be8",
+      "staticMessageIdMultisigIsmFactory": "0xfc6e546510dC9d76057F1f76633FCFfC188CB213",
+      "storageGasOracle": "0x5821f3B6eE05F3dC62b43B74AB1C8F8E6904b1C8",
+      "testRecipient": "0xDE05F3A5A62357ac9670351d89145851c087BB78",
+      "validatorAnnounce": "0x20c44b1E3BeaDA1e9826CFd48BeEDABeE9871cE9",
+      "staticMerkleRootWeightedMultisigIsmFactory": "0xB057Fb841027a8554521DcCdeC3c3474CaC99AB5",
+      "staticMessageIdWeightedMultisigIsmFactory": "0xe0B988062A0C6492177d64823Ab95a9c256c2a5F",
+      "gasCurrencyCoinGeckoId": "ethereum",
+      "interchainAccountIsm": "0xDa5177080f7fC5d9255eB32cC64B9b4e5136A716",
+      "interchainAccountRouter": "0xd876C01aB40e8cE42Db417fBC79c726d45504dE4",
+      "timelockController": "0x0000000000000000000000000000000000000000"
     }
   },
   "defaultRpcConsensusType": "fallback"

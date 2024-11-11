@@ -7,6 +7,7 @@ hyperlane-monorepo
 output
 deploy-evm-local.sh
 addresses.yaml
-deployments
+deployments/*
 agent-config copy.json
 demo-run.log
+infra/configs/deployments/*

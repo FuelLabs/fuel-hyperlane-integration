@@ -1,9 +1,0 @@
-# yaml-language-server: $schema=../schema.json
-tokens:
-  - addressOrDenom: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319"
-    chainName: test1
-    collateralAddressOrDenom: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
-    decimals: 18
-    name: CollateralTokenRoute
-    standard: EvmHypCollateral
-    symbol: CTR

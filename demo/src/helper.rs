@@ -2,6 +2,7 @@ use fuels::{
     accounts::provider::Provider,
     types::{bech32::Bech32Address, AssetId, ContractId},
 };
+use serde::Deserialize;
 use serde_json::Value;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
@@ -16,6 +17,90 @@ pub fn load_json_addresses() -> Value {
     let path = "../infra/configs/agent-config.json";
     let data = fs::read_to_string(path).expect("Unable to read JSON config file");
     serde_json::from_str(&data).expect("JSON format error")
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YamlConfig {
+    #[serde(rename = "testRecipient")]
+    test_recipient: String,
+    #[serde(rename = "aggregationISM")]
+    aggregation_ism: String,
+    #[serde(rename = "domainRoutingISM")]
+    domain_routing_ism: String,
+    #[serde(rename = "fallbackDomainRoutingISM")]
+    fallback_domain_routing_ism: String,
+    #[serde(rename = "messageIdMultisigISM")]
+    message_id_multisig_ism: String,
+    #[serde(rename = "merkleRootMultisigISM")]
+    merkle_root_multisig_ism: String,
+    #[serde(rename = "interchainSecurityModule")]
+    test_ism: String,
+}
+
+pub struct ParsedYamlConfig {
+    pub test_recipient: ContractId,
+    pub aggregation_ism: ContractId,
+    pub domain_routing_ism: ContractId,
+    pub fallback_domain_routing_ism: ContractId,
+    pub message_id_multisig_ism: ContractId,
+    pub merkle_root_multisig_ism: ContractId,
+    pub test_ism: ContractId,
+}
+
+impl From<YamlConfig> for ParsedYamlConfig {
+    fn from(config: YamlConfig) -> Self {
+        ParsedYamlConfig {
+            test_ism: ContractId::from_str(&config.test_ism.as_str().strip_prefix("0x").unwrap())
+                .unwrap(),
+            test_recipient: ContractId::from_str(
+                &config.test_recipient.as_str().strip_prefix("0x").unwrap(),
+            )
+            .unwrap(),
+            aggregation_ism: ContractId::from_str(
+                &config.aggregation_ism.as_str().strip_prefix("0x").unwrap(),
+            )
+            .unwrap(),
+            domain_routing_ism: ContractId::from_str(
+                &config
+                    .domain_routing_ism
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+            fallback_domain_routing_ism: ContractId::from_str(
+                &config
+                    .fallback_domain_routing_ism
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+            message_id_multisig_ism: ContractId::from_str(
+                &config
+                    .message_id_multisig_ism
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+            merkle_root_multisig_ism: ContractId::from_str(
+                &config
+                    .merkle_root_multisig_ism
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+        }
+    }
+}
+
+pub fn read_deployments_yaml() -> ParsedYamlConfig {
+    let path = "../deploy/deployments/testnet/contract_addresses.yaml";
+    let data = fs::read_to_string(path).expect("Unable to read YAML config file");
+    let raw_config: YamlConfig = serde_yaml::from_str(&data).expect("YAML format error");
+    ParsedYamlConfig::from(raw_config)
 }
 
 pub fn get_value_from_json(chain_name: &str, path: &[&str]) -> Value {

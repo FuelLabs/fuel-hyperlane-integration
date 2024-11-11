@@ -43,7 +43,6 @@ impl InterchainSecurityModule for Contract {
     }
 
     /// Verifies the message using the metadata.
-    /// Assumes the signatures are in the same order as the validators.
     ///
     /// ### Arguments
     ///
@@ -67,8 +66,8 @@ impl InterchainSecurityModule for Contract {
         require(threshold > 0, MessageIdMultisigError::NoMultisigThreshold);
 
         let validator_count = validators.len();
-        let mut validator_index: u8 = 0;
         let mut loop_index: u8 = 0;
+        // Assumes that signatures are ordered by validator
         while loop_index < threshold {
             let signature_recover_result = _signature_at(metadata, u32::from(loop_index));
             let sig_transformed = signature_recover_result.to_compact_signature();
@@ -79,7 +78,10 @@ impl InterchainSecurityModule for Contract {
             );
 
             let signature = sig_transformed.unwrap();
-            let address_recover_result = ec_recover_evm_address(signature, b256::from(digest));
+            let address_recover_result = ec_recover_evm_address(
+                signature,
+                Bytes::to_eth_signed_message_hash(b256::from(digest)),
+            );
             require(
                 address_recover_result
                     .is_ok(),
@@ -89,20 +91,83 @@ impl InterchainSecurityModule for Contract {
             let signer = address_recover_result.unwrap();
 
             // Loop through remaining validators until we find a match
-            while u64::from(validator_index) < validator_count && signer != storage.validators.get(u64::from(validator_index)).unwrap().read() {
-                validator_index += 1;
+            let mut validator_match = false;
+            let mut validator_index = 0;
+            while !validator_match {
+                if validator_index >= validator_count {
+                    break;
+                }
+                validator_match = signer == storage.validators.get(validator_index).unwrap().read();
+                if !validator_match {
+                    validator_index += 1;
+                }
             }
 
             // Fail if we never found a match
-            require(
-                u64::from(validator_index) < validator_count,
-                MessageIdMultisigError::NoValidatorMatch,
-            );
+            require(validator_match, MessageIdMultisigError::NoValidatorMatch);
 
-            validator_index += 1;
             loop_index += 1;
         }
         true
+    }
+}
+
+abi TestISM {
+    #[storage(read)]
+    fn get_verify_recovery(metadata: Bytes, message: Bytes) -> EvmAddress;
+
+    #[storage(read)]
+    fn get_verify_no_second_hash(metadata: Bytes, message: Bytes) -> EvmAddress;
+}
+
+impl TestISM for Contract {
+    #[storage(read)]
+    fn get_verify_recovery(metadata: Bytes, message: Bytes) -> EvmAddress {
+        let digest = _digest(metadata, message);
+
+        let signature_recover_result = _signature_at(metadata, 0);
+        let sig_transformed = signature_recover_result.to_compact_signature();
+        require(
+            sig_transformed
+                .is_some(),
+            MessageIdMultisigError::FailedToRecoverSignature(signature_recover_result),
+        );
+
+        let signature = sig_transformed.unwrap();
+        let address_recover_result = ec_recover_evm_address(
+            signature,
+            Bytes::to_eth_signed_message_hash(b256::from(digest)),
+        );
+        require(
+            address_recover_result
+                .is_ok(),
+            MessageIdMultisigError::FailedToRecoverSigner,
+        );
+
+        address_recover_result.unwrap()
+    }
+
+    #[storage(read)]
+    fn get_verify_no_second_hash(metadata: Bytes, message: Bytes) -> EvmAddress {
+        let digest = _digest(metadata, message);
+
+        let signature_recover_result = _signature_at(metadata, 0);
+        let sig_transformed = signature_recover_result.to_compact_signature();
+        require(
+            sig_transformed
+                .is_some(),
+            MessageIdMultisigError::FailedToRecoverSignature(signature_recover_result),
+        );
+
+        let signature = sig_transformed.unwrap();
+        let address_recover_result = ec_recover_evm_address(signature, b256::from(digest));
+        require(
+            address_recover_result
+                .is_ok(),
+            MessageIdMultisigError::FailedToRecoverSigner,
+        );
+
+        address_recover_result.unwrap()
     }
 }
 

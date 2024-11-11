@@ -1,8 +1,0 @@
-# yaml-language-server: $schema=../schema.json
-tokens:
-  - addressOrDenom: "0x67d269191c92Caf3cD7723F116c85e6E9bf55933"
-    chainName: test1
-    decimals: 18
-    name: SyntheticTokenRoute
-    standard: EvmHypSynthetic
-    symbol: STR

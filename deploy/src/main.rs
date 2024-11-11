@@ -1,20 +1,21 @@
+use alloy::signers::{
+    k256::{ecdsa::SigningKey, SecretKey as SepoliaPrivateKey},
+    local::PrivateKeySigner,
+};
 use core::panic;
-use fuels::types::Identity;
-use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage};
+use fuels::types::{EvmAddress, Identity};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::ops::RangeInclusive;
 use std::str::FromStr;
 use std::{env, path::Path};
 
 use fuels::{
-    client::{PageDirection, PaginationRequest},
     crypto::SecretKey,
     prelude::*,
-    types::{Bits256, BlockHeight, ContractId, Salt},
+    types::{Bits256, ContractId, Salt},
 };
 
 abigen!(
@@ -69,6 +70,14 @@ abigen!(
     Contract(
         name = "MerkleRootMultisigISM",
         abi = "contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism-abi.json",
+    ),
+    Contract(
+        name = "MessageIdMultisigISMTest",
+        abi = "contracts/test/message-id-multisig-ism-test/out/debug/message-id-multisig-ism-test-abi.json",
+    ),
+    Contract(
+        name = "MerkleRootMultisigISMTest",
+        abi = "contracts/test/merkle-root-multisig-ism-test/out/debug/merkle-root-multisig-ism-test-abi.json",
     )
 );
 
@@ -99,6 +108,16 @@ struct ContractAddresses {
     va: String,
     #[serde(rename = "gasOracle")]
     gas_oracle: String,
+    #[serde(rename = "aggregationISM")]
+    aggregation_ism: String,
+    #[serde(rename = "domainRoutingISM")]
+    domain_routing_ism: String,
+    #[serde(rename = "fallbackDomainRoutingISM")]
+    fallback_domain_routing_ism: String,
+    #[serde(rename = "messageIdMultisigISM")]
+    message_id_multisig_ism: String,
+    #[serde(rename = "merkleRootMultisigISM")]
+    merkle_root_multisig_ism: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -113,6 +132,11 @@ impl ContractAddresses {
         igp_hook: ContractId,
         va: ContractId,
         gas_oracle: ContractId,
+        aggregation_ism: ContractId,
+        domain_routing_ism: ContractId,
+        fallback_domain_routing_ism: ContractId,
+        message_id_multisig_ism: ContractId,
+        merkle_root_multisig_ism: ContractId,
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -124,6 +148,11 @@ impl ContractAddresses {
             igp_hook: format!("0x{}", igp_hook),
             va: format!("0x{}", va),
             gas_oracle: format!("0x{}", gas_oracle),
+            aggregation_ism: format!("0x{}", aggregation_ism),
+            domain_routing_ism: format!("0x{}", domain_routing_ism),
+            fallback_domain_routing_ism: format!("0x{}", fallback_domain_routing_ism),
+            message_id_multisig_ism: format!("0x{}", message_id_multisig_ism),
+            merkle_root_multisig_ism: format!("0x{}", merkle_root_multisig_ism),
         }
     }
 }
@@ -141,13 +170,11 @@ impl DeploymentEnv {
             Some(path) => path,
             None => &"./deployments".to_owned(),
         };
+        let fuel_pk = env::var("FUEL_PRIVATE_KEY").expect("FUEL_PRIVATE_KEY must be set");
 
         match env.as_str() {
             "LOCAL" => {
-                let secret_key = SecretKey::from_str(
-                    "0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711",
-                )
-                .unwrap();
+                let secret_key = SecretKey::from_str(&fuel_pk).unwrap();
                 let local_rpc: &str = "127.0.0.1:4000";
                 let dump_path = format!("{}/local", dump_path);
                 Self {
@@ -158,10 +185,7 @@ impl DeploymentEnv {
                 }
             }
             "TESTNET" => {
-                let secret_key = SecretKey::from_str(
-                    "0xd2f8342f13e67814a05e35dc966d84734849ad7e8037387e5fc07e4a2ff6d405",
-                )
-                .unwrap();
+                let secret_key = SecretKey::from_str(&fuel_pk).unwrap();
                 let testnet_rpc: &str = "testnet.fuel.network";
                 let dump_path = format!("{}/testnet", dump_path);
                 Self {
@@ -178,12 +202,22 @@ impl DeploymentEnv {
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
     // Wallet Initialization
     let env = DeploymentEnv::new();
-    let provider = Provider::connect(env.rpc_url).await.unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(env.secret_key, Some(provider.clone()));
-    let block_number = provider.latest_block_height().await.unwrap();
-    println!("Deployer: {}", Address::from(wallet.address()));
+    let sepolia_pk = SepoliaPrivateKey::from_slice(
+        &hex::decode(env::var("SEPOLIA_PRIVATE_KEY").expect("SEPOLIA_PRIVATE_KEY must be set"))
+            .unwrap(),
+    )
+    .unwrap();
+    let sepolia_pk = SigningKey::from(sepolia_pk);
+    let evm_signer = PrivateKeySigner::from_signing_key(sepolia_pk);
+
+    let fuel_provider = Provider::connect(env.rpc_url).await.unwrap();
+    let fuel_wallet =
+        WalletUnlocked::new_from_private_key(env.secret_key, Some(fuel_provider.clone()));
+    let block_number = fuel_provider.latest_block_height().await.unwrap();
+    println!("Deployer: {}", Address::from(fuel_wallet.address()));
     println!("Config sync block: {}", block_number);
 
     /////////////////////////////////
@@ -200,7 +234,7 @@ async fn main() {
         config.clone().with_configurables(configurables),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -216,7 +250,7 @@ async fn main() {
     let binary_filepath = "../contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin";
     let contract = Contract::load_from(binary_filepath, config.clone()).unwrap();
     let post_dispatch_mock_id = contract
-        .deploy(&wallet, TxPolicies::default())
+        .deploy(&fuel_wallet, TxPolicies::default())
         .await
         .unwrap();
 
@@ -234,7 +268,7 @@ async fn main() {
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -243,20 +277,93 @@ async fn main() {
         ContractId::from(recipient_id.clone())
     );
 
-    /////////////////////////
-    // Test ISM deployment //
-    /////////////////////////
+    /////////////////////
+    // ISMs deployment //
+    /////////////////////
 
-    let ism_id = Contract::load_from(
+    let test_ism_id = Contract::load_from(
         "../contracts/test/ism-test/out/debug/ism-test.bin",
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
-    println!("ISM deployed with ID: {}", ContractId::from(ism_id.clone()));
+    println!(
+        "Test ISM deployed with ID: {}",
+        ContractId::from(test_ism_id.clone())
+    );
+
+    let aggregation_ism_id = Contract::load_from(
+        "../contracts/ism/aggregation-ism/out/debug/aggregation-ism.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "Aggregation ISM deployed with ID: {}",
+        ContractId::from(aggregation_ism_id.clone())
+    );
+
+    let domain_routing_ism_id = Contract::load_from(
+        "../contracts/ism/routing/domain-routing-ism/out/debug/domain-routing-ism.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "Domain Routing ISM deployed with ID: {}",
+        ContractId::from(domain_routing_ism_id.clone())
+    );
+
+    let fallback_domain_routing_ism_id = Contract::load_from(
+        "../contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "Fallback Domain Routing ISM deployed with ID: {}",
+        ContractId::from(fallback_domain_routing_ism_id.clone())
+    );
+
+    let message_id_multisig_ism_id = Contract::load_from(
+        "../contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "Message ID Multisig ISM deployed with ID: {}",
+        ContractId::from(message_id_multisig_ism_id.clone())
+    );
+
+    let merkle_root_multisig_ism_id = Contract::load_from(
+        "../contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "Merkle Root Multisig ISM deployed with ID: {}",
+        ContractId::from(merkle_root_multisig_ism_id.clone())
+    );
 
     /////////////////////////////////
     // Merkle Tree hook deployment //
@@ -267,7 +374,7 @@ async fn main() {
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -286,7 +393,7 @@ async fn main() {
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -301,7 +408,7 @@ async fn main() {
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -313,7 +420,7 @@ async fn main() {
         config.clone(),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -326,13 +433,111 @@ async fn main() {
     // Instantiate Contracts //
     ///////////////////////////
 
-    let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), wallet.clone());
-    let mailbox = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-    let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), wallet.clone());
-    let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
-    let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
-    let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
-    let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
+    let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), fuel_wallet.clone());
+    let mailbox = Mailbox::new(mailbox_contract_id.clone(), fuel_wallet.clone());
+    let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), fuel_wallet.clone());
+    let igp_hook = IGPHook::new(igp_hook_id.clone(), fuel_wallet.clone());
+    let gas_oracle = GasOracle::new(gas_oracle_id.clone(), fuel_wallet.clone());
+    let igp = GasPaymaster::new(igp_id.clone(), fuel_wallet.clone());
+    let test_recipient = TestRecipient::new(recipient_id.clone(), fuel_wallet.clone());
+    let aggregation_ism = AggregationISM::new(aggregation_ism_id.clone(), fuel_wallet.clone());
+    let domain_routing_ism =
+        DomainRoutingISM::new(domain_routing_ism_id.clone(), fuel_wallet.clone());
+    let fallback_domain_routing_ism =
+        FallbackDomainRoutingISM::new(fallback_domain_routing_ism_id.clone(), fuel_wallet.clone());
+    let message_id_multisig_ism =
+        MessageIdMultisigISM::new(message_id_multisig_ism_id.clone(), fuel_wallet.clone());
+    let merkle_root_multisig_ism =
+        MerkleRootMultisigISM::new(merkle_root_multisig_ism_id.clone(), fuel_wallet.clone());
+
+    let wallet_address = Bits256(Address::from(fuel_wallet.address()).into());
+    let test_ism_address = Bits256(ContractId::from(test_ism_id.clone()).into());
+    let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
+
+    /////////////////////
+    // Initialize ISMs //
+    /////////////////////
+
+    // Aggregation ISM
+    let init_res = aggregation_ism
+        .methods()
+        .initialize(wallet_address)
+        .call()
+        .await;
+
+    let set_res = aggregation_ism.methods().set_threshold(2).call().await;
+    assert!(set_res.is_ok(), "Failed to set threshold.");
+
+    for _ in 0..2 {
+        let set_res = aggregation_ism
+            .methods()
+            .enroll_module(test_ism_id.clone())
+            .call()
+            .await;
+
+        assert!(set_res.is_ok(), "Failed to enroll ISM in Aggregation ISM.");
+    }
+    assert!(init_res.is_ok(), "Failed to initialize Aggregation ISM.");
+
+    // Domain Routing ISM
+    let init_res = domain_routing_ism
+        .methods()
+        .initialize_with_domains(
+            wallet_address,
+            vec![11155111, 84532],
+            vec![test_ism_address.clone(), test_ism_address.clone()],
+        )
+        .call()
+        .await;
+
+    assert!(init_res.is_ok(), "Failed to initialize Domain Routing ISM.");
+
+    // Fallback Domain Routing ISM
+    let init_res = fallback_domain_routing_ism
+        .methods()
+        .initialize(wallet_address, mailbox_address.clone())
+        .call()
+        .await;
+
+    assert!(
+        init_res.is_ok(),
+        "Failed to initialize Fallback Domain Routing ISM."
+    );
+
+    // Message ID Multisig ISM
+    let set_res = message_id_multisig_ism
+        .methods()
+        .set_threshold(1)
+        .call()
+        .await;
+
+    assert!(set_res.is_ok(), "Failed to set threshold.");
+
+    let validator = EvmAddress::from(Bits256(evm_signer.address().into_word().0));
+    let set_res = message_id_multisig_ism
+        .methods()
+        .enroll_validator(validator.clone())
+        .call()
+        .await;
+
+    assert!(set_res.is_ok(), "Failed to enroll validator.");
+
+    // Merkle Root Multisig ISM
+    let set_res = merkle_root_multisig_ism
+        .methods()
+        .set_threshold(1)
+        .call()
+        .await;
+
+    assert!(set_res.is_ok(), "Failed to set threshold.");
+
+    let set_res = merkle_root_multisig_ism
+        .methods()
+        .enroll_validator(validator)
+        .call()
+        .await;
+
+    assert!(set_res.is_ok(), "Failed to enroll validator.");
 
     /////////////////////////
     // Test Recipiet Setup //
@@ -340,7 +545,7 @@ async fn main() {
 
     let set_res = test_recipient
         .methods()
-        .set_ism(ism_id.clone())
+        .set_ism(test_ism_id.clone())
         .call()
         .await;
 
@@ -350,15 +555,13 @@ async fn main() {
     // Initalize Mailbox Contract //
     ////////////////////////////////
 
-    let wallet_address = Bits256(Address::from(wallet.address()).into());
     let post_dispatch_mock_address = Bits256(ContractId::from(post_dispatch_mock.id()).into());
-    let ism_address = Bits256(ContractId::from(ism_id.clone()).into());
 
     let init_res = mailbox
         .methods()
         .initialize(
             wallet_address,
-            ism_address,
+            test_ism_address,
             post_dispatch_mock_address, // Initially set to mocks
             post_dispatch_mock_address,
         )
@@ -371,7 +574,7 @@ async fn main() {
     // Initialize IGP Components //
     ///////////////////////////////
 
-    let owner_identity = Identity::Address(Address::from(wallet.address()));
+    let owner_identity = Identity::Address(Address::from(fuel_wallet.address()));
 
     // Initialize contracts
     let init_res = gas_oracle
@@ -449,7 +652,7 @@ async fn main() {
         config.clone().with_configurables(configurables),
     )
     .unwrap()
-    .deploy(&wallet, TxPolicies::default())
+    .deploy(&fuel_wallet, TxPolicies::default())
     .await
     .unwrap();
 
@@ -478,12 +681,17 @@ async fn main() {
         mailbox_contract_id.into(),
         post_dispatch_mock_id.into(),
         recipient_id.into(),
-        ism_id.into(),
+        test_ism_id.into(),
         merkle_tree_id.into(),
         igp_id.into(),
         igp_hook_id.into(),
         validator_id.into(),
         gas_oracle_id.into(),
+        aggregation_ism_id.into(),
+        domain_routing_ism_id.into(),
+        fallback_domain_routing_ism_id.into(),
+        message_id_multisig_ism_id.into(),
+        merkle_root_multisig_ism_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();
@@ -507,296 +715,4 @@ fn get_deployment_config() -> LoadConfiguration {
     let salt = Salt::new(bytes);
 
     LoadConfiguration::default().with_salt(salt)
-}
-
-/// Deploy new VA contract
-async fn deploy_new_va(wallet: WalletUnlocked, config: LoadConfiguration) {
-    let mailbox_id =
-        ContractId::from_str("0x0b5da5eba44aa5473da4defe65194a83e3dc2b0357a006dfbe57771e20ce4d83")
-            .unwrap();
-    let configurables = ValidatorAnnounceConfigurables::default()
-        .with_MAILBOX_ID(mailbox_id)
-        .unwrap()
-        .with_LOCAL_DOMAIN(1717982312)
-        .unwrap();
-
-    // Validator announce deployment
-
-    let validator_id = Contract::load_from(
-        "../contracts/validator-announce/out/debug/validator-announce.bin",
-        config.clone().with_configurables(configurables),
-    )
-    .unwrap()
-    .deploy(&wallet, TxPolicies::default())
-    .await
-    .unwrap();
-
-    println!(
-        "VA deployed with ID: {}",
-        ContractId::from(validator_id.clone())
-    );
-}
-
-/// Dispatch test
-async fn trigger_dispatch() {
-    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x5d80cd4fdacb3f5099311a197bb0dc6eb311dfd08e2c8ac3d901ff78629e2e28")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
-
-    // Send dispatch
-    let mailbox_id = "0x2d958d653083f13ea4653c6114473ab97b9ffe40efdedca87930512bd761d0ce";
-    let mailbox_contract_id = ContractId::from_str(mailbox_id).unwrap();
-
-    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-    let recipient_address = hex::decode("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9").unwrap();
-    let mut address_array = [0u8; 32];
-    address_array[12..].copy_from_slice(&recipient_address);
-
-    let rnd_number = thread_rng().gen_range(0..10000);
-    let body_text = format!("Hello from Fuel! {}", rnd_number);
-    let body = hex::encode(body_text).into_bytes();
-    let metadata = hex::encode("testestubng").into_bytes();
-    let res = mailbox_instance
-        .methods()
-        .dispatch(
-            11155111,
-            Bits256(address_array),
-            Bytes { 0: body },
-            Bytes { 0: metadata },
-            ContractId::zeroed(),
-        )
-        .determine_missing_contracts(Some(3))
-        .await
-        .unwrap()
-        .call()
-        .await;
-
-    if let Err(e) = res {
-        println!("Dispatch error: {:?}", e);
-    } else {
-        println!("Dispatch result: {:?}", res);
-    }
-}
-
-/// Recipient test
-async fn recipient_test() {
-    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
-
-    // Send dispatch
-    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
-    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
-    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
-    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
-
-    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
-    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-
-    println!(
-        "{:?}",
-        rec_instance.methods().handled().call().await.unwrap().value
-    );
-
-    let contract_id = ContractId::from_str(&recipient_addr).unwrap();
-
-    println!(
-        "Recipient formatted: {:?}",
-        Bech32ContractId::from(contract_id)
-    );
-
-    let res = mailbox_instance
-        .methods()
-        .recipient_ism(Bech32ContractId::from(contract_id))
-        .determine_missing_contracts(Some(3))
-        .await
-        .unwrap()
-        .simulate(Execution::StateReadOnly)
-        .await
-        .unwrap();
-
-    println!("ISM: {:?}", res.value);
-}
-
-/// Est gas test
-async fn est_gas_test() {
-    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
-
-    // Send dispatch
-    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
-    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
-    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
-    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
-
-    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
-    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-
-    let message = HyperlaneMessage::default();
-
-    let process_call = mailbox_instance
-        .methods()
-        .process(Bytes(vec![0]), Bytes(RawHyperlaneMessage::from(&message)));
-    let ism_call = rec_instance.methods().interchain_security_module();
-
-    let est = CallHandler::new_multi_call(wallet.clone())
-        .add_call(process_call)
-        .add_call(ism_call)
-        .estimate_transaction_cost(Some(1.0), Some(1))
-        .await
-        .unwrap();
-
-    println!("Estimate: {:?}", est);
-}
-
-/// Check Delivery
-async fn check_if_delivered() {
-    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(provider.clone()));
-
-    // Send dispatch
-    let recipient_addr = "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
-    let mailbox_addr = "0x8a71b28c1f5d869e5b2fefd0c63e84357af42c173c7025da43830df53a32cb58";
-    let rec_contract_id = ContractId::from_str(recipient_addr).unwrap();
-    let mailbox_contract_id = ContractId::from_str(mailbox_addr).unwrap();
-
-    let rec_instance = TestRecipient::new(rec_contract_id.clone(), wallet.clone());
-    let mailbox_instance = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-
-    let message_id =
-        Bits256::from_hex_str("0x2d04e7c14bbea23e972766763c92503bccb86058ec536c16c27b103e6a47aca8")
-            .unwrap();
-    let delivered_res = mailbox_instance
-        .methods()
-        .delivered(message_id)
-        .call()
-        .await
-        .unwrap();
-
-    println!("Delivered: {:?}", delivered_res.value);
-}
-
-/// Pagination test
-async fn test_pagination() {
-    println!("Pagination test");
-    let provider = Provider::connect("testnet.fuel.network").await.unwrap();
-
-    let blocks_per_req: u32 = 10;
-    let mut range: RangeInclusive<u32> = 13509410..=13509420;
-    // let mut range: RangeInclusive<u32> = 0..=10;
-
-    let mut block_req_cursor = Some("12898721".to_owned());
-    let mut tx_req_cursor = None;
-    let mut rewind = false;
-    let mut i = 0;
-
-    loop {
-        if rewind {
-            println!("Rewinding");
-            range = range.start() - 100..=range.end() - 100;
-        }
-        println!("Range: {:?}", range);
-
-        let range_start = range.start();
-        if *range_start == 0 {
-            block_req_cursor = None;
-            tx_req_cursor = None;
-        } else {
-            let start_block = BlockHeight::from(*range_start);
-            let block_data = provider
-                .block_by_height(start_block)
-                .await
-                .expect("Failed to get block data")
-                .unwrap();
-            let first_transaction = block_data.transactions.first().unwrap();
-
-            let hex_block = hex::encode(range_start.to_be_bytes());
-            let hex_tx = hex::encode(first_transaction.to_vec());
-
-            tx_req_cursor = Some(format!("{}#0x{}", hex_block, hex_tx));
-            block_req_cursor = Some(range_start.to_string());
-        }
-
-        println!("block cursor: {:?}", block_req_cursor);
-        println!("tx cursor: {:?}", tx_req_cursor);
-
-        // pull blocks
-        let result_amount: u32 = range.end() - range.start();
-        println!("requesting : {:?} blocks", result_amount);
-        let req = PaginationRequest {
-            cursor: block_req_cursor,
-            results: result_amount as i32,
-            direction: PageDirection::Forward,
-        };
-
-        let blocks = provider.clone().get_blocks(req).await.unwrap();
-        println!("retrieved : {:?} blocks", blocks.results.len());
-        for block in blocks.results.iter() {
-            println!();
-            println!(
-                "block id {:?}\n tx_amount: {:?}\n transactions: {:?}",
-                block.id, block.header.transactions_count, block.transactions
-            );
-            println!();
-        }
-        let tx_ids = blocks
-            .results
-            .iter()
-            .flat_map(|block| block.transactions.iter())
-            .collect::<Vec<_>>();
-
-        let tx_amount = blocks
-            .results
-            .iter()
-            .fold(0, |acc: usize, block| acc + block.transactions.len())
-            as i32;
-
-        assert_eq!(tx_ids.len(), tx_amount as usize);
-        println!("tx amount in blocks: {:?}", tx_amount);
-
-        let req = PaginationRequest {
-            cursor: tx_req_cursor,
-            results: tx_amount,
-            direction: PageDirection::Forward,
-        };
-        let txs = provider.clone().get_transactions(req).await.unwrap();
-        println!("retrieved : {:?} transacitons", txs.results.len());
-        assert_eq!(tx_ids.len(), txs.results.len());
-
-        for (tx_id, tx) in tx_ids.iter().zip(txs.results.iter()) {
-            let tx_fresh = provider
-                .get_transaction_by_id(tx_id.clone())
-                .await
-                .unwrap()
-                .unwrap();
-
-            println!("------------------------------------");
-            println!("tx: {:?}", tx);
-            println!("tx fresh: {:?}", tx_fresh);
-            println!("------------------------------------");
-        }
-
-        if rewind {
-            break;
-        }
-
-        i += 1;
-        if i == 2 {
-            rewind = true;
-        }
-        range = range.start() + blocks_per_req..=range.end() + blocks_per_req;
-
-        println!("tx cursor for next query: {:?}", txs.cursor);
-        println!("block cursor for next query: {:?}", blocks.cursor);
-    }
 }

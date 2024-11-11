@@ -2,7 +2,7 @@ contract;
 
 use merkle::*;
 use message::{EncodedMessage, Message};
-use std::{bytes::Bytes, context::msg_amount,};
+use std::{block::height, bytes::Bytes, context::msg_amount};
 use interfaces::{mailbox::mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*};
 
 storage {
@@ -37,6 +37,18 @@ impl MerkleTreeHook for Contract {
     #[storage(read)]
     fn count() -> u32 {
         _count()
+    }
+
+    /// Gets the stored count of the MerkleTree library.
+    /// And the current block number.
+    /// Used since we cannot query point in time data.
+    ///
+    /// ### Returns
+    ///
+    /// * [(u32, u32)] - The count and the current block number.
+    #[storage(read)]
+    fn count_and_block() -> (u32, u32) {
+        (_count(), height())
     }
 
     /// Returns the root from the MerkleTree.
@@ -123,7 +135,10 @@ impl PostDispatchHook for Contract {
 
         let index = _count();
         storage.merkle_tree.insert(id);
-        log(MerkleTreeEvent::InsertedIntoTree((id, index)));
+        log(InsertedIntoTreeEvent {
+            message_id: id,
+            index,
+        });
     }
 
     /// Compute the payment required by the postDispatch call
@@ -155,4 +170,3 @@ fn _count() -> u32 {
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
 }
-

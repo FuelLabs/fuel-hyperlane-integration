@@ -143,15 +143,15 @@ async fn test_hook_event_logs() {
 
         // Get logs
         let post_dispatch_events = post_dispatch_call
-            .decode_logs_with_type::<MerkleTreeEvent>()
+            .decode_logs_with_type::<InsertedIntoTreeEvent>()
             .unwrap();
 
         // Ensure the event is correct
         let event = post_dispatch_events.first().unwrap();
-        let MerkleTreeEvent::InsertedIntoTree((id, index)) = event;
+        let InsertedIntoTreeEvent { message_id, index } = event;
 
-        // Ensure the id and index are correct
-        assert_eq!(id, &parsed_id);
+        // Ensure the message_id and index are correct
+        assert_eq!(message_id, &parsed_id);
         assert_eq!(index, &i);
 
         let count = hook.methods().count().call().await.unwrap().value;

@@ -1,0 +1,19 @@
+# This is only used to deploy Multisig ISM contracts, since the CLI does not have the ability to deploy them yet.
+---
+basesepolia:
+  type: native
+  # token: "0x123" # Collateral/vault address. Required for collateral types
+  interchainSecurityModule:
+    threshold: 1
+    type: merkleRootMultisigIsm
+    validators:
+      - '0x03f16B5363CdC3A002e3b8c770273AD0EB034CaB'
+  owner: '0x03f16B5363CdC3A002e3b8c770273AD0EB034CaB' # Optional owner address for synthetic token
+  mailbox: '0x6966b0E55883d49BFB24539356a2f8A673E02039' # mailbox address route
+  # interchainGasPaymaster: "0x123" # Optional interchainGasPaymaster address
+  isNft: false # If the token is an NFT (ERC721), set to true
+  # You can optionally set the token metadata
+  name: 'NativeTokenRoute'
+  symbol: 'NTR'
+  totalSupply: 10000000
+  decimals: 18
