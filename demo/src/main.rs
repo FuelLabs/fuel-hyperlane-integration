@@ -202,35 +202,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // ⬇️ TODO move to clean case, actually check if we send/claim the right amount ⬇️ //
-    ////////////////////////////////////////////////////////////////////////////////////
-
-    // let gas_payment_quote = contracts.fuel_quote_dispatch().await;
-    // let wallet_balance_before = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
-    // let wallet_balance_after = get_native_balance(&fuel_provider, fuel_wallet.address()).await;
-
-    // // Wallet balance after should be more than gas_payment_quote
-    // if wallet_balance_before - wallet_balance_after < gas_payment_quote {
-    //     panic!("Wallet balance difference is less than gas payment quote");
-    // }
-
-    // let sepolia_ws_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
-    // let sepolia_provider = ProviderBuilder::new().on_builtin(&sepolia_ws_url).await?;
-
-    // let mailbox_address = address!("c2E0b1526E677EA0a856Ec6F50E708502F7fefa9");
-    // let filter = Filter::new()
-    //     .address(mailbox_address)
-    //     .event("ReceivedMessage(uint32,bytes32,uint256,string)")
-    //     .from_block(BlockNumberOrTag::Latest);
-
-    // let sub = sepolia_provider.subscribe_logs(&filter).await?;
-    // let mut stream = sub.into_stream();
-
-    // while let Some(log) = stream.next().await {
-    //     println!("Mailbox logs: {log:?}");
-    // }
-
-    // Ok(())
 }
