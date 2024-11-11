@@ -148,14 +148,22 @@ pub async fn get_bridged_balance(provider: &Provider, asset_id: AssetId) -> u64 
         .unwrap()
 }
 
-// pub async fn get_contract_balance(provider: &Provider, contract_id: ContractId) -> u64 {
-//     let asset = get_native_asset();
+pub async fn get_native_balance_of_wallet(provider: &Provider, wallet: &WalletUnlocked) -> u64 {
+    let asset = get_native_asset();
+    provider
+        .get_asset_balance(&wallet.address().into(), asset)
+        .await
+        .unwrap()
+}
 
-//     provider
-//         .get_contract_asset_balance(&Bech32ContractId::from(contract_id), asset)
-//         .await
-//         .unwrap()
-// }
+pub async fn get_contract_balance(provider: &Provider, contract_id: ContractId) -> u64 {
+    let asset = get_native_asset();
+
+    provider
+        .get_contract_asset_balance(&Bech32ContractId::from(contract_id), asset)
+        .await
+        .unwrap()
+}
 
 pub async fn send_token_to_contract(from: WalletUnlocked, to: &Bech32ContractId, amount: u64) {
     let _ = from

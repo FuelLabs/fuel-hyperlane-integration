@@ -280,5 +280,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     contracts.fuel_transfer_remote_collateral(amount).await;
     contracts.monitor_sepolio_for_asset_delivery(false).await;
 
+    ///////////////////////////////////////////////
+    // Case 9: Claim IGP payment from Fuel //
+    ///////////////////////////////////////////////
+
+    println!("Case: Claiming gas payment from Fuel IGP");
+
+    // let initial_balance = get_native_balance_of_wallet(&fuel_provider, &fuel_wallet).await;
+    // println!("Initial wallet balance: {}", initial_balance);
+
+    let igp_balance_first =
+        get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
+    println!("IGP balance before message dispatch: {}", igp_balance_first);
+
+    let gas_payment_quote = contracts.fuel_quote_dispatch().await;
+    println!("Gas payment quote: {}", gas_payment_quote);
+
+    contracts
+        .fuel_send_dispatch(DispatchType::WithIGPHook)
+        .await;
+    contracts.monitor_sepolia_for_delivery().await;
+
+    let igp_balance =
+        get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
+    println!("IGP balance after message dispatch: {}", igp_balance);
+
+    contracts.claim_gas_payment().await;
+
+    let igp_balance_after =
+        get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
+    println!("IGP balance after beneficiary claim: {}", igp_balance_after);
+
     Ok(())
 }

@@ -3,7 +3,7 @@ use alloy::signers::{
     local::PrivateKeySigner,
 };
 use core::panic;
-use fuels::types::Identity;
+use fuels::types::{EvmAddress, Identity};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::fs::{create_dir_all, File};
@@ -14,7 +14,6 @@ use std::{env, path::Path};
 use fuels::{
     crypto::SecretKey,
     prelude::*,
-    types::{Bits256, ContractId, Salt},
     types::{Bits256, ContractId, Salt},
 };
 
@@ -529,7 +528,7 @@ async fn main() {
         .initialize_with_domains(
             wallet_address,
             vec![11155111, 84532],
-            vec![test_ism_address.clone(), test_ism_address.clone()],
+            vec![test_ism_address, test_ism_address],
         )
         .call()
         .await;
@@ -539,7 +538,7 @@ async fn main() {
     // Fallback Domain Routing ISM
     let init_res = fallback_domain_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address.clone())
+        .initialize(wallet_address, mailbox_address)
         .call()
         .await;
 
@@ -560,7 +559,7 @@ async fn main() {
     let validator = EvmAddress::from(Bits256(evm_signer.address().into_word().0));
     let set_res = message_id_multisig_ism
         .methods()
-        .enroll_validator(validator.clone())
+        .enroll_validator(validator)
         .call()
         .await;
 
@@ -637,13 +636,7 @@ async fn main() {
 
     let init_res = igp
         .methods()
-        .initialize(
-            wallet_address,
-            wallet_address,
-            15000000000 * 850000000, // added * 850000000 for requiring less fuel test token
-            18,
-            5000,
-        )
+        .initialize(wallet_address, wallet_address, 15_000_000_000_000, 9, 5000)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
@@ -749,8 +742,8 @@ async fn main() {
             post_dispatch_mock_address,
             "Ether".to_string(),
             "ETH".to_string(),
-            18,
-            10_000_000,
+            9,
+            10_000_000_000_000,
             Some(
                 AssetId::from_str(
                     "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
@@ -772,7 +765,7 @@ async fn main() {
             post_dispatch_mock_address,
             "FuelSepoliaUSDC".to_string(),
             "FST".to_string(),
-            18,
+            6,
             10_000_000,
             None,
         )

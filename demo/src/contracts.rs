@@ -310,7 +310,7 @@ impl Contracts {
         dispatch_type: DispatchType,
     ) -> (FixedBytes<32>, FixedBytes<32>) {
         let recipient_address = ContractId::from(self.fuel.test_recipient.contract_id()).to_vec();
-        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(&recipient_address.as_slice());
+        let parsed_address: FixedBytes<32> = FixedBytes::from_slice(recipient_address.as_slice());
         let rnd_number = thread_rng().gen_range(0..10000);
         let body_text = format!("Hello from sepolia! {}", rnd_number);
         let body = AlloyBytes::copy_from_slice(body_text.as_bytes());
@@ -513,8 +513,30 @@ impl Contracts {
             .map_err(|e| println!("Fuel quote gas payment error: {:?}", e))
             .unwrap();
 
-    //     gas_payment_quote.value
-    // }
+        gas_payment_quote.value
+    }
+
+    pub async fn claim_gas_payment(&self) {
+        let res = self
+            .fuel
+            .igp
+            .methods()
+            .claim()
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .call()
+            .await;
+        match res {
+            Ok(res) => {
+                println!(
+                  "Claim gas payment from Fuel successful: https://app-testnet.fuel.network/tx/0x{:?}",
+                  res.tx_id.unwrap()
+              );
+            }
+            Err(e) => {
+                println!("Claim gas payment from Fuel error: {:?}", e);
+            }
+        }
+    }
 
     pub async fn fuel_get_minted_asset_id(&self) -> AssetId {
         self.fuel
@@ -833,10 +855,9 @@ impl Contracts {
         let mut stream = sub.into_stream();
 
         let mut tx_id = FixedBytes::default();
-        while let Some(log) = stream.next().await {
+        if let Some(log) = stream.next().await {
             tx_id = log.transaction_hash.unwrap();
             println!("Sepolia Mailbox received message at: {:?}\n", tx_id);
-            break;
         }
         tx_id
     }
