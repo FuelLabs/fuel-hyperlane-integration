@@ -19,6 +19,16 @@ abi MerkleTreeHook {
     #[storage(read)]
     fn count() -> u32;
 
+    /// Gets the stored count of the MerkleTree library.
+    /// And the current block number.
+    /// Used since we cannot query point in time data.
+    ///
+    /// ### Returns
+    ///
+    /// * [(u32, u32)] - The count and the current block number.
+    #[storage(read)]
+    fn count_and_block() -> (u32, u32);
+
     /// Gets the root of the MerkleTree library.
     ///
     /// ### Returns
@@ -40,9 +50,10 @@ abi MerkleTreeHook {
     fn tree() -> MerkleTree;
 }
 
-/// Events that can occur while interacting with the MerkleTree contract.
-pub enum MerkleTreeEvent {
-    InsertedIntoTree: (b256, u32),
+/// Merkle tree insertion event
+pub struct InsertedIntoTreeEvent {
+    pub message_id: b256,
+    pub index: u32,
 }
 
 /// Errors that can occur while interacting with the MerkleTree contract.

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+alloy = { version = "0.5.4", features = ["full", "signers", "k256"] }
 fuels = { workspace = true }
 tokio = { workspace = true }
 hex = { workspace = true }
@@ -11,3 +12,4 @@ rand = "0.8.4"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_yaml = "0.9"
 hyperlane-core = { workspace = true }
+dotenv = "0.15.0"

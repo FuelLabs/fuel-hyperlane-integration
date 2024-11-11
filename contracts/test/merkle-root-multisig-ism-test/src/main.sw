@@ -9,18 +9,19 @@ use std::{
         evm_address::EvmAddress,
     },
 };
-use std::array_conversions::b256::*;
 use interfaces::isms::{ism::*, multisig::multisig_ism::*};
 use checkpoint::{digest, domain_hash};
-use message_id_multisig_ism_metadata::MessageIdMultisigIsmMetadata;
+use merkle_root_multisig_ism_metadata::MerkleRootMultisigIsmMetadata;
 use message::EncodedMessage;
 use std_lib_extended::bytes::*;
+use merkle::*;
 
-/// Error types for the Message ID Multisig ISM.
-enum MessageIdMultisigError {
+/// Error types for the Merkle Root Multisig ISM.
+enum MerkleRootMultisigError {
     NoMultisigThreshold: (),
     NoValidatorMatch: (),
     FailedToRecoverSigner: (),
+    InvalidMerkleIndexMetadata: (),
     FailedToRecoverSignature: Bytes,
 }
 
@@ -39,11 +40,10 @@ impl InterchainSecurityModule for Contract {
     ///
     /// * [ModuleType] - The type of security model.
     fn module_type() -> ModuleType {
-        ModuleType::MESSAGE_ID_MULTISIG
+        ModuleType::MERKLE_ROOT_MULTISIG
     }
 
     /// Verifies the message using the metadata.
-    /// Assumes the signatures are in the same order as the validators.
     ///
     /// ### Arguments
     ///
@@ -64,18 +64,19 @@ impl InterchainSecurityModule for Contract {
     fn verify(metadata: Bytes, message: Bytes) -> bool {
         let digest = _digest(metadata, message);
         let (validators, threshold) = _validators_and_threshold(message);
-        require(threshold > 0, MessageIdMultisigError::NoMultisigThreshold);
+        require(threshold > 0, MerkleRootMultisigError::NoMultisigThreshold);
 
         let validator_count = validators.len();
-        let mut validator_index: u8 = 0;
+        let mut validator_index = 0;
         let mut loop_index: u8 = 0;
+        // Assumes that signatures are ordered by validator
         while loop_index < threshold {
             let signature_recover_result = _signature_at(metadata, u32::from(loop_index));
             let sig_transformed = signature_recover_result.to_compact_signature();
             require(
                 sig_transformed
                     .is_some(),
-                MessageIdMultisigError::FailedToRecoverSignature(signature_recover_result),
+                MerkleRootMultisigError::FailedToRecoverSignature(signature_recover_result),
             );
 
             let signature = sig_transformed.unwrap();
@@ -83,26 +84,60 @@ impl InterchainSecurityModule for Contract {
             require(
                 address_recover_result
                     .is_ok(),
-                MessageIdMultisigError::FailedToRecoverSigner,
+                MerkleRootMultisigError::FailedToRecoverSigner,
             );
 
             let signer = address_recover_result.unwrap();
 
             // Loop through remaining validators until we find a match
-            while u64::from(validator_index) < validator_count && signer != storage.validators.get(u64::from(validator_index)).unwrap().read() {
+            let mut validator_match = false;
+            while !validator_match {
+                if validator_index >= validator_count {
+                    break;
+                }
+                validator_match = signer == validators.get(validator_index).unwrap();
                 validator_index += 1;
             }
 
             // Fail if we never found a match
             require(
-                u64::from(validator_index) < validator_count,
-                MessageIdMultisigError::NoValidatorMatch,
+                validator_index < validator_count,
+                MerkleRootMultisigError::NoValidatorMatch,
             );
-
             validator_index += 1;
             loop_index += 1;
         }
         true
+    }
+}
+
+abi TestISM {
+    #[storage(read)]
+    fn get_verify_recovery(metadata: Bytes, message: Bytes) -> EvmAddress;
+}
+
+impl TestISM for Contract {
+    #[storage(read)]
+    fn get_verify_recovery(metadata: Bytes, message: Bytes) -> EvmAddress {
+        let digest = _digest(metadata, message);
+
+        let signature_recover_result = _signature_at(metadata, 0);
+        let sig_transformed = signature_recover_result.to_compact_signature();
+        require(
+            sig_transformed
+                .is_some(),
+            MerkleRootMultisigError::FailedToRecoverSignature(signature_recover_result),
+        );
+
+        let signature = sig_transformed.unwrap();
+        let address_recover_result = ec_recover_evm_address(signature, b256::from(digest));
+        require(
+            address_recover_result
+                .is_ok(),
+            MerkleRootMultisigError::FailedToRecoverSigner,
+        );
+
+        address_recover_result.unwrap()
     }
 }
 
@@ -132,6 +167,11 @@ impl MultisigIsm for Contract {
     /// ### Returns
     ///
     /// * [Bytes] - The digest to be signed by validators.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the message index and signed index do not match.
+    /// * If data passed in is invalid.
     fn digest(metadata: Bytes, message: Bytes) -> Bytes {
         _digest(metadata, message)
     }
@@ -176,19 +216,34 @@ impl MultisigIsmFunctions for Contract {
 // --- Internal Functions ---
 
 fn _digest(metadata: Bytes, message: Bytes) -> Bytes {
-    let metadata = MessageIdMultisigIsmMetadata::new(metadata);
+    let metadata = MerkleRootMultisigIsmMetadata::new(metadata);
     let message = EncodedMessage::from_bytes(message);
+
+    require(
+        metadata
+            .message_index() == metadata
+            .signed_index(),
+        MerkleRootMultisigError::InvalidMerkleIndexMetadata,
+    );
+
+    let signed_root = StorageMerkleTree::branch_root(
+        message
+            .id(),
+        metadata
+            .proof(),
+        u64::from(metadata.message_index()),
+    );
+
     digest(
         message
             .origin(),
         metadata
             .origin_merkle_tree_hook(),
+        Bytes::from(signed_root),
         metadata
-            .root(),
+            .signed_index(),
         metadata
-            .index(),
-        message
-            .id(),
+            .signed_message_id(),
     )
 }
 
@@ -200,5 +255,5 @@ fn _validators_and_threshold(_message: Bytes) -> (Vec<EvmAddress>, u8) {
 }
 
 fn _signature_at(metadata: Bytes, index: u32) -> Bytes {
-    MessageIdMultisigIsmMetadata::new(metadata).signature_at(index)
+    MerkleRootMultisigIsmMetadata::new(metadata).signature_at(index)
 }

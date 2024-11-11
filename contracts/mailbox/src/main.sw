@@ -294,12 +294,12 @@ impl Mailbox for Contract {
             .post_dispatch {
                 asset_id: b256::from(base),
                 coins: required_value,
-            }(metadata, message.bytes);
+            }(metadata, message.message_clean().bytes);
         hook
             .post_dispatch {
                 asset_id: b256::from(base),
                 coins: msg_amount() - required_value,
-            }(metadata, message.bytes);
+            }(metadata, message.message_clean().bytes);
 
         id
     }
@@ -390,7 +390,7 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(
             ism
-                .verify(metadata, message.bytes),
+                .verify(metadata, message.message_clean().bytes),
             MailboxError::MessageVerificationFailed,
         );
 
