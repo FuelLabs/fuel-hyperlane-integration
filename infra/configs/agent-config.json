@@ -34,15 +34,19 @@
           "http": "https://testnet.fuel.network/v1/graphql"
         }
       ],
-      "interchainGasPaymaster": "0xe2dea3a8e8eb6dd1b380d540c33b98ad640b8fa8093920a1e83a4a765a935e0e",
-      "interchainSecurityModule": "0x762fee4f1c7af315595af715521439295b77f63780d4ccfe63b1c74ecd1d614c",
-      "mailbox": "0x238f1e43dc373e17b83048d9b5155e6842b1c9165ee563f1d8c0f210eb2867e8",
-      "merkleTreeHook": "0x0587597548b53a33bf9272273799234a3cc5faaa1c977904078cddce8cfcd720",
-      "validatorAnnounce": "0xe234c4858be967284dae17589f5369864f41231ab4c02064c5e83688f59256bd",
-      "storageGasOracle": "0xd749539c1b4540c7a3362fb32b712d7e9ee63d13db7a11555d59dcd16ed2561c",
-      "interchainGasPaymasterHook": "0x6f20262a2dfaff456bbdd728995068f249d1a20a2d930db01d7a26790745c5a1",
+      "mailbox": "0xbf7b8365bcb3773cd414b24cd10b0d0b57fadb95977a4c95bb22fe931571695d",
+      "postDispatch": "0x4f058bbf568edaea4b228ae2a08d584fb1ff368ca77d3fc0cd349721bd478578",
+      "recipient": "0xfbe3ba62b00d8238c2493cee660a04d9f651328a74f15da2e100e818151be764",
+      "interchainSecurityModule": "0x0ed9f50f8ddd96e253366b54460e92137b8057bc4a8dd1357e8350725996d5b5",
+      "merkleTreeHook": "0x36abb36cf0c42ff394663b775d3a26086b85ad4d2a86b14286a6ff8f03a8b88d",
+      "gasOracle": "0xd70e5beb9b3cd13b5cde9ca2d8be2be6fc372c7f5f1d4f68aa86f7c0708df311",
+      "interchainGasPaymaster": "0x9b8fa2bea021049da099d953d1f25d136667dca8451a80cc8249a67d4124828e",
+      "igpHook": "0xd8e3bbb0584bdc31cc8ffb8392c7f8d4e348ab58944bc9e9ec2f226909092e1e",
+      "warpRouteNative": "0x9db0cbc3e0c5cd01f2f8868d461010dbe211e3c5e4b941c7088936c8bc39d460",
+      "warpRouteBridged": "0x4fbbe89e5ad90c2e172dc3ef697db3633e3d1a04f8f180da6479fcb473d12d5f",
+      "validatorAnnounce": "0x85721453248bb7e990f057699f5033e348182758153b78b062662db383a52dfa",
       "index": {
-        "from": 15065376,
+        "from": 14706541,
         "chunk": 10
       }
     },
@@ -73,8 +77,7 @@
       "fallbackRoutingHook": "0x17Dc724B7a2F09141C13b8AC33B396073785c2BC",
       "gnosisSafeTransactionServiceUrl": "https://safe-transaction-sepolia.safe.global",
       "index": {
-        "from": 4517401,
-        "chunk": 5000
+        "from": 7006566
       },
       "interchainAccountIsm": "0x83a3068B719F764d413625dA77468ED74789ae02",
       "interchainAccountRouter": "0x8e131c8aE5BF1Ed38D05a00892b6001a7d37739d",
@@ -95,11 +98,6 @@
       "protocolFee": "0x13AC3349Cb159fE86A22cf42DdA803D9f7309DB5",
       "proxyAdmin": "0x97Bbc6bBaFa5Ce3b2FA966c121Af63bD09e940f8",
       "rpcUrls": [
-        {
-          "http": "https://11155111.rpc.thirdweb.com"
-        }
-      ],
-      "placeHolder": [
         {
           "http": "https://11155111.rpc.thirdweb.com"
         }

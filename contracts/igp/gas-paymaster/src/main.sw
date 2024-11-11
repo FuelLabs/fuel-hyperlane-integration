@@ -294,10 +294,31 @@ impl OracleContractWrapper for Contract {
 }
 
 impl IGPWithOverhead for Contract {
+  
+    /// Gets the gas overhead for a given domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas overhead for.
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The gas overhead.
     #[storage(read)]
     fn gas_overhead(domain: u32) -> Option<u64> {
         storage.gas_overheads.get(domain).try_read()
     }
+
+    /// Sets the gas overhead for a given domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to set the gas overhead for.
+    /// * `gas_overhead`: [u64] - The gas overhead.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_gas_overhead(domain: u32, gas_overhead: u64) {
         only_owner();
@@ -374,4 +395,39 @@ fn convert_decimals(num: u256, from_decimals: u8, to_decimals: u8) -> u256 {
         require(multiplier != 0, "Multiplier cannot be zero");
         num * multiplier
     }
+}
+
+#[test()]
+fn test_convert_decimals() {
+    let num = u256::from((0, 0, 0, 1000000));
+    let from_decimals = 9;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == num);
+
+    let num = u256::from((0, 0, 0, 1000000000000000));
+    let from_decimals = 18;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == u256::from((0, 0, 0, 1000000)));
+
+    let num = u256::from((0, 0, 0, 1000000));
+    let from_decimals = 4;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == u256::from((0, 0, 0, 100000000000)));
+
+    // Some loss of precision
+    let num = u256::from((0, 0, 0, 9999999));
+    let from_decimals = 9;
+    let to_decimals = 4;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == u256::from((0, 0, 0, 99)));
+
+    // Total loss of precision
+    let num = u256::from((0, 0, 0, 999));
+    let from_decimals = 9;
+    let to_decimals = 4;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == u256::from((0, 0, 0, 0)));
 }

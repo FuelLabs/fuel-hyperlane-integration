@@ -1,6 +1,6 @@
 use fuels::{
-    accounts::provider::Provider,
-    types::{bech32::Bech32Address, AssetId, ContractId},
+    accounts::{provider::Provider, wallet::WalletUnlocked, Account},
+    types::{bech32::Bech32ContractId, transaction::TxPolicies, Address, AssetId, ContractId},
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -8,6 +8,10 @@ use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::path::Path;
 use std::{fs, str::FromStr};
+
+pub const TEST_RECIPIENT_IN_FUEL: &str =
+    "45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b";
+pub const TEST_RECIPIENT_IN_SEPOLIA: &str = "c2E0b1526E677EA0a856Ec6F50E708502F7fefa9";
 
 pub fn get_native_asset() -> AssetId {
     AssetId::from_str("0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07").unwrap()
@@ -126,9 +130,37 @@ pub fn stip_address_prefix(value: Value) -> ContractId {
     ContractId::from_str(value_str_stripped).unwrap()
 }
 
-pub async fn get_native_balance(provider: &Provider, address: &Bech32Address) -> u64 {
+pub async fn get_native_balance(provider: &Provider) -> u64 {
     let asset = get_native_asset();
-    provider.get_asset_balance(address, asset).await.unwrap()
+    let address = Address::from_str(TEST_RECIPIENT_IN_FUEL).unwrap();
+    provider
+        .get_asset_balance(&address.into(), asset)
+        .await
+        .unwrap()
+}
+
+pub async fn get_bridged_balance(provider: &Provider, asset_id: AssetId) -> u64 {
+    let address = Address::from_str(TEST_RECIPIENT_IN_FUEL).unwrap();
+
+    provider
+        .get_asset_balance(&address.into(), asset_id)
+        .await
+        .unwrap()
+}
+
+pub async fn get_contract_balance(provider: &Provider, contract_id: ContractId) -> u64 {
+    let asset = get_native_asset();
+
+    provider
+        .get_contract_asset_balance(&Bech32ContractId::from(contract_id), asset)
+        .await
+        .unwrap()
+}
+
+pub async fn send_token_to_contract(from: WalletUnlocked, to: &Bech32ContractId, amount: u64) {
+    let _ = from
+        .force_transfer_to_contract(to, amount, get_native_asset(), TxPolicies::default())
+        .await;
 }
 
 pub fn write_demo_run_to_file(entires: Vec<String>) {

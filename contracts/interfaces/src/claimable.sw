@@ -23,7 +23,6 @@ abi Claimable {
     fn claim();
 }
 
-
 //  ----------------- Events -----------------
 
 /// Logged when the benficiary is set.

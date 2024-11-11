@@ -1,6 +1,8 @@
 mod contracts;
 mod helper;
 
+use std::{env, str::FromStr};
+
 use crate::contracts::load_contracts;
 use alloy::{
     network::EthereumWallet,
@@ -15,14 +17,7 @@ use fuels::{
     accounts::{provider::Provider as FuelProvider, wallet::WalletUnlocked},
     crypto::SecretKey as FuelPrivateKey,
 };
-use std::env;
-use std::str::FromStr;
-
-// Demo cases:
-// 1. Bidirectional message sending - done
-// 2. Bidirectional token sending
-// 3. Receive IGP payments
-// 4. All ISMS working
+use helper::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -49,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sepolia_block_number = sepolia_provider.get_block_number().await.unwrap();
     println!("Latest fuel block number: {}", fuel_block_number);
     println!("Latest sepolia block number: {}", sepolia_block_number);
+    println!("-----------------------------------------------------------");
 
     let secret_key = FuelPrivateKey::from_str(
         &env::var("FUEL_PRIVATE_KEY").expect("FUEL_PRIVATE_KEY must be set"),
@@ -200,6 +196,88 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         contracts.monitor_sepolia_for_delivery().await;
     }
+
+    ////////////////////////////////////////////////////
+    // Case 5: Collateral Sepolia (USDC) -> Fuel (ETH)//
+    ////////////////////////////////////////////////////
+
+    println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
+
+    let amount = 6;
+    println!("transfer amount is {}", amount);
+
+    send_token_to_contract(
+        fuel_wallet.clone(),
+        contracts.fuel.warp_route_collateral.contract_id(),
+        amount,
+    )
+    .await;
+
+    let initial_balance = get_native_balance(&fuel_provider).await;
+    println!("Initial recipient balance: {}", initial_balance);
+
+    let message_id = contracts.sepolia_transfer_remote_collateral(amount).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
+
+    let final_balance = get_native_balance(&fuel_provider).await;
+    println!("Final recipient balance: {}", final_balance);
+    println!("Difference: {}", final_balance - initial_balance);
+    println!(
+        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b/transactions",
+    );
+    println!("-----------------------------------------------------------");
+
+    ////////////////////////////////////////////////////
+    // Case 6: Bridged Fuel (FST) to Sepolia (FST) //
+    ////////////////////////////////////////////////////
+
+    let amount = 300_000;
+    println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
+    println!("-----------------------------------------------------------");
+    println!("transfer amount is {}", amount);
+
+    contracts
+        .fuel_transfer_remote_bridged(fuel_wallet.clone(), amount)
+        .await;
+
+    contracts.monitor_sepolio_for_asset_delivery(true).await;
+    println!("-----------------------------------------------------------");
+
+    ////////////////////////////////////////////////////
+    // Case 7: Bridged Sepolia (FST) to Fuel (FST) //
+    ////////////////////////////////////////////////////
+
+    println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
+
+    let amount = 470;
+    println!("transfer amount is {}", amount);
+    let asset_id = contracts.fuel_get_minted_asset_id().await;
+
+    let balance_before: u64 = get_bridged_balance(&fuel_provider, asset_id).await;
+    println!("Balance before: {}", balance_before);
+
+    let message_id = contracts.sepolia_transfer_remote_bridged(amount).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
+
+    let balance_after = get_bridged_balance(&fuel_provider, asset_id).await;
+    println!("Balance after: {}", balance_after);
+    println!(
+        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x{}/transactions",
+        TEST_RECIPIENT_IN_FUEL
+    );
+    println!("-----------------------------------------------------------");
+
+    ////////////////////////////////////////////////////
+    // Case 8: Collateral Fuel (ETH) to Sepolia (USDC)//
+    ////////////////////////////////////////////////////
+
+    println!("Case: Transferring Fuel (ETH) to Sepolia (USDC)");
+
+    let amount = 1;
+    println!("transfer amount is {}", amount);
+
+    contracts.fuel_transfer_remote_collateral(amount).await;
+    contracts.monitor_sepolio_for_asset_delivery(false).await;
 
     Ok(())
 }

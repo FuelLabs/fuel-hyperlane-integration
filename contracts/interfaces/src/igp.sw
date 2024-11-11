@@ -6,27 +6,26 @@ use std::u128::U128;
 const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
 
 abi IGP {
-
-/// Initializes the contract with the given parameters.
-///
-/// ### Arguments
-///
-/// * `owner`: [b256] - The address of the owner of the contract.
-/// * `beneficiary`: [b256] - The address of the beneficiary to receive gas payments.
-/// * `token_exchange_rate`: [u64] - The exchange rate of the token.
-/// * `base_asset_decimal`: [u8] - The number of decimals for the base asset.
-/// * `default_gas_amount`: [u64] - The default gas amount for the current domain.
-///
-/// ### Reverts
-///
-/// * If the contract is already initialized.
-  #[storage(write)]
+    /// Initializes the contract with the given parameters.
+    ///
+    /// ### Arguments
+    ///
+    /// * `owner`: [b256] - The address of the owner of the contract.
+    /// * `beneficiary`: [b256] - The address of the beneficiary to receive gas payments.
+    /// * `token_exchange_rate`: [u64] - The exchange rate of the token.
+    /// * `base_asset_decimal`: [u8] - The number of decimals for the base asset.
+    /// * `default_gas_amount`: [u64] - The default gas amount for the current domain.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is already initialized.
+    #[storage(write)]
     fn initialize(
         owner: b256,
         beneficiary: b256,
         token_exchange_rate: u64,
-        base_asset_decimal:u8,
-        default_gas_amount: u64
+        base_asset_decimal: u8,
+        default_gas_amount: u64,
     );
     /// Qupote payment total payment for a given gas amount.
     ///
@@ -87,8 +86,6 @@ abi IGP {
     #[storage(read)]
     fn get_current_domain_gas() -> u64;
 }
-
-
 
 /// Functions specific to on chain fee quoting.
 abi OracleContractWrapper {
