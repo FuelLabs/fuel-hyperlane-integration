@@ -34,19 +34,19 @@
           "http": "https://testnet.fuel.network/v1/graphql"
         }
       ],
-      "mailbox": "0xbf7b8365bcb3773cd414b24cd10b0d0b57fadb95977a4c95bb22fe931571695d",
-      "postDispatch": "0x4f058bbf568edaea4b228ae2a08d584fb1ff368ca77d3fc0cd349721bd478578",
-      "recipient": "0xfbe3ba62b00d8238c2493cee660a04d9f651328a74f15da2e100e818151be764",
-      "interchainSecurityModule": "0x0ed9f50f8ddd96e253366b54460e92137b8057bc4a8dd1357e8350725996d5b5",
-      "merkleTreeHook": "0x36abb36cf0c42ff394663b775d3a26086b85ad4d2a86b14286a6ff8f03a8b88d",
-      "gasOracle": "0xd70e5beb9b3cd13b5cde9ca2d8be2be6fc372c7f5f1d4f68aa86f7c0708df311",
-      "interchainGasPaymaster": "0x9b8fa2bea021049da099d953d1f25d136667dca8451a80cc8249a67d4124828e",
-      "igpHook": "0xd8e3bbb0584bdc31cc8ffb8392c7f8d4e348ab58944bc9e9ec2f226909092e1e",
-      "warpRouteNative": "0x9db0cbc3e0c5cd01f2f8868d461010dbe211e3c5e4b941c7088936c8bc39d460",
-      "warpRouteBridged": "0x4fbbe89e5ad90c2e172dc3ef697db3633e3d1a04f8f180da6479fcb473d12d5f",
-      "validatorAnnounce": "0x85721453248bb7e990f057699f5033e348182758153b78b062662db383a52dfa",
+      "mailbox": "0x255902ce0ab3db3911bb49746b0b529f5d428d97de7845d54b34d431fa600548",
+      "postDispatch": "0x27874dae8e470adbe1dd3a0481edd555e31cd0e6e164f3ac5d31de2cc380af26",
+      "recipient": "0x827e40af65113cbe522aaff82ca0c1ab732b2ec65c66788608946d5fc9bb809d",
+      "interchainSecurityModule": "0x8583774d59ae65c6c05d43932f0052d06ab483c7444087dbd9de274af67f28da",
+      "merkleTreeHook": "0xb943bfa07123e8914a4fc9b4b270d4f0792b6e52535b0d7bd53fa61b3754d7d3",
+      "storageGasOracle": "0x6c58b52b51747dd0a911929a5111b2d931741ea448cd6a048d21266ba33c9b34",
+      "interchainGasPaymaster": "0xd6d4cbb912a6e18a6d27d2efa7a5e0e405e4f4fbfcbd7460c341398c6d596217",
+      "interchainGasPaymasterHook": "0x244ce5e378eb2bd9a5498c3ac2f2a67325fc3abf97687afea8e8609d2d52db58",
+      "warpRouteNative": "0x3662a6e14fd7ab8474201e4aa89e5ddfc641c32d3232fda016dea3bd7ecd1b40",
+      "warpRouteBridged": "0x7f4fdab9be073c4273a9b60654e7ea0b8d4b5ba7883ab402eacf2f85997b705b",
+      "validatorAnnounce": "0x0a72da32ad3b39d5b94c77cdeb9df007dc8bf4cc919828562195c9b3f7220916",
       "index": {
-        "from": 14706541,
+        "from": 15383991,
         "chunk": 10
       }
     },

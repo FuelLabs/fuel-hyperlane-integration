@@ -828,7 +828,7 @@ impl Contracts {
                 .await
                 .unwrap();
 
-            println!("Is message delivered: {:?}", delivered_res.value);
+            println!("Is message delivered: {:?} \n", delivered_res.value);
 
             if delivered_res.value {
                 break;
@@ -908,8 +908,6 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
     let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
     let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
-    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["igpHook"]);
-    let gas_oracle = get_contract_id_from_json("fueltestnet", &["gasOracle"]);
     let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
     let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteBridged"]);
     let recipient = get_contract_id_from_json("fueltestnet", &["recipient"]);
@@ -930,7 +928,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
         evm_provider.clone(),
     );
     let sepolia_recipient = SepoliaRecipient::new(
-        address!("fFAEF09B3cd11D9b20d1a19bECca54EEC2884766"),
+        address!("E98DfB92f3114d3DCd888B4D7118E78AE16308ba"),
         evm_provider.clone(),
     );
 

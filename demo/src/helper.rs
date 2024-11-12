@@ -11,7 +11,6 @@ use std::{fs, str::FromStr};
 
 pub const TEST_RECIPIENT_IN_FUEL: &str =
     "45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b";
-pub const TEST_RECIPIENT_IN_SEPOLIA: &str = "c2E0b1526E677EA0a856Ec6F50E708502F7fefa9";
 
 pub fn get_native_asset() -> AssetId {
     AssetId::from_str("0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07").unwrap()
