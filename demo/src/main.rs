@@ -60,6 +60,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ////////////////////
 
     contracts.set_sepolia_ism_to_test_ism().await;
+    contracts.set_fuel_ism_to_test_ism().await;
+    contracts.set_fuel_mailbox_ism_to_test_ism().await;
 
     ///////////////////////////////////////////////
     // Case 1: Send message from Sepolia to Fuel //

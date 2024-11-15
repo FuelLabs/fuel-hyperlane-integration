@@ -456,6 +456,19 @@ impl Contracts {
         );
     }
 
+    pub async fn set_fuel_ism_to_test_ism(&self) {
+        let res = self
+            .fuel
+            .test_recipient
+            .methods()
+            .set_ism(self.fuel.test_ism)
+            .call()
+            .await
+            .unwrap();
+
+        println!("ISM set to Test ISM at: {:?}", res.tx_id.unwrap());
+    }
+
     pub async fn set_sepolia_ism_to_message_id_multisig(&self) {
         let res = self
             .sepolia
