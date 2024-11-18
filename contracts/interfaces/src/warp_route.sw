@@ -123,18 +123,6 @@ abi WarpRoute {
     #[storage(write)]
     fn set_hook(hook: b256);
 
-    /// Checks if a message has been delivered
-    ///
-    /// ### Arguments
-    ///
-    /// * `message_id`: [b256] - The ID of the message
-    ///
-    /// ### Returns
-    ///
-    /// * [bool] - Whether the message has been delivered
-    #[storage(read)]
-    fn is_message_delivered(message_id: b256) -> bool;
-
     /// Gets the total number of coins ever minted for an asset.
     ///
     /// ### Returns

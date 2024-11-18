@@ -87,15 +87,6 @@ abi IGP {
     fn get_current_domain_gas() -> u64;
 }
 
-/// Functions specific to on chain fee quoting.
-abi OracleContractWrapper {
-    #[storage(read, write)]
-    fn set_gas_from_oracle(domain: u32, oracle: b256);
-
-    #[storage(read)]
-    fn get_gas_oracle(domain: u32) -> Option<b256>;
-}
-
 /// Functions required for calculation of overheads
 /// Can be needed for specific domains in the future
 abi IGPWithOverhead {

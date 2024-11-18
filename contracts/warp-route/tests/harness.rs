@@ -31,6 +31,18 @@ mod warp_route {
             name = "TestInterchainSecurityModule",
             abi = "contracts/test/ism-test/out/debug/ism-test-abi.json",
         ),
+        Contract(
+            name = "GasOracle",
+            abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
+        ),
+        Contract(
+            name = "GasPaymaster",
+            abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
+        ),
+        Contract(
+            name = "IGPHook",
+            abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
+        ),
     );
 
     const TEST_NON_OWNER_PRIVATE_KEY: &str =
@@ -39,8 +51,11 @@ mod warp_route {
     const TEST_HOOK_ADDRESS: &str =
         "0x00000000000000000000000000000000000000000000000000000000deadbeef";
 
-    const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
-    const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
+    const REMOTE_ROUTER_ADDRESS: &str =
+        "0x00000000000000000000000000000000000000000000000000000000deadbeef";
+
+    const TEST_LOCAL_DOMAIN: u32 = 1717982312;
+    const TEST_REMOTE_DOMAIN: u32 = 11155111;
     const TEST_RECIPIENT: &str =
         "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
 
@@ -99,7 +114,7 @@ mod warp_route {
             symbol: config.token_symbol,
             decimals: config.decimals,
             total_supply: config.total_supply,
-            asset_id: config.asset_id,
+            asset_id: config.asset_id.unwrap(),
             sub_id: AssetId::zeroed().into(),
         }
     }
@@ -112,7 +127,7 @@ mod warp_route {
         token_symbol: String,
         decimals: u8,
         total_supply: u64,
-        asset_id: AssetId,
+        asset_id: Option<AssetId>,
     }
 
     // deploy the test contracts
@@ -131,13 +146,13 @@ mod warp_route {
                 vec![
                     AssetConfig {
                         id: get_native_asset(),
-                        num_coins: 1,                 /* Single coin (UTXO) */
-                        coin_amount: 100_000_000_000, /* Amount per coin */
+                        num_coins: 1,                         /* Single coin (UTXO) */
+                        coin_amount: 100_000_000_000_000_000, /* Amount per coin */
                     },
                     AssetConfig {
                         id: get_collateral_asset(),
-                        num_coins: 1,                 /* Single coin (UTXO) */
-                        coin_amount: 100_000_000_000, /* Amount per coin */
+                        num_coins: 1,                         /* Single coin (UTXO) */
+                        coin_amount: 100_000_000_000_000_000, /* Amount per coin */
                     },
                 ],
             ),
@@ -197,11 +212,12 @@ mod warp_route {
         let warp_route = WarpRoute::new(warp_route_id.clone(), wallet.clone());
         let mailbox = Mailbox::new(mailbox_id.clone(), wallet.clone());
         let post_dispatch = PostDispatchMock::new(post_dispatch_id.clone(), wallet.clone());
+        let default_ism = TestInterchainSecurityModule::new(default_ism_id.clone(), wallet.clone());
 
         let owner = Bits256(Address::from(wallet.address()).into());
         let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
         let hook_address = Bits256(ContractId::from(post_dispatch.id()).into());
-
+        let default_ism_address = Bits256(ContractId::from(default_ism.id()).into());
         let warp_init_res = warp_route
             .methods()
             .initialize(
@@ -213,7 +229,7 @@ mod warp_route {
                 config.token_symbol.clone(),
                 config.decimals,
                 config.total_supply,
-                Some(config.asset_id),
+                Some(config.asset_id.unwrap()),
             )
             .call()
             .await;
@@ -221,7 +237,7 @@ mod warp_route {
 
         let mailbox_init_res = mailbox
             .methods()
-            .initialize(owner, hook_address, hook_address, hook_address)
+            .initialize(owner, default_ism_address, hook_address, hook_address)
             .call()
             .await;
         assert!(mailbox_init_res.is_ok(), "Failed to initialize Mailbox.");
@@ -233,10 +249,13 @@ mod warp_route {
             .await;
         assert!(set_ism_res.is_ok(), "Failed to set default ISM.");
 
-        //For both cases warp route requires a remote mailbox adress to send assets
+        //For both cases warp route requires a remote wr adress to send assets
         let enroll_router_res = warp_route
             .methods()
-            .enroll_remote_router(TEST_REMOTE_DOMAIN, mailbox_address)
+            .enroll_remote_router(
+                TEST_REMOTE_DOMAIN,
+                Bits256(Address::from_str(REMOTE_ROUTER_ADDRESS).unwrap().into()),
+            )
             .call()
             .await;
         assert!(enroll_router_res.is_ok(), "Failed to enroll remote router.");
@@ -256,12 +275,12 @@ mod warp_route {
 
         static COLLATERAL_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
             Mutex::new(WarpRouteConfig {
-                token_mode: WarpRouteTokenMode::COLLATERAL, // Default to COLLATERAL mode
+                token_mode: WarpRouteTokenMode::COLLATERAL,
                 token_name: TOKEN_NAME.to_string(),
                 token_symbol: TOKEN_SYMBOL.to_string(),
                 decimals: DECIMALS,
                 total_supply: TOTAL_SUPPLY,
-                asset_id: get_collateral_asset(), // Default asset for COLLATERAL
+                asset_id: Some(get_collateral_asset()),
             })
         });
 
@@ -283,6 +302,43 @@ mod warp_route {
                 mailbox_id,
                 post_dispatch_id,
             )
+        }
+
+        /// ============ enroll_unenroll_router ============
+        #[tokio::test]
+        async fn test_enroll_unenroll_router() {
+            let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
+
+            let domain = TEST_REMOTE_DOMAIN;
+            let router_address = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
+
+            // Verify the router is set
+            let router = warp_route
+                .methods()
+                .router(domain)
+                .call()
+                .await
+                .unwrap()
+                .value;
+            assert_eq!(router, router_address);
+
+            // Unenroll the router
+            warp_route
+                .methods()
+                .unenroll_remote_router(domain)
+                .call()
+                .await
+                .unwrap();
+
+            // Verify the router is removed
+            let router_after_unenroll = warp_route
+                .methods()
+                .router(domain)
+                .call()
+                .await
+                .unwrap()
+                .value;
+            assert_eq!(router_after_unenroll, Bits256::zeroed());
         }
 
         /// ============ get_token_info ============
@@ -400,7 +456,7 @@ mod warp_route {
             assert_eq!(new_mailbox, test_mailbox_address);
         }
 
-        /// ============ set_mailbox_hooh_unauthorized ============
+        /// ============ set_mailbox_hook_unauthorized ============
         #[tokio::test]
         async fn test_unauthorized_set() {
             let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
@@ -428,7 +484,7 @@ mod warp_route {
 
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
-            let asset = config.asset_id;
+            let asset = config.asset_id.unwrap();
 
             let wallet_balance_before = get_balance(provider, wallet.address(), asset)
                 .await
@@ -438,17 +494,6 @@ mod warp_route {
                 get_contract_balance(provider, warp_route.contract_id(), asset)
                     .await
                     .unwrap();
-
-            //For gas payment
-            let (_, _) = wallet
-                .force_transfer_to_contract(
-                    warp_route.contract_id(),
-                    10_000_000,
-                    get_native_asset(),
-                    TxPolicies::default(),
-                )
-                .await
-                .unwrap();
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let amount = 1u64;
@@ -507,7 +552,7 @@ mod warp_route {
             let (_, _) = wallet
                 .force_transfer_to_contract(
                     warp_route.contract_id(),
-                    amount * 5,
+                    amount * 2,
                     get_collateral_asset(),
                     TxPolicies::default(),
                 )
@@ -557,6 +602,57 @@ mod warp_route {
             );
         }
 
+        #[tokio::test]
+        async fn test_claim_as_owner() {
+            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+                get_collateral_contract_instance().await;
+
+            let wallet = warp_route.account();
+            let provider = wallet.provider().unwrap();
+            let asset = config.asset_id.unwrap();
+
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let amount = 190;
+
+            let call_params = CallParameters::new(amount, asset, 5_000_000);
+
+            // Transfer remote
+            warp_route
+                .methods()
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .call_params(call_params)
+                .unwrap()
+                .with_contract_ids(&[
+                    warp_route_id.into(),
+                    mailbox.into(),
+                    post_dispatch_id.into(),
+                ])
+                .call()
+                .await
+                .unwrap();
+
+            let contract_balance_before =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            // Claim the balance as the owner
+            warp_route
+                .methods()
+                .claim()
+                .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+                .call()
+                .await
+                .unwrap();
+
+            let contract_balance_after =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            assert_eq!(contract_balance_before - amount, contract_balance_after);
+        }
+
         /// ============ transfer_remote_with_wrong_asset ============
         #[tokio::test]
         async fn test_transfer_remote_with_wrong_asset() {
@@ -587,7 +683,7 @@ mod warp_route {
         async fn test_transfer_remote_with_insufficient_funds() {
             let (config, warp_route, _, _, _) = get_collateral_contract_instance().await;
 
-            let asset = config.asset_id;
+            let asset = config.asset_id.unwrap();
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let amount = 1_000_000_000_000u64;
             let call_params = CallParameters::new(1_000_000_000, asset, 1_000_000_000);
@@ -613,7 +709,8 @@ mod warp_route {
 
             // Test with a zero transfer
             let amount_zero = 0u64;
-            let call_params_zero = CallParameters::new(amount_zero, config.asset_id, 1_000_000_000);
+            let call_params_zero =
+                CallParameters::new(amount_zero, config.asset_id.unwrap(), 1_000_000_000);
 
             let call_zero = warp_route
                 .methods()
@@ -630,6 +727,49 @@ mod warp_route {
                 "TransferZeroCoins"
             );
         }
+
+        #[tokio::test]
+        async fn test_pause_and_unpause() {
+            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+                get_collateral_contract_instance().await;
+
+            // Pause the contract
+            warp_route.methods().pause().call().await.unwrap();
+
+            let is_paused = warp_route.methods().is_paused().call().await.unwrap().value;
+            assert!(is_paused);
+
+            let amount = 1;
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+
+            // Attempt an operation that should fail when paused
+            let call = warp_route
+                .methods()
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .call()
+                .await;
+            assert_eq!(get_revert_reason(call.unwrap_err()), "Paused");
+
+            // Unpause the contract
+            warp_route.methods().unpause().call().await.unwrap();
+
+            let call_params = CallParameters::new(amount, config.asset_id.unwrap(), 1_000_000_000);
+
+            let call = warp_route
+                .methods()
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .call_params(call_params)
+                .unwrap()
+                .with_contract_ids(&[
+                    warp_route_id.into(),
+                    mailbox.into(),
+                    post_dispatch_id.into(),
+                ])
+                .call()
+                .await;
+
+            assert!(call.is_ok());
+        }
     }
     /// Bridged Token Mode Test Cases
     #[cfg(test)]
@@ -643,7 +783,7 @@ mod warp_route {
                 token_symbol: TOKEN_SYMBOL.to_string(),
                 decimals: DECIMALS,
                 total_supply: TOTAL_SUPPLY,
-                asset_id: get_native_asset(),
+                asset_id: Some(get_native_asset()),
             })
         });
 
@@ -667,7 +807,7 @@ mod warp_route {
                 .value;
 
             let mut config = BRIDGED_CONFIG.lock().await.clone();
-            config.asset_id = token_info.asset_id;
+            config.asset_id = Some(token_info.asset_id);
 
             (
                 config,
@@ -691,7 +831,7 @@ mod warp_route {
                 .unwrap()
                 .value;
 
-            config.asset_id = token_info.asset_id;
+            config.asset_id = Some(token_info.asset_id);
 
             assert_eq!(token_info.name, config.token_name);
             assert_eq!(token_info.symbol, config.token_symbol);
@@ -722,7 +862,7 @@ mod warp_route {
 
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
-            let asset = config.asset_id;
+            let asset = config.asset_id.unwrap();
             let mint_amount = 100_000_000;
 
             let wallet_balance_before_mint = get_balance(provider, wallet.address(), asset)
@@ -807,10 +947,13 @@ mod warp_route {
             let body = build_message_body(recipient, amount);
 
             let provider = wallet.provider().unwrap();
-            let recipient_balance_before =
-                get_balance(provider, &recipient_address.into(), config.asset_id)
-                    .await
-                    .unwrap();
+            let recipient_balance_before = get_balance(
+                provider,
+                &recipient_address.into(),
+                config.asset_id.unwrap(),
+            )
+            .await
+            .unwrap();
 
             let call = warp_route
                 .methods()
@@ -833,10 +976,13 @@ mod warp_route {
             );
 
             // Validate balances after the transaction
-            let recipient_balance =
-                get_balance(provider, &recipient_address.into(), config.asset_id)
-                    .await
-                    .unwrap();
+            let recipient_balance = get_balance(
+                provider,
+                &recipient_address.into(),
+                config.asset_id.unwrap(),
+            )
+            .await
+            .unwrap();
 
             assert_eq!(recipient_balance_before + amount, recipient_balance);
         }
@@ -890,7 +1036,7 @@ mod warp_route {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
 
             let wallet = warp_route.account();
-            let asset = config.asset_id;
+            let asset = config.asset_id.unwrap();
 
             // Mint some tokens for testing burn
             warp_route
@@ -960,6 +1106,201 @@ mod warp_route {
                 .unwrap()
                 .value;
             assert_eq!(cumulative_supply, MAX_SUPPLY - 1);
+        }
+    }
+    mod native {
+        use super::*;
+
+        static NATIVE_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
+            Mutex::new(WarpRouteConfig {
+                token_mode: WarpRouteTokenMode::COLLATERAL,
+                token_name: "ETH".to_string(),
+                token_symbol: "ETH".to_string(),
+                decimals: 9,
+                total_supply: MAX_SUPPLY,
+                asset_id: Some(get_native_asset()),
+            })
+        });
+
+        async fn get_native_contract_instance() -> (
+            WarpRouteConfig,
+            WarpRoute<WalletUnlocked>,
+            ContractId,
+            ContractId,
+            ContractId,
+        ) {
+            let (warp_route, contract_id, mailbox_id, post_dispatch_id, _) =
+                get_contract_instance(&NATIVE_CONFIG).await;
+            let config = NATIVE_CONFIG.lock().await.clone();
+
+            (
+                config,
+                warp_route,
+                contract_id,
+                mailbox_id,
+                post_dispatch_id,
+            )
+        }
+
+        #[tokio::test]
+        async fn test_transfer_remote_native() {
+            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+                get_native_contract_instance().await;
+
+            let wallet = warp_route.account();
+            let provider = wallet.provider().unwrap();
+            let asset = config.asset_id.unwrap();
+
+            let contract_balance_before =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let amount = 180;
+
+            let call_params = CallParameters::new(amount, asset, 5_000_000);
+
+            // Transfer remote
+            let call = warp_route
+                .methods()
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .call_params(call_params)
+                .unwrap()
+                .with_contract_ids(&[
+                    warp_route_id.into(),
+                    mailbox.into(),
+                    post_dispatch_id.into(),
+                ])
+                .call()
+                .await
+                .unwrap();
+
+            let logs = call
+                .decode_logs_with_type::<SentTransferRemoteEvent>()
+                .unwrap();
+            let log = logs[0].clone();
+            assert_eq!(log.destination, TEST_REMOTE_DOMAIN);
+            assert_eq!(log.recipient, recipient);
+            assert_eq!(log.amount, amount);
+
+            let contract_balance_after =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            assert_eq!(contract_balance_before + amount, contract_balance_after);
+        }
+
+        #[tokio::test]
+        async fn test_handle_message_native() {
+            let (_, warp_route, _, _, _) = get_native_contract_instance().await;
+
+            let wallet = warp_route.account();
+            let sender = Bits256(Address::from(wallet.address()).into());
+            let amount = 18;
+
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
+            let body = build_message_body(recipient, amount);
+
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    amount,
+                    get_native_asset(),
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
+
+            let provider = wallet.provider().unwrap();
+            let recipient_balance_before =
+                get_balance(provider, &recipient_address.into(), get_native_asset())
+                    .await
+                    .unwrap();
+
+            let call = warp_route
+                .methods()
+                .handle(TEST_REMOTE_DOMAIN, sender, body)
+                .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+                .call()
+                .await
+                .unwrap();
+
+            let logs = call
+                .decode_logs_with_type::<ReceivedTransferRemoteEvent>()
+                .unwrap();
+            assert_eq!(
+                logs,
+                vec![ReceivedTransferRemoteEvent {
+                    origin: TEST_REMOTE_DOMAIN,
+                    recipient,
+                    amount,
+                }]
+            );
+
+            let recipient_balance_after =
+                get_balance(provider, &recipient_address.into(), get_native_asset())
+                    .await
+                    .unwrap();
+
+            assert_eq!(recipient_balance_before + amount, recipient_balance_after);
+        }
+
+        #[tokio::test]
+        async fn test_claim_native() {
+            let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+                get_native_contract_instance().await;
+
+            let wallet = warp_route.account();
+            let provider = wallet.provider().unwrap();
+            let asset = get_native_asset();
+
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let amount = 1800;
+
+            let call_params = CallParameters::new(amount, asset, 5_000_000);
+
+            // Transfer remote
+            warp_route
+                .methods()
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .call_params(call_params)
+                .unwrap()
+                .with_contract_ids(&[
+                    warp_route_id.into(),
+                    mailbox.into(),
+                    post_dispatch_id.into(),
+                ])
+                .call()
+                .await
+                .unwrap();
+
+            let contract_balance_before_claim =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            // Claim the balance
+            warp_route
+                .methods()
+                .claim()
+                .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+                .call()
+                .await
+                .unwrap();
+
+            let contract_balance_after =
+                get_contract_balance(provider, warp_route.contract_id(), asset)
+                    .await
+                    .unwrap();
+
+            // Only the actual transfer amount should be claimed, not the gas fee
+            assert_eq!(
+                contract_balance_before_claim,
+                contract_balance_after + amount
+            );
         }
     }
 }

@@ -1,6 +1,6 @@
 use fuels::{
     prelude::*,
-    types::{tx_status::TxStatus, Bits256, Identity},
+    types::{Bits256, Identity},
 };
 use gas_oracle::{GasOracle, RemoteGasDataConfig};
 use std::str::FromStr;
@@ -37,9 +37,6 @@ const TEST_NON_BASE_ASSET_ID: [u8; 32] = [1u8; 32];
 
 const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 const BASE_ASSET_DECIMALS: u8 = 9;
-
-// const DEFAULT_ASSET_ID_CONTRACT: &str =
-//     "aae22a288eef5c58e347a238014c02570201b306542cd911f264f03e643f38c6";
 
 fn get_base_asset() -> AssetId {
     AssetId::default()
@@ -741,7 +738,7 @@ async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {
 
     let res = igp
         .methods()
-        .get_gas_oracle(TEST_DESTINATION_DOMAIN + 10)
+        .gas_oracle(TEST_DESTINATION_DOMAIN + 10)
         .simulate(Execution::StateReadOnly)
         .await
         .unwrap()

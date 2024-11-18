@@ -42,7 +42,14 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{claimable::*, mailbox::mailbox::*, ownable::Ownable, warp_route::*, token_router::*, message_recipient::MessageRecipient};
+use interfaces::{
+    claimable::*,
+    mailbox::mailbox::*,
+    message_recipient::MessageRecipient,
+    ownable::Ownable,
+    token_router::*,
+    warp_route::*,
+};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -53,16 +60,13 @@ storage {
     mailbox: ContractId = ContractId::zero(),
     /// The address of the default hook contract to use for message dispatch
     default_hook: ContractId = ContractId::zero(),
-    /// Mapping of message IDs to whether they have been delivered
-    delivered_messages: StorageMap<b256, bool> = StorageMap {},
-    
-    beneficiary: Identity = Identity::Address(Address::zero()),
-    
+    /// The address of the beneficiary
+    beneficiary: Identity = Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)),
+    /// The address of the default ISM contract to use for message dispatch
     default_ism: ContractId = ContractId::zero(),
     /// Mapping of domain identifiers to their corresponding router addresses
     /// Each domain has a unique router that handles token transfers
     routers: StorageMap<u32, b256> = StorageMap {},
-
     // TOKEN
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
@@ -190,7 +194,7 @@ impl WarpRoute for Contract {
 
         let asset = storage.asset_id.read();
         require(msg_asset_id() == asset, WarpRouteError::PaymentError);
-        
+
         match storage.token_mode.read() {
             WarpRouteTokenMode::BRIDGED => {
                 //Burn has checks inside along with decreasing total supply
@@ -199,10 +203,6 @@ impl WarpRoute for Contract {
             WarpRouteTokenMode::COLLATERAL => {
                 //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
-                log(TokensLockedEvent {
-                    amount,
-                    asset,
-                });
             }
         }
 
@@ -211,9 +211,17 @@ impl WarpRoute for Contract {
 
         let message_body = _build_token_metadata_bytes(recipient, amount);
 
+        let quote = mailbox.quote_dispatch(
+            destination_domain,
+            remote_domain_router,
+            message_body,
+            Bytes::new(),
+            hook_contract,
+        );
+
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
-            coins: this_balance(AssetId::base()),
+            coins: quote,
             asset_id: b256::from(AssetId::base()),
         }(
             destination_domain,
@@ -319,21 +327,6 @@ impl WarpRoute for Contract {
         storage.default_hook.write(ContractId::from(hook));
     }
 
-    /// Checks if a message has been delivered
-    ///
-    /// ### Arguments
-    ///
-    /// * `message_id`: [b256] - The ID of the message
-    ///
-    /// ### Returns
-    ///
-    /// * [bool] - Whether the message has been delivered
-    #[storage(read)]
-    fn is_message_delivered(message_id: b256) -> bool {
-        storage.delivered_messages.get(message_id).try_read().unwrap_or(false)
-    }
-
-
     /// Sets the default ISM
     ///
     /// ### Arguments
@@ -374,7 +367,7 @@ impl WarpRoute for Contract {
 }
 
 impl TokenRouter for Contract {
-     /// Gets the router address for a specific domain
+    /// Gets the router address for a specific domain
     ///
     /// ### Arguments
     ///
@@ -394,7 +387,7 @@ impl TokenRouter for Contract {
     ///
     /// * `domain`: [u32] - The domain to remove the router for
     #[storage(write)]
-    fn unenroll_remote_router(domain: u32)->bool {
+    fn unenroll_remote_router(domain: u32) -> bool {
         storage.routers.remove(domain)
     }
 
@@ -422,7 +415,9 @@ impl TokenRouter for Contract {
     #[storage(read, write)]
     fn enroll_remote_routers(domains: Vec<u32>, routers: Vec<b256>) {
         require(
-            domains.len() == routers.len(),
+            domains
+                .len() == routers
+                .len(),
             TokenRouterError::RouterLengthMismatch,
         );
 
@@ -439,7 +434,6 @@ impl TokenRouter for Contract {
             }
         }
     }
-
 }
 
 impl MessageRecipient for Contract {
@@ -582,7 +576,7 @@ impl Claimable for Contract {
         });
     }
 
-    /// Sends all base asset funds to the beneficiary. Callable by anyone.
+    /// Sends all asset to the beneficiary. Callable by anyone.
     #[storage(read)]
     fn claim() {
         let asset = storage.asset_id.read();
@@ -622,7 +616,7 @@ fn _build_token_metadata_bytes(recipient: b256, amount: u64) -> Bytes {
     let amount_u256 = u256::from(amount); // Convert `u64` to `U256` for 32-byte padding
     buffer = amount_u256.abi_encode(buffer);
 
-    let metadata = Bytes::new();  // Or `Bytes(vec![])` if `Bytes::new()` is unavailable
+    let metadata = Bytes::new();
     buffer = metadata.abi_encode(buffer);
 
     let bytes = Bytes::from(buffer.as_raw_slice());
@@ -634,9 +628,8 @@ fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
 
     let recipient = buffer_reader.read::<b256>();
     let amount_u256 = buffer_reader.read::<u256>();
-    
+
     let amount = <u64 as TryFrom<u256>>::try_from(amount_u256).expect("Amount exceeds u64 range");
-    
     (recipient, amount)
 }
 

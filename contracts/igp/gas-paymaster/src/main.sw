@@ -3,7 +3,7 @@ contract;
 use sway_libs::ownership::*;
 use standards::src5::State;
 
-use interfaces::{igp::*, ownable::Ownable,claimable::*, post_dispatch_hook::*,};
+use interfaces::{claimable::*, igp::*, ownable::Ownable, post_dispatch_hook::*,};
 
 use std::{
     asset::transfer,
@@ -39,15 +39,14 @@ storage {
     /// The intended use is for applications to not need to worry about ISM gas costs themselves.
     gas_overheads: StorageMap<u32, u64> = StorageMap {},
     /// The scale of a token exchange rate. 1e19.
-    token_exchange_rate_scale:u64 = 10_000_000_000_000_000_000,
+    token_exchange_rate_scale: u64 = 10_000_000_000_000_000_000,
     base_asset_decimal: u8 = 9,
     /// local default gas amount
-    default_gas_amount:u64 = 5_000,
+    default_gas_amount: u64 = 5_000,
 }
 
 impl IGP for Contract {
-  
-     /// Initializes the contract.
+    /// Initializes the contract.
     ///
     /// ### Arguments
     ///
@@ -64,8 +63,8 @@ impl IGP for Contract {
         owner: b256,
         beneficiary: b256,
         token_exchange_rate: u64,
-        base_asset_decimal:u8,
-        default_gas_amount: u64
+        base_asset_decimal: u8,
+        default_gas_amount: u64,
     ) {
         require(
             _owner() == State::Uninitialized,
@@ -73,8 +72,10 @@ impl IGP for Contract {
         );
 
         initialize_ownership(Identity::Address(Address::from(owner)));
-        storage.beneficiary.write(Identity::Address(Address::from(beneficiary)));
-        
+        storage
+            .beneficiary
+            .write(Identity::Address(Address::from(beneficiary)));
+
         storage.token_exchange_rate_scale.write(token_exchange_rate);
         storage.base_asset_decimal.write(base_asset_decimal);
         storage.default_gas_amount.write(default_gas_amount);
@@ -174,7 +175,7 @@ impl IGP for Contract {
         });
     }
 
-      /// Gets the gas amount for the current domain.
+    /// Gets the gas amount for the current domain.
     ///
     /// ### Returns
     ///
@@ -209,7 +210,9 @@ impl Claimable for Contract {
     fn set_beneficiary(beneficiary: Identity) {
         only_owner();
         storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent { beneficiary: beneficiary.bits() });
+        log(BeneficiarySetEvent {
+            beneficiary: beneficiary.bits(),
+        });
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
@@ -256,45 +259,7 @@ impl Ownable for Contract {
     }
 }
 
-impl OracleContractWrapper for Contract {
-    /// Sets the gas oracle for a given domain.
-    ///
-    /// ### Arguments
-    ///
-    /// * `domain`: [u32] - The domain to set the gas oracle for.
-    /// * `gas_oracle`: [b256] - The gas oracle.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the caller is not the owner.
-    #[storage(read, write)]
-    fn set_gas_from_oracle(domain: u32, gas_oracle: b256) {
-        only_owner();
-
-        storage.gas_oracles.insert(domain, gas_oracle);
-        log(GasOracleSetEvent {
-            domain,
-            gas_oracle,
-        });
-    }
-
-    /// Gets the gas oracle for a given domain.
-    ///
-    /// ### Arguments
-    ///
-    /// * `domain`: [u32] - The domain to get the gas oracle for.
-    ///
-    /// ### Returns
-    ///
-    /// * [b256] - The gas oracle.
-    #[storage(read)]
-    fn get_gas_oracle(domain: u32) -> Option<b256> {
-        storage.gas_oracles.get(domain).try_read()
-    }
-}
-
 impl IGPWithOverhead for Contract {
-  
     /// Gets the gas overhead for a given domain.
     ///
     /// ### Arguments
@@ -350,7 +315,6 @@ pub fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
 /// Reverts if no gas oracle is set.
 #[storage(read)]
 fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
-
     let overhead = storage.gas_overheads.get(destination_domain).try_read().unwrap_or(0);
     let total_gas_amount = gas_amount + overhead;
 
@@ -369,7 +333,13 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
     let origin_cost = (destination_gas_cost * u256::from(token_exchange_rate)) / u256::from(storage.token_exchange_rate_scale.read());
 
     // Convert from the remote token's decimals to the local token's decimals.
-    let origin_cost = convert_decimals(origin_cost, token_decimals, storage.base_asset_decimal.read());
+    let origin_cost = convert_decimals(
+        origin_cost,
+        token_decimals,
+        storage
+            .base_asset_decimal
+            .read(),
+    );
 
     u256_to_u64(origin_cost).expect("quote_gas_payment overflow")
 }
