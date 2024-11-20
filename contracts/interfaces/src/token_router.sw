@@ -19,7 +19,6 @@ pub enum TokenRouterError {
 
 /// Interface for the TokenRouter contract which handles cross-chain token transfers
 abi TokenRouter {
-
     /// Gets the router address for a specific domain
     ///
     /// ### Arguments
@@ -57,5 +56,21 @@ abi TokenRouter {
     /// * `domain`: [u32] - The domain to unenroll
     #[storage(write)]
     fn unenroll_remote_router(domain: u32) -> bool;
-}
 
+    /// Gets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to query
+    #[storage(read)]
+    fn remote_router_decimals(router: b256) -> u8;
+
+    /// Sets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to set
+    /// * `decimals`: [u8] - The decimals to set
+    #[storage(write)]
+    fn set_remote_router_decimals(router: b256, decimals: u8);
+}

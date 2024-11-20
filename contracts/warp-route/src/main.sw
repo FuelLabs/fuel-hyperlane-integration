@@ -67,7 +67,9 @@ storage {
     /// Mapping of domain identifiers to their corresponding router addresses
     /// Each domain has a unique router that handles token transfers
     routers: StorageMap<u32, b256> = StorageMap {},
-    // TOKEN
+    /// Mapping of remote router decimals
+    remote_router_decimals: StorageMap<b256, u8> = StorageMap {},
+    /// Asset
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
     /// The sub ID of the token managed by the WarpRoute contract
@@ -209,7 +211,11 @@ impl WarpRoute for Contract {
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let hook_contract = storage.default_hook.read();
 
-        let message_body = _build_token_metadata_bytes(recipient, amount);
+        let remote_decimals = _get_remote_router_decimals(remote_domain_router); // will get the remote decimals - or 18 as default
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(9);
+        let adjusted_amount = _adjust_send_decimals(amount, local_decimals, remote_decimals);
+
+        let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
         let quote = mailbox.quote_dispatch(
             destination_domain,
@@ -434,6 +440,27 @@ impl TokenRouter for Contract {
             }
         }
     }
+
+    /// Gets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to query
+    #[storage(read)]
+    fn remote_router_decimals(router: b256) -> u8 {
+        _get_remote_router_decimals(router)
+    }
+
+    /// Sets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to set
+    /// * `decimals`: [u8] - The decimals to set
+    #[storage(write)]
+    fn set_remote_router_decimals(router: b256, decimals: u8) {
+        storage.remote_router_decimals.insert(router, decimals);
+    }
 }
 
 impl MessageRecipient for Contract {
@@ -451,12 +478,18 @@ impl MessageRecipient for Contract {
     /// * If the message has already been delivered
     /// * If the cumulative supply exceeds the maximum supply
     #[storage(read, write)]
-    fn handle(origin: u32, _sender: b256, message_body: Bytes) {
+    fn handle(origin: u32, sender: b256, message_body: Bytes) {
         reentrancy_guard();
         require_not_paused();
 
+        let asset = storage.asset_id.read();
         let (recipient, amount) = _extract_asset_data_from_body(message_body);
         let recipient_identity = Identity::Address(Address::from(recipient));
+
+        let remote_decimals = _get_remote_router_decimals(sender); // will get the remote decimals - or 18 as default
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(9);
+        let adjusted_amount = _adjust_recieved_decimals(amount, local_decimals, remote_decimals);
+
         let asset = storage.asset_id.read();
 
         match storage.token_mode.read() {
@@ -464,12 +497,12 @@ impl MessageRecipient for Contract {
                 let cumulative_supply = storage.cumulative_supply.get(asset).read();
 
                 require(
-                    cumulative_supply + amount <= MAX_SUPPLY,
+                    cumulative_supply + adjusted_amount <= MAX_SUPPLY,
                     WarpRouteError::MaxMinted,
                 );
                 storage
                     .cumulative_supply
-                    .insert(asset, cumulative_supply + amount);
+                    .insert(asset, cumulative_supply + adjusted_amount);
                 let _ = _mint(
                     storage
                         .total_assets,
@@ -479,18 +512,18 @@ impl MessageRecipient for Contract {
                     storage
                         .sub_id
                         .read(),
-                    amount,
+                    adjusted_amount,
                 );
             }
             WarpRouteTokenMode::COLLATERAL => {
-                transfer(recipient_identity, asset, amount);
+                transfer(recipient_identity, asset, adjusted_amount);
             }
         }
 
         log(ReceivedTransferRemoteEvent {
             origin,
             recipient,
-            amount,
+            amount: adjusted_amount,
         });
     }
 
@@ -501,6 +534,36 @@ impl MessageRecipient for Contract {
 }
 
 // ---------------  Pausable, Claimable and Ownable  ---------------
+
+impl Claimable for Contract {
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        storage.beneficiary.write(beneficiary);
+        log(BeneficiarySetEvent {
+            beneficiary: beneficiary.bits(),
+        });
+    }
+
+    #[storage(read)]
+    fn claim() {
+        let asset = storage.asset_id.read();
+        let beneficiary = storage.beneficiary.read();
+        let balance = this_balance(asset);
+
+        transfer(beneficiary, asset, balance);
+
+        log(ClaimEvent {
+            beneficiary: beneficiary.bits(),
+            amount: balance,
+        });
+    }
+}
 
 impl Pausable for Contract {
     #[storage(write)]
@@ -548,51 +611,6 @@ impl Ownable for Contract {
     }
 }
 
-impl Claimable for Contract {
-    /// Gets the current beneficiary.
-    ///
-    /// ### Returns
-    ///
-    /// * [Identity] - The beneficiary.
-    #[storage(read)]
-    fn beneficiary() -> Identity {
-        storage.beneficiary.read()
-    }
-
-    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
-    ///
-    /// ### Arguments
-    ///
-    /// * `beneficiary`: [Identity] - The new beneficiary.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the caller is not the owner.
-    #[storage(read, write)]
-    fn set_beneficiary(beneficiary: Identity) {
-        only_owner();
-        storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent {
-            beneficiary: beneficiary.bits(),
-        });
-    }
-
-    /// Sends all asset to the beneficiary. Callable by anyone.
-    #[storage(read)]
-    fn claim() {
-        let asset = storage.asset_id.read();
-        let beneficiary = storage.beneficiary.read();
-        let balance = this_balance(asset);
-
-        transfer(beneficiary, asset, balance);
-
-        log(ClaimEvent {
-            beneficiary: beneficiary.bits(),
-            amount: balance,
-        });
-    }
-}
-
 // ------------------------------------------------------------
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
@@ -634,27 +652,60 @@ fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
     (recipient, amount)
 }
 
-/// Gets the router address for a specific domain
-///
-/// ### Arguments
-///
-/// * `domain`: [u32] - The domain to query
-///
-/// ### Returns
-///
-/// * [b256] - The router address (zero address if not set)
 #[storage(read)]
 fn _get_router(domain: u32) -> b256 {
     storage.routers.get(domain).try_read().unwrap_or(b256::zero())
 }
 
-/// Stores a router address for a domain in the contract storage
-///
-/// ### Arguments
-///
-/// * `domain`: [u32] - The domain to set the router for
-/// * `router`: [b256] - The router address to store
 #[storage(read, write)]
 fn _insert_route_to_state(domain: u32, router: b256) {
     storage.routers.insert(domain, router);
+}
+
+#[storage(read)]
+fn _get_remote_router_decimals(router: b256) -> u8 {
+    storage.remote_router_decimals.get(router).try_read().unwrap_or(18)
+}
+
+fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
+    if local_decimals == remote_decimals {
+        return amount;
+    }
+
+    let difference = if local_decimals > remote_decimals {
+        local_decimals - remote_decimals
+    } else {
+        remote_decimals - local_decimals
+    };
+
+    let factor = 10u64.pow(difference.as_u32());
+
+    if local_decimals < remote_decimals {
+        amount * factor
+    } else {
+        require(amount % factor == 0, WarpRouteError::PrecisionLoss);
+        amount / factor
+    }
+}
+
+fn _adjust_recieved_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
+    if local_decimals == remote_decimals {
+        return amount;
+    }
+
+    let difference = if local_decimals > remote_decimals {
+        local_decimals - remote_decimals
+    } else {
+        remote_decimals - local_decimals
+    };
+
+    let factor = 10u64.pow(difference.as_u32());
+
+    //Here we have the recieved amount in the remote decimals
+    if local_decimals < remote_decimals {
+        require(amount % factor == 0, WarpRouteError::PrecisionLoss);
+        amount / factor
+    } else {
+        amount * factor
+    }
 }
