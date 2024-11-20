@@ -9,10 +9,6 @@ use interfaces::{mailbox::mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     mailbox: ContractId = ContractId::zero(),
-    latest_insertion_block: u32 = 0,
-    finalized_tree: StorageVec<b256> = StorageVec {},
-    finalized_root: b256 = b256::zero(),
-    finalized_count: u32 = 0,
 }
 
 impl MerkleTreeHook for Contract {
@@ -32,7 +28,6 @@ impl MerkleTreeHook for Contract {
             MerkleTreeError::ContractAlreadyInitialized,
         );
         storage.mailbox.write(mailbox);
-        storage.finalized_root.write(_root());
     }
 
     /// Returns the count from the MerkleTree.
@@ -42,10 +37,10 @@ impl MerkleTreeHook for Contract {
     /// * [u32] - The count from the MerkleTree.
     #[storage(read)]
     fn count() -> u32 {
-        _finalized_count()
+        _count()
     }
 
-    /// Gets the stored count of the MerkleTree library.
+    /// Gets the stored count of the MerkleTree.
     /// And the current block number.
     /// Used since we cannot query point in time data.
     ///
@@ -54,7 +49,7 @@ impl MerkleTreeHook for Contract {
     /// * [(u32, u32)] - The count and the current block number.
     #[storage(read)]
     fn count_and_block() -> (u32, u32) {
-        _finalized_count_with_block()
+        (_count(), height())
     }
 
     /// Returns the root from the MerkleTree.
@@ -64,7 +59,7 @@ impl MerkleTreeHook for Contract {
     /// * [b256] - The root from the MerkleTree.
     #[storage(read)]
     fn root() -> b256 {
-        _finalized_root()
+        _root()
     }
 
     /// Returns the latest checkpoint from the MerkleTree.
@@ -75,12 +70,12 @@ impl MerkleTreeHook for Contract {
     /// * [u32] - The count from the MerkleTree.
     #[storage(read)]
     fn tree() -> MerkleTree {
-        _finalized_tree()
+        storage.merkle_tree.load()
     }
 
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        _finalized_checkpoint()
+        _checkpoint()
     }
 }
 
@@ -140,7 +135,6 @@ impl PostDispatchHook for Contract {
         );
 
         let index = _count();
-        _store_insertion_data(index);
         storage.merkle_tree.insert(id);
         log(InsertedIntoTreeEvent {
             message_id: id,
@@ -176,11 +170,6 @@ fn _count() -> u32 {
 }
 
 #[storage(read)]
-fn _tree() -> MerkleTree {
-    storage.merkle_tree.load()
-}
-
-#[storage(read)]
 fn _root() -> b256 {
     storage.merkle_tree.root()
 }
@@ -195,73 +184,4 @@ fn _checkpoint() -> (b256, u32) {
 #[storage(read)]
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
-}
-
-#[storage(read)]
-fn _is_latest_insertion_block() -> bool {
-    storage.latest_insertion_block.read() == height()
-}
-
-// --------------- Each insertion data write --------------------
-
-#[storage(write, read)]
-fn _store_insertion_data(current_count: u32) {
-    if _is_latest_insertion_block() {
-        return;
-    }
-
-    storage.finalized_tree.store_vec(_tree().branch);
-    storage.finalized_root.write(_root());
-    storage.finalized_count.write(current_count);
-    storage.latest_insertion_block.write(height());
-}
-
-// ----------- Getters with enforced finality ----------------
-
-#[storage(read)]
-fn _finalized_count_with_block() -> (u32, u32) {
-    if _is_latest_insertion_block() {
-        (storage.finalized_count.read(), height())
-    } else {
-        (_count(), height())
-    }
-}
-
-#[storage(read)]
-fn _finalized_count() -> u32 {
-    if _is_latest_insertion_block() {
-        storage.finalized_count.read()
-    } else {
-        _count()
-    }
-}
-
-#[storage(read)]
-fn _finalized_tree() -> MerkleTree {
-    if _is_latest_insertion_block() {
-        MerkleTree {
-            branch: storage.finalized_tree.load_vec(),
-            count: storage.finalized_count.read(),
-        }
-    } else {
-        _tree()
-    }
-}
-
-#[storage(read)]
-fn _finalized_checkpoint() -> (b256, u32) {
-    if _is_latest_insertion_block() {
-        (storage.finalized_root.read(), storage.finalized_count.read() - 1)
-    } else {
-        _checkpoint()
-    }
-}
-
-#[storage(read)]
-fn _finalized_root() -> b256 {
-    if _is_latest_insertion_block() {
-        storage.finalized_root.read()
-    } else {
-        _root()
-    }
 }
