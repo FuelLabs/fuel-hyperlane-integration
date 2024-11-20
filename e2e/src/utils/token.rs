@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::fs;
 use std::str::FromStr;
 
-use crate::utils::mocks::constants::*;
+use crate::utils::constants::*;
 
 #[allow(dead_code)]
 pub struct TokenMetadata {
@@ -32,15 +32,6 @@ pub fn get_local_fuel_base_asset() -> AssetId {
         .expect("base_asset_id should be a string");
 
     AssetId::from_str(base_asset_id).unwrap()
-}
-
-pub fn get_token_metadata() -> TokenMetadata {
-    TokenMetadata {
-        name: "TestToken".to_string(),
-        symbol: "TT".to_string(),
-        decimals: BASE_ASSET_DECIMALS,
-        total_supply: 100_000_000_000_000,
-    }
 }
 
 pub async fn get_balance(

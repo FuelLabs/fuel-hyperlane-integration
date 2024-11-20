@@ -1,6 +1,5 @@
 pub mod abis;
 pub mod config;
-pub mod deploy_mocks;
 
 use config::{get_e2e_env, get_loaded_private_key, get_node_url, EnvE2E};
 use dotenv::dotenv;
@@ -54,7 +53,6 @@ pub async fn cleanup(fuel_node: Option<Child>) {
 
 static PROVIDER: Lazy<Mutex<Option<Provider>>> = Lazy::new(|| Mutex::new(None));
 static WALLET: Lazy<Mutex<Option<WalletUnlocked>>> = Lazy::new(|| Mutex::new(None));
-// static MAILBOX: Lazy<Mutex<Option<Mailbox<WalletUnlocked>>>> = Lazy::new(|| Mutex::new(None));
 
 pub async fn get_provider() -> Provider {
     let mut provider_guard = PROVIDER.lock().await;
@@ -67,7 +65,6 @@ pub async fn get_provider() -> Provider {
 }
 
 pub async fn launch_local_node() {
-    // Initializing a wallet in a local env launches a local node
     let _ = get_loaded_wallet().await;
 }
 pub async fn get_loaded_wallet() -> WalletUnlocked {

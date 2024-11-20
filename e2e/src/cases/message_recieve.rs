@@ -17,7 +17,7 @@ use crate::{
 };
 
 use ethers::{core::types::Address, prelude::*};
-abigen!(RemoteMailbox, "e2e/src/evm/abis/Mailbox.abi.json",);
+abigen!(RemoteMailbox, "e2e/src/evm/abis/Mailbox.json",);
 
 async fn message_recieve() -> Result<f64, String> {
     let start = Instant::now();

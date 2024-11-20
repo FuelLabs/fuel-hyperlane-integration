@@ -452,6 +452,7 @@ impl MessageRecipient for Contract {
     /// * If the cumulative supply exceeds the maximum supply
     #[storage(read, write)]
     fn handle(origin: u32, _sender: b256, message_body: Bytes) {
+        reentrancy_guard();
         require_not_paused();
 
         let (recipient, amount) = _extract_asset_data_from_body(message_body);

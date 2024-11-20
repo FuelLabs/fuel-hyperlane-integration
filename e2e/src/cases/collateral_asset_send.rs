@@ -2,8 +2,8 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
-        mocks::constants::TEST_RECIPIENT,
+        constants::TEST_RECIPIENT,
+        local_contracts::*,
         token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
     },
 };
@@ -41,10 +41,31 @@ async fn collateral_asset_send() -> Result<f64, String> {
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
     let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
-    let gas_oracle_id = get_contract_address_from_yaml("interchainGasPaymasterOracle");
+    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
 
+    let remote_wr = load_remote_wr_addresses("CTR").unwrap();
+    let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
+
+    let mut remote_wr_array = [0u8; 32];
+    remote_wr_array[12..].copy_from_slice(&remote_wr_hex);
+
+    warp_route_instance
+        .methods()
+        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .call()
+        .await
+        .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
+
     let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+
+    let warp_balance_before = get_contract_balance(
+        wallet.provider().unwrap(),
+        warp_route_instance.contract_id(),
+        base_asset,
+    )
+    .await
+    .unwrap();
 
     let _ = warp_route_instance
         .methods()
@@ -71,10 +92,11 @@ async fn collateral_asset_send() -> Result<f64, String> {
     .await
     .unwrap();
 
-    if warp_balance_after != 0 {
+    if warp_balance_after != warp_balance_before + amount {
         return Err(format!(
-            "Warp balance after is not 0: {:?}",
-            warp_balance_after
+            "Warp balance is increased by {:?}, expected {:?}",
+            warp_balance_after - warp_balance_before,
+            amount
         ));
     }
 

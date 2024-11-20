@@ -1,43 +1,37 @@
-use hyperlane_core::Encode;
-use std::str::FromStr;
 use tokio::time::Instant;
 
 use fuels::{
-    accounts::{provider::Provider, wallet::WalletUnlocked},
-    crypto::SecretKey,
     programs::calls::CallParameters,
     types::{transaction_builders::VariableOutputPolicy, Bits256, Bytes},
 };
 
 use crate::{
     cases::TestCase,
-    setup::abis::{GasOracle, IGPHook, InterchainGasPaymaster, Mailbox},
+    setup::{
+        abis::{GasOracle, IGPHook, InterchainGasPaymaster, Mailbox},
+        get_loaded_wallet,
+    },
     utils::{
         _test_message,
+        constants::TEST_RECIPIENT,
         local_contracts::{
             get_contract_address_from_json, get_contract_address_from_yaml,
             get_value_from_agent_config_json,
         },
-        mocks::constants::TEST_RECIPIENT,
         token::{get_balance, get_contract_balance, get_local_fuel_base_asset},
     },
 };
 
 async fn send_message_with_gas() -> Result<f64, String> {
     let start = Instant::now();
-
-    let fuel_provider = Provider::connect("127.0.0.1:4000").await.unwrap();
-    let secret_key =
-        SecretKey::from_str("0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711")
-            .unwrap();
-    let wallet = WalletUnlocked::new_from_private_key(secret_key, Some(fuel_provider.clone()));
+    let wallet = get_loaded_wallet().await;
 
     let base_asset = get_local_fuel_base_asset();
 
     let fuel_mailbox_id = get_contract_address_from_json("fueltest1", "mailbox");
     let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
-    let gas_oracle_id = get_contract_address_from_yaml("interchainGasPaymasterOracle");
+    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
     let test_recipient_id = get_contract_address_from_yaml("testRecipient");
 
@@ -48,7 +42,7 @@ async fn send_message_with_gas() -> Result<f64, String> {
     let fuel_gas_oracle_instance = GasOracle::new(gas_oracle_id, wallet.clone());
     let test_recipient_instance = Mailbox::new(test_recipient_id, wallet.clone());
 
-    let wallet_balance = get_balance(&fuel_provider, wallet.address(), base_asset)
+    let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), base_asset)
         .await
         .unwrap();
 
@@ -56,7 +50,7 @@ async fn send_message_with_gas() -> Result<f64, String> {
         .unwrap()
         .as_u64()
         .map(|v| v as u32)
-        .unwrap_or(31337);
+        .unwrap_or(9913371);
 
     let message = _test_message(
         &fuel_mailbox_instance,
@@ -64,9 +58,9 @@ async fn send_message_with_gas() -> Result<f64, String> {
         500,
     );
 
-    let quote = fuel_igp_hook_instance
+    let quote = fuel_igp_instance
         .methods()
-        .quote_dispatch(Bytes(message.body.clone()), Bytes(message.to_vec()))
+        .quote_gas_payment(remote_domain, 5000)
         .with_contract_ids(&[
             fuel_igp_instance.contract_id().clone(),
             fuel_gas_oracle_instance.contract_id().clone(),
@@ -76,10 +70,13 @@ async fn send_message_with_gas() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to get quote: {:?}", e))?;
 
-    let contract_balance =
-        get_contract_balance(&fuel_provider, fuel_igp_instance.contract_id(), base_asset)
-            .await
-            .unwrap();
+    let contract_balance = get_contract_balance(
+        wallet.provider().unwrap(),
+        fuel_igp_instance.contract_id(),
+        base_asset,
+    )
+    .await
+    .unwrap();
 
     fuel_mailbox_instance
         .methods()
@@ -126,14 +123,18 @@ async fn send_message_with_gas() -> Result<f64, String> {
         ));
     }
 
-    let wallet_balance_final = get_balance(&fuel_provider, wallet.address(), base_asset)
-        .await
-        .unwrap();
-
-    let contract_balance_final =
-        get_contract_balance(&fuel_provider, fuel_igp_instance.contract_id(), base_asset)
+    let wallet_balance_final =
+        get_balance(wallet.provider().unwrap(), wallet.address(), base_asset)
             .await
             .unwrap();
+
+    let contract_balance_final = get_contract_balance(
+        wallet.provider().unwrap(),
+        fuel_igp_instance.contract_id(),
+        base_asset,
+    )
+    .await
+    .unwrap();
 
     if wallet_balance - wallet_balance_final != quote.value {
         return Err(format!(

@@ -2,8 +2,11 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
-        mocks::constants::TEST_RECIPIENT,
+        constants::TEST_RECIPIENT,
+        local_contracts::{
+            get_contract_address_from_yaml, get_value_from_agent_config_json,
+            load_remote_wr_addresses,
+        },
         token::{
             get_balance, get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2,
         },
@@ -48,10 +51,9 @@ async fn bridged_asset_send() -> Result<f64, String> {
             .unwrap();
 
     //mint testing tokens to owner
-    let mint_amount = 200_000;
     warp_route_instance
         .methods()
-        .mint_tokens(Address::from(wallet.address()), mint_amount)
+        .mint_tokens(Address::from(wallet.address()), amount)
         .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
         .determine_missing_contracts(Some(5))
         .await
@@ -64,7 +66,7 @@ async fn bridged_asset_send() -> Result<f64, String> {
         .await
         .unwrap();
 
-    if wallet_balance - wallet_balance_before_mint != mint_amount {
+    if wallet_balance - wallet_balance_before_mint != amount {
         return Err(format!(
             "Wallet balance after mint does not match mint amount: {:?}",
             wallet_balance - wallet_balance_before_mint
@@ -79,7 +81,7 @@ async fn bridged_asset_send() -> Result<f64, String> {
         .await
         .unwrap();
 
-    if token_info_updated.value.total_supply != token_info.value.total_supply + mint_amount {
+    if token_info_updated.value.total_supply != token_info.value.total_supply + amount {
         return Err(format!(
             "Total supply after mint does not match mint amount: {:?}",
             token_info_updated.value.total_supply
@@ -89,7 +91,7 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
     let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
-    let gas_oracle_id = get_contract_address_from_yaml("interchainGasPaymasterOracle");
+    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
 
     let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
@@ -101,6 +103,19 @@ async fn bridged_asset_send() -> Result<f64, String> {
         base_asset,
     )
     .await;
+
+    let remote_wr = load_remote_wr_addresses("STR").unwrap();
+    let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
+
+    let mut remote_wr_array = [0u8; 32];
+    remote_wr_array[12..].copy_from_slice(&remote_wr_hex);
+
+    warp_route_instance
+        .methods()
+        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .call()
+        .await
+        .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
 
     let _ = warp_route_instance
         .methods()
@@ -122,7 +137,7 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let warp_balance_after = get_contract_balance(
         wallet.provider().unwrap(),
         warp_route_instance.contract_id(),
-        base_asset,
+        asset_id,
     )
     .await
     .unwrap();

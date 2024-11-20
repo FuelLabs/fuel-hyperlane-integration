@@ -15,6 +15,30 @@ pub fn load_yaml_addresses() -> HashMap<String, String> {
     values
 }
 
+pub fn load_remote_wr_addresses(wr_type: &str) -> Option<String> {
+    let path = format!(
+        "../infra/configs/deployments/warp_routes/{}/test1-config.yaml",
+        wr_type
+    );
+    let data = fs::read_to_string(path.clone())
+        .unwrap_or_else(|_| panic!("Unable to read YAML addresses file, not found {}", path));
+
+    let values: serde_yaml::Value = serde_yaml::from_str(&data).expect("YAML format error");
+
+    let tokens = values
+        .get("tokens")
+        .and_then(|v| v.as_sequence())
+        .expect("Expected 'tokens' to be a sequence");
+
+    let first_token = tokens.first().expect("No tokens found in sequence");
+    let address = first_token
+        .get("addressOrDenom")
+        .and_then(|a| a.as_str())
+        .expect("Missing 'addressOrDenom' in first token");
+
+    Some(address.to_string())
+}
+
 pub fn get_value_from_agent_config_json(chain_name: &str, key: &str) -> Option<JsonValue> {
     let json_addresses = load_json_addresses();
     let res = json_addresses["chains"][chain_name][key].clone();
@@ -28,7 +52,7 @@ pub fn get_contract_address_from_yaml(contract_name: &str) -> ContractId {
     let yaml_addresses = load_yaml_addresses();
     let res = yaml_addresses
         .get(contract_name)
-        .expect("Key not found in YAML");
+        .unwrap_or_else(|| panic!("Key not found in YAML: {}", contract_name));
     ContractId::from_str(res).unwrap()
 }
 

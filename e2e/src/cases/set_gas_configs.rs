@@ -15,7 +15,7 @@ async fn set_gas_configs() -> Result<f64, String> {
     let wallet = get_loaded_wallet().await;
 
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
-    let gas_oracle_id = get_contract_address_from_yaml("interchainGasPaymasterOracle");
+    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
 
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
@@ -47,7 +47,7 @@ async fn set_gas_configs() -> Result<f64, String> {
 
     let default_remote_gas = get_value_from_agent_config_json("test1", "defaultGas")
         .and_then(|v| v.as_u64())
-        .unwrap_or(500);
+        .unwrap_or(37999464941);
 
     let remote_decimals = get_value_from_agent_config_json("test1", "nativeToken.decimals")
         .and_then(|v| v.as_u64())
@@ -64,7 +64,7 @@ async fn set_gas_configs() -> Result<f64, String> {
     let configs = vec![RemoteGasDataConfig {
         domain: remote_domain as u32,
         remote_gas_data: RemoteGasData {
-            token_exchange_rate: 1_u128,
+            token_exchange_rate: 15000000000,
             gas_price: default_remote_gas.into(),
             token_decimals: remote_decimals,
         },

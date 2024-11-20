@@ -1,17 +1,17 @@
+pub mod constants;
 pub mod local_contracts;
-pub mod mocks;
+pub mod monitor;
 pub mod token;
 
 use crate::cases::FailedTestCase;
 use crate::setup::abis::Mailbox;
 
+use constants::*;
 use fuels::{
     accounts::wallet::WalletUnlocked,
-    types::{bech32::Bech32ContractId, Bits256, Bytes},
+    types::{bech32::Bech32ContractId, Bits256, Bytes, U256},
 };
 use hyperlane_core::{HyperlaneMessage, H256};
-use mocks::constants::*;
-use token::get_token_metadata;
 use tokio::time::Instant;
 
 pub fn summary(test_amount: usize, failed: Vec<FailedTestCase>, start: Instant) {
@@ -46,28 +46,15 @@ pub fn _test_message(
     }
 }
 
-pub fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
+fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
     let mut buffer = Vec::new();
 
-    let token = get_token_metadata();
+    let amount_u256 = U256::from(amount);
+    let mut amount_bytes = [0u8; 32];
+    amount_u256.to_big_endian(&mut amount_bytes);
 
     buffer.extend(&recipient.0);
-    buffer.extend(&amount.to_be_bytes());
-    buffer.extend(&token.decimals.to_be_bytes());
-    buffer.extend(&token.total_supply.to_be_bytes());
+    buffer.extend(&amount_bytes);
+
     Bytes(buffer)
-}
-
-pub fn hyperlane_message_to_bytes(message: &HyperlaneMessage) -> Vec<u8> {
-    let mut bytes = Vec::new();
-
-    bytes.push(message.version);
-    bytes.extend_from_slice(&message.nonce.to_be_bytes());
-    bytes.extend_from_slice(&message.origin.to_be_bytes());
-    bytes.extend_from_slice(message.sender.as_bytes());
-    bytes.extend_from_slice(&message.destination.to_be_bytes());
-    bytes.extend_from_slice(message.recipient.as_bytes());
-    bytes.extend_from_slice(&message.body);
-
-    bytes
 }

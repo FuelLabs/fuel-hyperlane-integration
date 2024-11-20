@@ -1,11 +1,7 @@
 [
   {
     "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "_localDomain",
-        "type": "uint32"
-      }
+      { "internalType": "uint32", "name": "_localDomain", "type": "uint32" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -166,13 +162,7 @@
   {
     "inputs": [],
     "name": "VERSION",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -203,34 +193,16 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_id",
-        "type": "bytes32"
-      }
-    ],
+    "inputs": [{ "internalType": "bytes32", "name": "_id", "type": "bytes32" }],
     "name": "delivered",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "deployedBlock",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -246,16 +218,8 @@
         "name": "recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "messageBody",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "metadata",
-        "type": "bytes"
-      },
+      { "internalType": "bytes", "name": "messageBody", "type": "bytes" },
+      { "internalType": "bytes", "name": "metadata", "type": "bytes" },
       {
         "internalType": "contract IPostDispatchHook",
         "name": "hook",
@@ -263,13 +227,7 @@
       }
     ],
     "name": "dispatch",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -285,25 +243,11 @@
         "name": "recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "messageBody",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "hookMetadata",
-        "type": "bytes"
-      }
+      { "internalType": "bytes", "name": "messageBody", "type": "bytes" },
+      { "internalType": "bytes", "name": "hookMetadata", "type": "bytes" }
     ],
     "name": "dispatch",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -319,45 +263,19 @@
         "name": "_recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "_messageBody",
-        "type": "bytes"
-      }
+      { "internalType": "bytes", "name": "_messageBody", "type": "bytes" }
     ],
     "name": "dispatch",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_defaultIsm",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_defaultHook",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_requiredHook",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_owner", "type": "address" },
+      { "internalType": "address", "name": "_defaultIsm", "type": "address" },
+      { "internalType": "address", "name": "_defaultHook", "type": "address" },
+      { "internalType": "address", "name": "_requiredHook", "type": "address" }
     ],
     "name": "initialize",
     "outputs": [],
@@ -367,67 +285,35 @@
   {
     "inputs": [],
     "name": "latestDispatchedId",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "localDomain",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
+    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "nonce",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
+    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "_metadata",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_message",
-        "type": "bytes"
-      }
+      { "internalType": "bytes", "name": "_metadata", "type": "bytes" },
+      { "internalType": "bytes", "name": "_message", "type": "bytes" }
     ],
     "name": "process",
     "outputs": [],
@@ -435,40 +321,16 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_id",
-        "type": "bytes32"
-      }
-    ],
+    "inputs": [{ "internalType": "bytes32", "name": "_id", "type": "bytes32" }],
     "name": "processedAt",
-    "outputs": [
-      {
-        "internalType": "uint48",
-        "name": "",
-        "type": "uint48"
-      }
-    ],
+    "outputs": [{ "internalType": "uint48", "name": "", "type": "uint48" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_id",
-        "type": "bytes32"
-      }
-    ],
+    "inputs": [{ "internalType": "bytes32", "name": "_id", "type": "bytes32" }],
     "name": "processor",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -484,16 +346,8 @@
         "name": "recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "messageBody",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "metadata",
-        "type": "bytes"
-      },
+      { "internalType": "bytes", "name": "messageBody", "type": "bytes" },
+      { "internalType": "bytes", "name": "metadata", "type": "bytes" },
       {
         "internalType": "contract IPostDispatchHook",
         "name": "hook",
@@ -502,11 +356,7 @@
     ],
     "name": "quoteDispatch",
     "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
+      { "internalType": "uint256", "name": "fee", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -523,19 +373,11 @@
         "name": "recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "messageBody",
-        "type": "bytes"
-      }
+      { "internalType": "bytes", "name": "messageBody", "type": "bytes" }
     ],
     "name": "quoteDispatch",
     "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
+      { "internalType": "uint256", "name": "fee", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -552,11 +394,7 @@
         "name": "recipientAddress",
         "type": "bytes32"
       },
-      {
-        "internalType": "bytes",
-        "name": "messageBody",
-        "type": "bytes"
-      },
+      { "internalType": "bytes", "name": "messageBody", "type": "bytes" },
       {
         "internalType": "bytes",
         "name": "defaultHookMetadata",
@@ -565,22 +403,14 @@
     ],
     "name": "quoteDispatch",
     "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
+      { "internalType": "uint256", "name": "fee", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_recipient",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_recipient", "type": "address" }
     ],
     "name": "recipientIsm",
     "outputs": [
@@ -615,11 +445,7 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_hook",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_hook", "type": "address" }
     ],
     "name": "setDefaultHook",
     "outputs": [],
@@ -628,11 +454,7 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_module",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_module", "type": "address" }
     ],
     "name": "setDefaultIsm",
     "outputs": [],
@@ -641,11 +463,7 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_hook",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "_hook", "type": "address" }
     ],
     "name": "setRequiredHook",
     "outputs": [],
@@ -654,11 +472,7 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "newOwner", "type": "address" }
     ],
     "name": "transferOwnership",
     "outputs": [],

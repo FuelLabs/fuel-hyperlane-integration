@@ -11,7 +11,7 @@
 test1:
   type: collateral
   token: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' # Collateral/vault address. Required for collateral types
-  owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' # Optional owner address for synthetic token
+  owner: '0x0aE30543a22C74123D9c64F64B9Cb9bBB7268eEa' # Optional owner address for synthetic token
   mailbox: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318' # mailbox address route
   # interchainGasPaymaster: "0x123" # Optional interchainGasPaymaster address
   isNft: false # If the token is an NFT (ERC721), set to true
