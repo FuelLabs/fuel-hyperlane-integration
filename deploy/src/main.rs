@@ -216,14 +216,6 @@ async fn main() {
     dotenv::dotenv().ok();
     // Wallet Initialization
     let env = DeploymentEnv::new();
-    let sepolia_pk = SepoliaPrivateKey::from_slice(
-        &hex::decode(env::var("SEPOLIA_PRIVATE_KEY").expect("SEPOLIA_PRIVATE_KEY must be set"))
-            .unwrap(),
-    )
-    .unwrap();
-    let sepolia_pk = SigningKey::from(sepolia_pk);
-    let evm_signer = PrivateKeySigner::from_signing_key(sepolia_pk);
-
     let fuel_provider = Provider::connect(env.rpc_url).await.unwrap();
     let fuel_wallet =
         WalletUnlocked::new_from_private_key(env.secret_key, Some(fuel_provider.clone()));
@@ -547,23 +539,53 @@ async fn main() {
         "Failed to initialize Fallback Domain Routing ISM."
     );
 
+    // Multisig ISMs
+
+    let evm_pk_vars = vec![
+        "SEPOLIA_PRIVATE_KEY_1",
+        "SEPOLIA_PRIVATE_KEY_2",
+        "SEPOLIA_PRIVATE_KEY_3",
+    ];
+
+    // Set validators
+    for pk in evm_pk_vars {
+        let secret_key = SepoliaPrivateKey::from_slice(
+            &hex::decode(env::var(pk).expect(format!("{:?} must be set", pk).as_str())).unwrap(),
+        )
+        .unwrap();
+        let signing_key = SigningKey::from(secret_key);
+        let signer = PrivateKeySigner::from_signing_key(signing_key);
+        let validator_address = EvmAddress::from(Bits256(signer.address().into_word().0));
+
+        // Message ID Multisig ISM
+        let set_res = message_id_multisig_ism
+            .methods()
+            .enroll_validator(validator_address)
+            .call()
+            .await;
+        assert!(set_res.is_ok(), "Failed to enroll validator.");
+
+        // Merkle Root Multisig ISM
+        let set_res = merkle_root_multisig_ism
+            .methods()
+            .enroll_validator(validator_address)
+            .call()
+            .await;
+        assert!(set_res.is_ok(), "Failed to enroll validator.");
+
+        let parsed_address = hex::encode(validator_address.value().0.to_vec());
+        println!("Validator enrolled: {:?}", parsed_address);
+    }
+
+    // Set thresholds
+
     // Message ID Multisig ISM
     let set_res = message_id_multisig_ism
         .methods()
         .set_threshold(1)
         .call()
         .await;
-
     assert!(set_res.is_ok(), "Failed to set threshold.");
-
-    let validator = EvmAddress::from(Bits256(evm_signer.address().into_word().0));
-    let set_res = message_id_multisig_ism
-        .methods()
-        .enroll_validator(validator)
-        .call()
-        .await;
-
-    assert!(set_res.is_ok(), "Failed to enroll validator.");
 
     // Merkle Root Multisig ISM
     let set_res = merkle_root_multisig_ism
@@ -571,23 +593,7 @@ async fn main() {
         .set_threshold(1)
         .call()
         .await;
-
     assert!(set_res.is_ok(), "Failed to set threshold.");
-
-    let set_res = merkle_root_multisig_ism
-        .methods()
-        .enroll_validator(validator)
-        .call()
-        .await;
-
-    assert!(set_res.is_ok(), "Failed to enroll validator.");
-    // let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), wallet.clone());
-    // let mailbox = Mailbox::new(mailbox_contract_id.clone(), wallet.clone());
-    // let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), wallet.clone());
-    // let igp_hook = IGPHook::new(igp_hook_id.clone(), wallet.clone());
-    // let gas_oracle = GasOracle::new(gas_oracle_id.clone(), wallet.clone());
-    // let igp = GasPaymaster::new(igp_id.clone(), wallet.clone());
-    // let test_recipient = TestRecipient::new(recipient_id.clone(), wallet.clone());
 
     /////////////////////////
     // Test Recipiet Setup //
