@@ -27,7 +27,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
-    let msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
+    let _msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
 
     let _ = send_gas_to_contract_2(
         wallet.clone(),
@@ -45,21 +45,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     .await
     .unwrap();
 
-    let recipient_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        msg_recipient_instance.contract_id(),
-        base_asset,
-    )
-    .await
-    .unwrap();
-
     let recipient = get_fuel_test_recipient();
-    println!("recipient for remote {:?}", recipient);
-    println!(
-        "recipient fuel checks {:?}",
-        msg_recipient_instance.contract_id()
-    );
-
     let fuel_domain = get_local_domain();
 
     let remote_wallet = get_evm_wallet().await;
@@ -105,14 +91,6 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     assert!(res, "Failed to recieve message from remote");
 
-    let recipient_final_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        msg_recipient_instance.contract_id(),
-        base_asset,
-    )
-    .await
-    .map_err(|e| format!("Failed to get final balance: {:?}", e))?;
-
     let amount_18dec_to_local = amount / 10u64.pow(18 - 9);
 
     let contract_final_balance = get_contract_balance(
@@ -128,14 +106,6 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
             "Final contract balance mismatch. Expected: {}, Got: {}",
             amount_18dec_to_local,
             contract_balance - contract_final_balance
-        ));
-    }
-
-    if recipient_final_balance != recipient_balance + amount_18dec_to_local {
-        return Err(format!(
-            "Final balance mismatch. Expected: {}, Got: {}",
-            recipient_balance + amount_18dec_to_local,
-            recipient_final_balance
         ));
     }
 

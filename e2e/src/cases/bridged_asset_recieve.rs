@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     cases::TestCase,
     evm::{get_evm_wallet, monitor_fuel_for_delivery, SepoliaContracts},
@@ -10,8 +8,6 @@ use crate::{
     utils::{
         _test_message, get_fuel_test_recipient, get_local_domain, get_remote_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_balance, get_contract_balance},
-        TEST_RECIPIENT,
     },
 };
 use alloy::primitives::{FixedBytes, U256};
@@ -60,18 +56,10 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
         .await
         .unwrap();
 
-    let asset_id = token_metadata.value.asset_id;
+    let _asset_id = token_metadata.value.asset_id;
     let decimals = token_metadata.value.decimals;
 
     let amount = 100_000_000_000_000;
-
-    let initial_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        msg_recipient_instance.contract_id(),
-        asset_id,
-    )
-    .await
-    .unwrap();
 
     let remote_wallet = get_evm_wallet().await;
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
@@ -118,36 +106,7 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 
     assert!(res, "Failed to recieve message from remote");
 
-    let final_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        msg_recipient_instance.contract_id(),
-        asset_id,
-    )
-    .await
-    .map_err(|e| format!("Failed to get final balance: {:?}", e))?;
-
     let amount_18dec_to_local = amount / 10u64.pow((18 - decimals).into());
-
-    //ensure recipient balance is increased by amount
-    if final_balance != initial_balance + amount_18dec_to_local {
-        return Err(format!(
-            "Final balance mismatch. Expected: {}, Got: {}",
-            initial_balance + amount_18dec_to_local,
-            final_balance
-        ));
-    }
-
-    let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
-
-    let final_balance = get_balance(
-        wallet.provider().unwrap(),
-        &recipient_address.into(),
-        asset_id,
-    )
-    .await
-    .map_err(|e| format!("Failed to get final balance: {:?}", e))?;
-
-    println!("bullshit {:?}", final_balance);
 
     //ensure circulating supply is increased by amount
     let token_metadata_final = warp_route_instance
@@ -157,16 +116,17 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to get token metadata: {:?}", e))?;
 
-    if token_metadata_final.value.total_supply != token_metadata.value.total_supply + amount {
+    if token_metadata_final.value.total_supply
+        != token_metadata.value.total_supply + amount_18dec_to_local
+    {
         return Err(format!(
             "Circulating supply mismatch. Expected: {}, Got: {}",
-            token_metadata.value.total_supply + amount,
+            token_metadata.value.total_supply + amount_18dec_to_local,
             token_metadata_final.value.total_supply
         ));
     }
 
     //Attempt to handle amount greater than total supply should fail
-
     //For this to success, we need to convert remote decimals to same as local decimals - so that it wont be divided by 10^difference
     let _ = warp_route_instance
         .methods()

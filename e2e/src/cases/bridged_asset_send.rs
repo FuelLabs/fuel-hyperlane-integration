@@ -21,20 +21,12 @@ async fn bridged_asset_send() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
     let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
-    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let base_asset = get_local_fuel_base_asset();
 
     let remote_domain = get_remote_domain();
     let amount = 100_000;
-
-    let _ = warp_route_instance
-        .methods()
-        .set_hook(Bits256(fuel_igp_hook_id.into()))
-        .call()
-        .await
-        .map_err(|e| format!("Error setting igp hook {:?}", e));
 
     //get token info
     let token_info = warp_route_instance
