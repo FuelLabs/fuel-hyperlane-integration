@@ -24,7 +24,6 @@ abi PostDispatchHook {
     /// ### Returns
     ///
     /// * [PostDispatchHookType] - The type of the hook.
-    #[storage(read)]
     fn hook_type() -> PostDispatchHookType;
 
     /// Returns whether the hook supports metadata

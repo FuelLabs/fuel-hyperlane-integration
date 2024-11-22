@@ -57,7 +57,7 @@ pub struct InsertedIntoTreeEvent {
 }
 
 /// Errors that can occur while interacting with the MerkleTree contract.
-pub enum MerkleTreeError {
+pub enum MerkleTreeHookError {
     MessageNotDispatching: b256,
     NoValueExpected: (),
     ContractNotInitialized: (),

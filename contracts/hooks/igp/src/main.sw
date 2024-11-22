@@ -32,7 +32,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [PostDispatchHookType] - The type of the hook.
-    #[storage(read)]
     fn hook_type() -> PostDispatchHookType {
         PostDispatchHookType::INTERCHAIN_GAS_PAYMASTER
     }

@@ -100,7 +100,6 @@ impl Mailbox for Contract {
     /// ### Returns
     ///
     /// * [u32] - The domain of the contract.
-    #[storage(read)]
     fn local_domain() -> u32 {
         LOCAL_DOMAIN
     }
@@ -418,7 +417,7 @@ impl Mailbox for Contract {
     /// ### Reverts
     ///
     /// * If recipient call fails.
-    #[storage(read, write)]
+    #[storage(read)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
         recipient.interchain_security_module()

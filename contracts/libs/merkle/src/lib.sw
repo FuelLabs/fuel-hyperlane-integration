@@ -104,7 +104,6 @@ impl StorageKey<StorageMerkleTree> {
     /// ### Returns
     ///
     /// * [b256] - The storage key.
-    #[storage(read)]
     fn get_branch_storage_key(self, index: u64) -> b256 {
         sha256((index, self.field_id()))
     }

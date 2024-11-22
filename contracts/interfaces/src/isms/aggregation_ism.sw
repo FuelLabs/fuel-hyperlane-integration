@@ -1,6 +1,6 @@
 library;
 
-use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
+use std::bytes::Bytes;
 
 ///  Official Aggregation ISM interface for Hyperlane V3
 abi AggregationIsm {

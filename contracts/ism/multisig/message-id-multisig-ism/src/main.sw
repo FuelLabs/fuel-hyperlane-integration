@@ -106,41 +106,6 @@ impl InterchainSecurityModule for Contract {
     }
 }
 
-abi Test {
-    #[storage(read)]
-    fn verify_test(metadata: Bytes, message: Bytes) -> (EvmAddress, bool);
-}
-
-impl Test for Contract {
-    #[storage(read)]
-    fn verify_test(metadata: Bytes, message: Bytes) -> (EvmAddress, bool) {
-        let digest = _digest(metadata, message);
-        let (validators, threshold) = _validators_and_threshold(message);
-        require(threshold > 0, MessageIdMultisigError::NoMultisigThreshold);
-
-        let signature_recover_result = _signature_at(metadata, 0);
-        let sig_transformed = signature_recover_result.to_compact_signature();
-        require(
-            sig_transformed
-                .is_some(),
-            MessageIdMultisigError::FailedToRecoverSignature(signature_recover_result),
-        );
-
-        let signature = sig_transformed.unwrap();
-        let address_recover_result = ec_recover_evm_address(signature, b256::from(digest));
-        require(
-            address_recover_result
-                .is_ok(),
-            MessageIdMultisigError::FailedToRecoverSigner,
-        );
-
-        let signer = address_recover_result.unwrap();
-
-        let is_match = signer == storage.validators.get(0).unwrap().read();
-        (signer, is_match)
-    }
-}
-
 impl MultisigIsm for Contract {
     /// Returns the validators and threshold for the Multisig ISM for the given message.
     ///
