@@ -298,8 +298,6 @@ set_common_agent_vars() {
 
 # Function to run relayer
 run_relayer() {
-
-
     cargo run --release --bin relayer -- \
         --db "$DB_DIR" \
         --relayChains "$RELAY_CHAINS" \

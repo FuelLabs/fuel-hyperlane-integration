@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
-use alloy_primitives::FixedBytes;
-use alloy_signer::{k256::ecdsa::SigningKey, Signature, Signer};
-use alloy_signer_local::{LocalSigner, PrivateKeySigner};
+use alloy_signer_local::PrivateKeySigner;
 use fuels::{
     prelude::*,
     types::{errors::transaction::Reason, Bits256, Bytes32, ContractId, EvmAddress},
@@ -108,90 +106,6 @@ fn message_id_test_data() -> (Vec<HyperlaneMessage>, Vec<Bytes>, Vec<H256>, Vec<
     ];
 
     (messages_generated, metadata, expected_digests, signatures)
-}
-
-async fn sign_digest(digest: H256) -> (String, LocalSigner<SigningKey>, Bytes) {
-    let alloy_signer = PrivateKeySigner::random();
-
-    println!("digest that we are signing length: {:?}", digest.0.len());
-    let signed_digest = alloy_signer.sign_message(digest.as_bytes()).await.unwrap();
-
-    assert_eq!(digest.0.as_slice(), digest.as_bytes());
-
-    let alloy_recovered_address = signed_digest.recover_address_from_msg(digest.0).unwrap();
-    let alloy_recovered_address = alloy_recovered_address.into_word().0;
-    let signer_address = alloy_signer.address().into_word().0;
-    println!("signer_address: {:?}", signer_address);
-    println!("alloy_recovered_address: {:?}", alloy_recovered_address);
-
-    // XXX testing
-
-    let ddigest = digest.0;
-    println!("ddigest as slice: {:?}", ddigest.as_slice());
-    let ssignature = Signature::try_from(signed_digest.as_bytes().as_slice()).unwrap();
-    println!(
-        "ssignature as slice: {:?}",
-        ssignature.as_bytes().as_slice()
-    );
-
-    let rec_from_string = ssignature
-        .recover_address_from_prehash(&FixedBytes::from(ddigest))
-        .unwrap();
-    println!("rec_from_string: {:?}", rec_from_string.into_word().0);
-
-    // XXX testing
-
-    // Convert r, s, and v to hexadecimal format
-    let r_hex = format!("{:064x}", signed_digest.r());
-    let s_hex = format!("{:064x}", signed_digest.s());
-    let v_hex = format!(
-        "{:02x}",
-        (signed_digest.v().y_parity_byte_non_eip155().unwrap())
-    );
-    let v_not_hex = format!(
-        "{:02}",
-        (signed_digest.v().y_parity_byte_non_eip155().unwrap())
-    );
-
-    println!("r (hex): {}", r_hex);
-    println!("s (hex): {}", s_hex);
-    println!("v (hex): {}", v_hex);
-    println!("v (not hex): {}", v_not_hex);
-
-    let signature = format!("{}{}{}", r_hex, s_hex, v_hex);
-
-    // Convert the signature into a Bytes object
-    let hex = format!("0x{}", signature);
-    println!("signature: {:?}", signature);
-    let signature_bytes = Bytes::from_hex_str(&hex).unwrap();
-    println!("signature_bytes: {:?}", signature_bytes);
-    println!("signature_bytes.len(): {:?}", signature_bytes.0.len());
-
-    let sig_slice: &[u8] = &signature_bytes.0;
-    let const_sig = Signature::try_from(sig_slice).unwrap();
-    let const_recovers = const_sig.recover_address_from_msg(digest.0).unwrap();
-    println!("const_recovers: {:?}", const_recovers.into_word().0);
-
-    // Assuming append_signature_to_test_metadata is a function that takes a signature and returns Bytes
-    let metadata = append_signatures_to_test_metadata(vec![signature.clone()]);
-
-    (signature, alloy_signer, metadata)
-}
-
-fn append_signatures_to_test_metadata(signatures: Vec<String>) -> Bytes {
-    // origin_merkle_tree_address = "0x1111111111111111111111111111111111111111111111111111111111111111";
-    // signed_checkpoint_root = "0x2222222222222222222222222222222222222222222222222222222222222222";
-    // signed_checkpoint_index = "0x00000001";
-    // validator_signatures =  None, will be appended
-    let test_metadata = "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000001";
-    let mut appended_metadata = test_metadata.to_string();
-
-    for signature in signatures {
-        appended_metadata.push_str(&signature);
-    }
-
-    println!("appended_metadata: {:?}", appended_metadata);
-    Bytes::from_hex_str(&appended_metadata).unwrap()
 }
 
 async fn get_contract_instance() -> (MessageIdMultisigIsm<WalletUnlocked>, ContractId) {
@@ -323,137 +237,14 @@ async fn signature_at() {
 }
 
 #[tokio::test]
-async fn verify_single_validator_success() {
-    let (ism, _) = get_contract_instance().await;
-
-    ism.methods().set_threshold(1).call().await.unwrap();
-
-    let (messages, metadata, expected_digests, _) = message_id_test_data();
-
-    let message = messages[0].clone();
-    let message_bytes = Bytes(RawHyperlaneMessage::from(&message));
-    // println!("message_bytes: {:?}", message_bytes);
-    println!("message id: {:?}", message.id());
-    println!("message origin: {:?}", message.origin);
-
-    let digest = expected_digests[0];
-    let digest_from_contract = ism
-        .methods()
-        .digest(metadata[0].clone(), message_bytes.clone())
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    println!("digest: {:?}", digest.0);
-    println!("digest_from_contract: {:?}", digest_from_contract);
-
-    assert_eq!(
-        digest,
-        H256(
-            Bytes32::try_from(digest_from_contract.0.as_slice())
-                .unwrap()
-                .into()
-        )
-    );
-
-    let (_, signer, metadata_with_signature) = sign_digest(digest).await;
-
-    println!("metadata_with_signature: {:?}", metadata_with_signature);
-
-    let digest_from_contract_2 = ism
-        .methods()
-        .digest(metadata_with_signature.clone(), message_bytes)
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    assert_eq!(
-        digest_from_contract, digest_from_contract_2,
-        "Digests should match"
-    );
-    println!("digest_from_contract_2: {:?}", digest_from_contract_2);
-
-    // println!("address: {}", H256::from(signer.address().0));
-    let signer_address = signer.address().into_word().0;
-    // let address = EvmAddress::from(Bits256(pad_to_32_bytes(signer.address().0)));
-    let address = EvmAddress::from(Bits256(signer_address));
-    println!("address: {:?}", signer.address().into_word().0);
-    println!("address: {:?}", address);
-    ism.methods()
-        .enroll_validator(address)
-        .call()
-        .await
-        .unwrap();
-
-    let result = ism
-        .methods()
-        .verify(
-            metadata_with_signature,
-            Bytes(RawHyperlaneMessage::from(&message)),
-        )
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    assert!(result);
-}
-
-#[tokio::test]
-async fn verify_triple_validator_success() {
-    let (ism, _) = get_contract_instance().await;
-
-    ism.methods().set_threshold(3).call().await.unwrap();
-
-    let (messages, _, expected_digests, _) = message_id_test_data();
-
-    let message = messages[0].clone();
-    let message_bytes = Bytes(RawHyperlaneMessage::from(&message));
-    let digest = expected_digests[0];
-
-    let (signature_1, signer_1, _) = sign_digest(digest).await;
-    let (signature_2, signer_2, _) = sign_digest(digest).await;
-    let (signature_3, signer_3, _) = sign_digest(digest).await;
-
-    let metadata_with_signatures =
-        append_signatures_to_test_metadata(vec![signature_1, signature_2, signature_3]);
-
-    let address_1 = EvmAddress::from(Bits256(signer_1.address().into_word().0));
-    let address_2 = EvmAddress::from(Bits256(signer_2.address().into_word().0));
-    let address_3 = EvmAddress::from(Bits256(signer_3.address().into_word().0));
-
-    let addresses = vec![address_1, address_2, address_3];
-
-    for address in addresses {
-        ism.methods()
-            .enroll_validator(address)
-            .call()
-            .await
-            .unwrap();
-    }
-
-    let result = ism
-        .methods()
-        .verify(metadata_with_signatures, message_bytes)
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    assert!(result);
-}
-
-#[tokio::test]
 async fn verify_no_threshold() {
     let (ism, _) = get_contract_instance().await;
 
-    let (messages, _, expected_digests, _) = message_id_test_data();
+    let (messages, _, _, _) = message_id_test_data();
 
-    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, metadata_with_signature) = sign_digest(digest).await;
+    let signer = PrivateKeySigner::random();
+    let metadata_with_signature = Bytes::from_hex_str("0xa7bf5b6c33b77c058b83849c7ab0193f86bbc71d8d4b183ad89da4b9c23311eede0a5c35d109e5555d9eb485d12c283f6bccd8aaf5fede627cda4a551bf0c9fd00000005").unwrap();
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
@@ -483,11 +274,10 @@ async fn verify_no_threshold() {
 async fn verify_invalid_metadata_len() {
     let (ism, _) = get_contract_instance().await;
 
-    let (messages, _, expected_digests, _) = message_id_test_data();
+    let (messages, _, _, _) = message_id_test_data();
 
-    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, _) = sign_digest(digest).await;
+    let signer = PrivateKeySigner::random();
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
@@ -517,11 +307,11 @@ async fn verify_invalid_metadata_len() {
 async fn verify_invalid_metadata() {
     let (ism, _) = get_contract_instance().await;
 
-    let (messages, _, expected_digests, _) = message_id_test_data();
+    let (messages, _, _, _) = message_id_test_data();
 
-    let digest = expected_digests[0];
     let message = messages[0].clone();
-    let (_, signer, mut metadata_with_signature) = sign_digest(digest).await;
+    let signer = PrivateKeySigner::random();
+    let mut metadata_with_signature = Bytes::from_hex_str("0xa7bf5b6c33b77c058b83849c7ab0193f86bbc71d8d4b183ad89da4b9c23311eede0a5c35d109e5555d9eb485d12c283f6bccd8aaf5fede627cda4a551bf0c9fd00000005").unwrap();
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()

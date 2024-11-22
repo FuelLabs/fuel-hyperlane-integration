@@ -66,7 +66,15 @@ abigen!(
     Contract(
         name = "WarpRoute",
         abi = "contracts/warp-route/out/debug/warp-route-abi.json",
-    )
+    ),
+    Contract(
+        name = "MessageIdMultisigISM",
+        abi = "contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism-abi.json",
+    ),
+    Contract(
+        name = "MerkleRootMultisigISM",
+        abi = "contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism-abi.json",
+    ),
 );
 
 sol!(
@@ -197,8 +205,8 @@ pub struct FuelContracts {
     pub aggregation_ism: ContractId,
     pub domain_routing_ism: ContractId,
     pub fallback_domain_routing_ism: ContractId,
-    pub message_id_multisig_ism: ContractId,
-    pub merkle_root_multisig_ism: ContractId,
+    pub message_id_multisig_ism: MessageIdMultisigISM<WalletUnlocked>,
+    pub merkle_root_multisig_ism: MerkleRootMultisigISM<WalletUnlocked>,
     pub test_ism: ContractId,
     pub warp_route_collateral: WarpRoute<WalletUnlocked>,
     pub warp_route_bridged: WarpRoute<WalletUnlocked>,
@@ -369,6 +377,64 @@ impl Contracts {
         }
     }
 
+    pub async fn set_fuel_multisig_ism_single_validator_threshold(&self) {
+        let res_1 = self
+            .fuel
+            .message_id_multisig_ism
+            .methods()
+            .set_threshold(1)
+            .call()
+            .await
+            .unwrap();
+
+        let res = self
+            .fuel
+            .merkle_root_multisig_ism
+            .methods()
+            .set_threshold(1)
+            .call()
+            .await
+            .unwrap();
+
+        println!(
+            "Message ID Multisig ISM threshold set to 1 at: {:?}",
+            res_1.tx_id.unwrap()
+        );
+        println!(
+            "Merkle Root Multisig ISM threshold set to 1 at: {:?}",
+            res.tx_id.unwrap()
+        );
+    }
+
+    pub async fn set_fuel_multisig_ism_three_validator_threshold(&self) {
+        let res_1 = self
+            .fuel
+            .message_id_multisig_ism
+            .methods()
+            .set_threshold(3)
+            .call()
+            .await
+            .unwrap();
+
+        let res = self
+            .fuel
+            .merkle_root_multisig_ism
+            .methods()
+            .set_threshold(3)
+            .call()
+            .await
+            .unwrap();
+
+        println!(
+            "Message ID Multisig ISM threshold set to 3 at: {:?}",
+            res_1.tx_id.unwrap()
+        );
+        println!(
+            "Merkle Root Multisig ISM threshold set to 3 at: {:?}",
+            res.tx_id.unwrap()
+        );
+    }
+
     pub async fn set_fuel_mailbox_ism_to_test_ism(&self) {
         let res = self
             .fuel
@@ -429,7 +495,7 @@ impl Contracts {
             .fuel
             .test_recipient
             .methods()
-            .set_ism(self.fuel.message_id_multisig_ism)
+            .set_ism(self.fuel.message_id_multisig_ism.contract_id())
             .call()
             .await
             .unwrap();
@@ -445,7 +511,7 @@ impl Contracts {
             .fuel
             .test_recipient
             .methods()
-            .set_ism(self.fuel.merkle_root_multisig_ism)
+            .set_ism(self.fuel.merkle_root_multisig_ism.contract_id())
             .call()
             .await
             .unwrap();
@@ -934,6 +1000,10 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
         TestRecipient::new(yaml_config.test_recipient, fuel_wallet.clone());
     let warp_route_collateral_instance = WarpRoute::new(warp_route_collateral, fuel_wallet.clone());
     let warp_route_bridged_instance = WarpRoute::new(warp_route_bridged, fuel_wallet.clone());
+    let message_id_multisig_ism_instance =
+        MessageIdMultisigISM::new(yaml_config.message_id_multisig_ism, fuel_wallet.clone());
+    let merkle_root_multisig_ism_instance =
+        MerkleRootMultisigISM::new(yaml_config.merkle_root_multisig_ism, fuel_wallet.clone());
 
     // Base Sepolia contract addresses
     let mailbox_instance_sepolia = SepoliaMailbox::new(
@@ -967,8 +1037,8 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
             aggregation_ism: yaml_config.aggregation_ism,
             domain_routing_ism: yaml_config.domain_routing_ism,
             fallback_domain_routing_ism: yaml_config.fallback_domain_routing_ism,
-            message_id_multisig_ism: yaml_config.message_id_multisig_ism,
-            merkle_root_multisig_ism: yaml_config.merkle_root_multisig_ism,
+            message_id_multisig_ism: message_id_multisig_ism_instance,
+            merkle_root_multisig_ism: merkle_root_multisig_ism_instance,
             test_recipient: msg_recipient_instance,
             test_ism: yaml_config.test_ism,
             warp_route_collateral: warp_route_collateral_instance,

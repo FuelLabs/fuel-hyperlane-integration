@@ -332,7 +332,3 @@ async fn route_verify_fail() {
         assert!(!success);
     }
 }
-
-// Test that the domain routing ISM can route messages to the correct ISM
-// use the `route` function to route messages to the correct ISM
-// setup the test domain modules and test isms and should be prety straight forward

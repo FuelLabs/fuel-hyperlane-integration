@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Pre Demo Setup //
     ////////////////////
 
-    contracts.set_sepolia_ism_to_test_ism().await;
+    // contracts.set_sepolia_ism_to_test_ism().await;
     contracts.set_fuel_ism_to_test_ism().await;
     contracts.set_fuel_mailbox_ism_to_test_ism().await;
 
@@ -136,6 +136,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     contracts
         .monitor_fuel_for_delivery(sent_to_fuel_msg_id)
+        .await;
+
+    // Multisig ISMs
+
+    // -------------------------------------------
+    // --------- 1 validator threshold -----------
+    // -------------------------------------------
+    contracts
+        .set_fuel_multisig_ism_single_validator_threshold()
+        .await;
+
+    // Message ID Multisig ISM
+    contracts.set_fuel_ism_to_message_id_multisig().await;
+
+    let (sent_to_fuel_msg_id, sent_to_fuel_tx) = contracts
+        .sepolia_send_dispatch(DispatchType::WithMerkleTreeHook)
+        .await;
+
+    println!("Sent to Fuel Message ID: {:?}", sent_to_fuel_msg_id);
+    println!("Transaction ID on Sepolia: {:?}", sent_to_fuel_tx);
+
+    contracts
+        .monitor_fuel_for_delivery(sent_to_fuel_msg_id)
+        .await;
+
+    // Merkle Root Multisig ISM
+    contracts.set_fuel_ism_to_merkle_root_multisig().await;
+
+    let (sent_to_fuel_msg_id, sent_to_fuel_tx) = contracts
+        .sepolia_send_dispatch(DispatchType::WithMerkleTreeHook)
+        .await;
+
+    println!("Sent to Fuel Message ID: {:?}", sent_to_fuel_msg_id);
+    println!("Transaction ID on Sepolia: {:?}", sent_to_fuel_tx);
+
+    contracts
+        .monitor_fuel_for_delivery(sent_to_fuel_msg_id)
+        .await;
+
+    // -------------------------------------------
+    // --------- 3 validator threshold -----------
+    // -------------------------------------------
+    contracts
+        .set_fuel_multisig_ism_three_validator_threshold()
         .await;
 
     // Message ID Multisig ISM
