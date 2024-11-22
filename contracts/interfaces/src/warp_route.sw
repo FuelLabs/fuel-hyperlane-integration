@@ -13,7 +13,6 @@ pub enum WarpRouteError {
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),
-    PrecisionLoss: (),
     NoRouter: u32,
 }
 

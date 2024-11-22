@@ -2,14 +2,12 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        constants::TEST_RECIPIENT,
-        local_contracts::{
-            get_contract_address_from_yaml, get_value_from_agent_config_json,
-            load_remote_wr_addresses,
-        },
+        get_remote_domain,
+        local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{
             get_balance, get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2,
         },
+        TEST_RECIPIENT,
     },
 };
 use fuels::{
@@ -23,17 +21,20 @@ async fn bridged_asset_send() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
     let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
+    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let base_asset = get_local_fuel_base_asset();
 
-    let remote_domain = get_value_from_agent_config_json("test1", "domainId")
-        .unwrap()
-        .as_u64()
-        .map(|v| v as u32)
-        .unwrap_or(9913371);
-
+    let remote_domain = get_remote_domain();
     let amount = 100_000;
+
+    let _ = warp_route_instance
+        .methods()
+        .set_hook(Bits256(fuel_igp_hook_id.into()))
+        .call()
+        .await
+        .map_err(|e| format!("Error setting igp hook {:?}", e));
 
     //get token info
     let token_info = warp_route_instance

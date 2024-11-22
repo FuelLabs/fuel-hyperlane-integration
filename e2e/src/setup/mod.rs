@@ -7,7 +7,7 @@ use fuels::prelude::*;
 use once_cell::sync::Lazy;
 use tokio::{process::Child, sync::Mutex};
 
-use crate::utils::token::{get_collateral_asset, get_native_asset};
+use crate::utils::token::get_native_asset;
 
 pub async fn setup() -> Option<Child> {
     dotenv().ok();
@@ -42,6 +42,7 @@ pub async fn setup() -> Option<Child> {
     None
 }
 
+#[allow(dead_code)]
 pub async fn cleanup(fuel_node: Option<Child>) {
     if let Some(mut fuel_node) = fuel_node {
         fuel_node
@@ -78,18 +79,11 @@ pub async fn get_loaded_wallet() -> WalletUnlocked {
                 let mut wallets = launch_custom_provider_and_get_wallets(
                     WalletsConfig::new_multiple_assets(
                         1,
-                        vec![
-                            AssetConfig {
-                                id: get_native_asset(),
-                                num_coins: 1,                 /* Single coin (UTXO) */
-                                coin_amount: 100_000_000_000, /* Amount per coin */
-                            },
-                            AssetConfig {
-                                id: get_collateral_asset(),
-                                num_coins: 1,                 /* Single coin (UTXO) */
-                                coin_amount: 100_000_000_000, /* Amount per coin */
-                            },
-                        ],
+                        vec![AssetConfig {
+                            id: get_native_asset(),
+                            num_coins: 1,                 /* Single coin (UTXO) */
+                            coin_amount: 100_000_000_000, /* Amount per coin */
+                        }],
                     ),
                     None,
                     None,

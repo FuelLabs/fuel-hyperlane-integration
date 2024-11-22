@@ -683,7 +683,8 @@ fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -
     if local_decimals < remote_decimals {
         amount * factor
     } else {
-        require(amount % factor == 0, WarpRouteError::PrecisionLoss);
+        //require(amount % factor == 0, WarpRouteError::PrecisionLoss); 
+        //Commented out - precision loss will be handled in WarpUI
         amount / factor
     }
 }
@@ -703,7 +704,8 @@ fn _adjust_recieved_decimals(amount: u64, local_decimals: u8, remote_decimals: u
 
     //Here we have the recieved amount in the remote decimals
     if local_decimals < remote_decimals {
-        require(amount % factor == 0, WarpRouteError::PrecisionLoss);
+        //require(amount % factor == 0, WarpRouteError::PrecisionLoss); 
+        //Commented out - precision loss will be handled in WarpUI
         amount / factor
     } else {
         amount * factor

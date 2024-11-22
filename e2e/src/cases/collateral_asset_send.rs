@@ -2,7 +2,7 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        constants::TEST_RECIPIENT,
+        get_remote_domain, get_remote_test_recipient,
         local_contracts::*,
         token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
     },
@@ -20,15 +20,11 @@ async fn collateral_asset_send() -> Result<f64, String> {
     let warp_route_id = get_contract_address_from_yaml("warpRoute");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
-    let base_asset = get_local_fuel_base_asset();
 
-    let remote_domain = get_value_from_agent_config_json("test1", "domainId")
-        .unwrap()
-        .as_u64()
-        .map(|v| v as u32)
-        .unwrap_or(9913371);
-
+    let remote_domain = get_remote_domain();
     let amount = 1000;
+
+    let base_asset: fuels::types::AssetId = get_local_fuel_base_asset();
 
     let _ = send_gas_to_contract_2(
         wallet.clone(),
@@ -57,7 +53,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
 
-    let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+    let test_recipient = get_remote_test_recipient();
 
     let warp_balance_before = get_contract_balance(
         wallet.provider().unwrap(),

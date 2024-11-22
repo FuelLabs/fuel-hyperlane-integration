@@ -3,18 +3,12 @@ use serde_json::Value;
 use std::fs;
 use std::str::FromStr;
 
-use crate::utils::constants::*;
-
 #[allow(dead_code)]
 pub struct TokenMetadata {
     pub name: String,
     pub symbol: String,
     pub decimals: u8,
     pub total_supply: u64,
-}
-
-pub fn get_collateral_asset() -> AssetId {
-    AssetId::from_str(BRIDGED_ASSET_ID).unwrap()
 }
 
 pub fn get_native_asset() -> AssetId {

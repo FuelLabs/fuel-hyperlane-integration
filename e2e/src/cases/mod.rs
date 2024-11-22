@@ -56,11 +56,11 @@ pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
         set_gas_configs::test(),
         message_send_with_gas::test(),
+        remote_mailbox::test(),
         collateral_asset_send::test(),
-        bridged_asset_send::test(),
-        // message_recieve::test(), TODO: Check here
-        remote_mailbox::test(), // TODO: Can be deleted
-        bridged_asset_recieve::test(),
         collateral_asset_recieve::test(),
+        bridged_asset_send::test(),
+        bridged_asset_recieve::test(),
+        message_recieve::test(),
     ]
 }

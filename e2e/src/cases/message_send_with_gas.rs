@@ -2,22 +2,19 @@ use tokio::time::Instant;
 
 use fuels::{
     programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Bits256, Bytes},
+    types::{transaction_builders::VariableOutputPolicy, Bytes},
 };
 
 use crate::{
     cases::TestCase,
+    //evm::monitor_sepolia_for_delivery,
     setup::{
         abis::{GasOracle, IGPHook, InterchainGasPaymaster, Mailbox},
         get_loaded_wallet,
     },
     utils::{
-        _test_message,
-        constants::TEST_RECIPIENT,
-        local_contracts::{
-            get_contract_address_from_json, get_contract_address_from_yaml,
-            get_value_from_agent_config_json,
-        },
+        get_msg_body, get_remote_domain, get_remote_test_recipient,
+        local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
         token::{get_balance, get_contract_balance, get_local_fuel_base_asset},
     },
 };
@@ -26,37 +23,25 @@ async fn send_message_with_gas() -> Result<f64, String> {
     let start = Instant::now();
     let wallet = get_loaded_wallet().await;
 
+    let remote_recipient = get_remote_test_recipient();
     let base_asset = get_local_fuel_base_asset();
+    let remote_domain = get_remote_domain();
+    let msg_body = get_msg_body();
 
     let fuel_mailbox_id = get_contract_address_from_json("fueltest1", "mailbox");
     let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
-    let test_recipient_id = get_contract_address_from_yaml("testRecipient");
 
     let fuel_mailbox_instance = Mailbox::new(fuel_mailbox_id, wallet.clone());
-
     let fuel_igp_hook_instance = IGPHook::new(fuel_igp_hook_id, wallet.clone());
     let fuel_igp_instance = InterchainGasPaymaster::new(igp_id, wallet.clone());
     let fuel_gas_oracle_instance = GasOracle::new(gas_oracle_id, wallet.clone());
-    let test_recipient_instance = Mailbox::new(test_recipient_id, wallet.clone());
 
     let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), base_asset)
         .await
         .unwrap();
-
-    let remote_domain = get_value_from_agent_config_json("test1", "domainId")
-        .unwrap()
-        .as_u64()
-        .map(|v| v as u32)
-        .unwrap_or(9913371);
-
-    let message = _test_message(
-        &fuel_mailbox_instance,
-        test_recipient_instance.contract_id(),
-        500,
-    );
 
     let quote = fuel_igp_instance
         .methods()
@@ -64,7 +49,6 @@ async fn send_message_with_gas() -> Result<f64, String> {
         .with_contract_ids(&[
             fuel_igp_instance.contract_id().clone(),
             fuel_gas_oracle_instance.contract_id().clone(),
-            test_recipient_instance.contract_id().clone(),
         ])
         .call()
         .await
@@ -89,9 +73,9 @@ async fn send_message_with_gas() -> Result<f64, String> {
         .methods()
         .dispatch(
             remote_domain,
-            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            Bytes(message.body.clone()),
-            Bytes(message.body.clone()),
+            remote_recipient,
+            Bytes(msg_body.clone()),
+            Bytes(msg_body.clone()),
             fuel_igp_hook_instance.contract_id(),
         )
         .call_params(CallParameters::new(10_000_000, base_asset, 10_000_000))

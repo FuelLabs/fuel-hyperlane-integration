@@ -4,7 +4,10 @@ use crate::{
         abis::{GasOracle, IGPHook, InterchainGasPaymaster, RemoteGasData, RemoteGasDataConfig},
         get_loaded_wallet,
     },
-    utils::local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
+    utils::{
+        get_remote_domain,
+        local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
+    },
 };
 use fuels::types::{Address, Bits256};
 use tokio::time::Instant;
@@ -39,11 +42,7 @@ async fn set_gas_configs() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to initialize IGP: {:?}", e));
 
-    let remote_domain = get_value_from_agent_config_json("test1", "domainId")
-        .unwrap()
-        .as_u64()
-        .map(|v| v as u32)
-        .unwrap_or(9913371);
+    let remote_domain = get_remote_domain();
 
     let default_remote_gas = get_value_from_agent_config_json("test1", "defaultGas")
         .and_then(|v| v.as_u64())
@@ -62,7 +61,7 @@ async fn set_gas_configs() -> Result<f64, String> {
         .await;
 
     let configs = vec![RemoteGasDataConfig {
-        domain: remote_domain as u32,
+        domain: remote_domain,
         remote_gas_data: RemoteGasData {
             token_exchange_rate: 15000000000,
             gas_price: default_remote_gas.into(),
@@ -78,7 +77,7 @@ async fn set_gas_configs() -> Result<f64, String> {
         .map_err(|e| format!("Failed to set remote gas data configs: {:?}", e))?;
 
     igp.methods()
-        .set_gas_oracle(remote_domain as u32, Bits256(gas_oracle_id.into()))
+        .set_gas_oracle(remote_domain, Bits256(gas_oracle_id.into()))
         .call()
         .await
         .map_err(|e| format!("Failed to set gas oracle to igp: {:?}", e))?;
