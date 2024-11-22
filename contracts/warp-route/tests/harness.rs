@@ -685,29 +685,6 @@ mod warp_route {
             assert_eq!(get_revert_reason(call.unwrap_err()), "PaymentError");
         }
 
-        /// ============ handle_with_precision_loss ============
-        // #[tokio::test]
-        // async fn test_handle_with_precision_loss() {
-        //     let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
-
-        //     let wallet = warp_route.account();
-        //     let sender = Bits256(Address::from(wallet.address()).into());
-        //     let amount = 1_000_000_000_000_100_000;
-
-        //     let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-        //     let body = build_message_body(recipient, amount);
-
-        //     let call = warp_route
-        //         .methods()
-        //         .handle(TEST_LOCAL_DOMAIN, sender, body)
-        //         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        //         .call()
-        //         .await;
-
-        //     assert!(call.is_err());
-        //     assert_eq!(get_revert_reason(call.unwrap_err()), "PrecisionLoss");
-        // }
-
         /// ============ transfer_remote_with_insufficient_funds ============
         #[tokio::test]
         async fn test_transfer_remote_with_insufficient_funds() {
@@ -1098,29 +1075,6 @@ mod warp_route {
             assert_eq!(get_revert_reason(call.unwrap_err()), "InsufficientFunds");
         }
 
-        /// ============ handle_with_precision_loss ============
-        // #[tokio::test]
-        // async fn test_handle_with_precision_loss() {
-        //     let (_, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
-
-        //     let wallet = warp_route.account();
-        //     let sender = Bits256(Address::from(wallet.address()).into());
-        //     let amount = 1_000_000_000_000_100_000;
-
-        //     let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-        //     let body = build_message_body(recipient, amount);
-
-        //     let call = warp_route
-        //         .methods()
-        //         .handle(TEST_LOCAL_DOMAIN, sender, body)
-        //         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        //         .call()
-        //         .await;
-
-        //     assert!(call.is_err());
-        //     assert_eq!(get_revert_reason(call.unwrap_err()), "PrecisionLoss");
-        // }
-
         #[tokio::test]
         async fn test_max_supply_enforcement_handle_message() {
             let (_, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
@@ -1307,28 +1261,6 @@ mod warp_route {
             );
         }
 
-        /// ============ handle_with_precision_loss ============
-        // #[tokio::test]
-        // async fn test_handle_with_precision_loss() {
-        //     let (_, warp_route, _, _, _) = get_native_contract_instance().await;
-
-        //     let wallet = warp_route.account();
-        //     let sender = Bits256(Address::from(wallet.address()).into());
-        //     let amount = 1_000_000_000_000_100_000;
-
-        //     let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-        //     let body = build_message_body(recipient, amount);
-
-        //     let call = warp_route
-        //         .methods()
-        //         .handle(TEST_LOCAL_DOMAIN, sender, body)
-        //         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        //         .call()
-        //         .await;
-
-        //     assert!(call.is_err());
-        //     assert_eq!(get_revert_reason(call.unwrap_err()), "PrecisionLoss");
-        // }
         #[tokio::test]
         async fn test_claim_native() {
             let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =

@@ -565,7 +565,7 @@ impl Contracts {
         println!("ISM set to Merkle Root Multisig at: {:?}", res);
     }
 
-    pub async fn set_sepolia_ism_to_test_ism(&self) {
+    pub async fn _set_sepolia_ism_to_test_ism(&self) {
         let res = self
             .sepolia
             .recipient

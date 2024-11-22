@@ -147,7 +147,7 @@ pub async fn get_bridged_balance(provider: &Provider, asset_id: AssetId) -> u64 
         .unwrap()
 }
 
-pub async fn get_native_balance_of_wallet(provider: &Provider, wallet: &WalletUnlocked) -> u64 {
+pub async fn _get_native_balance_of_wallet(provider: &Provider, wallet: &WalletUnlocked) -> u64 {
     let asset = get_native_asset();
     provider
         .get_asset_balance(&wallet.address().into(), asset)
@@ -170,8 +170,8 @@ pub async fn send_token_to_contract(from: WalletUnlocked, to: &Bech32ContractId,
         .await;
 }
 
-pub fn write_demo_run_to_file(entires: Vec<String>) {
-    let full_path = format!("./demo-run.log");
+pub fn _write_demo_run_to_file(entires: Vec<String>) {
+    let full_path = "./demo-run.log".to_string();
     let path = Path::new(&full_path);
 
     if let Some(parent) = path.parent() {
