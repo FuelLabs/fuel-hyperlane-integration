@@ -53,18 +53,18 @@ pub struct ParsedYamlConfig {
 impl From<YamlConfig> for ParsedYamlConfig {
     fn from(config: YamlConfig) -> Self {
         ParsedYamlConfig {
-            test_ism: ContractId::from_str(&config.test_ism.as_str().strip_prefix("0x").unwrap())
+            test_ism: ContractId::from_str(config.test_ism.as_str().strip_prefix("0x").unwrap())
                 .unwrap(),
             test_recipient: ContractId::from_str(
-                &config.test_recipient.as_str().strip_prefix("0x").unwrap(),
+                config.test_recipient.as_str().strip_prefix("0x").unwrap(),
             )
             .unwrap(),
             aggregation_ism: ContractId::from_str(
-                &config.aggregation_ism.as_str().strip_prefix("0x").unwrap(),
+                config.aggregation_ism.as_str().strip_prefix("0x").unwrap(),
             )
             .unwrap(),
             domain_routing_ism: ContractId::from_str(
-                &config
+                config
                     .domain_routing_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -72,7 +72,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             fallback_domain_routing_ism: ContractId::from_str(
-                &config
+                config
                     .fallback_domain_routing_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -80,7 +80,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             message_id_multisig_ism: ContractId::from_str(
-                &config
+                config
                     .message_id_multisig_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -88,7 +88,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             merkle_root_multisig_ism: ContractId::from_str(
-                &config
+                config
                     .merkle_root_multisig_ism
                     .as_str()
                     .strip_prefix("0x")

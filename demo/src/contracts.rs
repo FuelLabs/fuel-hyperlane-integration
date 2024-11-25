@@ -231,6 +231,7 @@ pub type EvmProvider = FillProvider<
     Ethereum,
 >;
 
+#[allow(dead_code)]
 pub enum DispatchType {
     WithNoHook,
     WithIGPHook,
