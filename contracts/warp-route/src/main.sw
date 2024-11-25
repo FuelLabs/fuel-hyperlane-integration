@@ -240,7 +240,7 @@ impl WarpRoute for Contract {
         log(SentTransferRemoteEvent {
             destination: destination_domain,
             recipient,
-            amount,
+            amount: adjusted_amount,
         });
 
         message_id
