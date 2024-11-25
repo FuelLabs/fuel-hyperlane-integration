@@ -550,7 +550,7 @@ async fn main() {
     // Set validators
     for pk in evm_pk_vars {
         let secret_key = SepoliaPrivateKey::from_slice(
-            &hex::decode(env::var(pk).expect(format!("{:?} must be set", pk).as_str())).unwrap(),
+            &hex::decode(env::var(pk).unwrap_or_else(|_| panic!("{:?} must be set", pk))).unwrap(),
         )
         .unwrap();
         let signing_key = SigningKey::from(secret_key);
@@ -573,7 +573,7 @@ async fn main() {
             .await;
         assert!(set_res.is_ok(), "Failed to enroll validator.");
 
-        let parsed_address = hex::encode(validator_address.value().0.to_vec());
+        let parsed_address = hex::encode(validator_address.value().0);
         println!("Validator enrolled: {:?}", parsed_address);
     }
 

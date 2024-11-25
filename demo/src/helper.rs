@@ -53,18 +53,18 @@ pub struct ParsedYamlConfig {
 impl From<YamlConfig> for ParsedYamlConfig {
     fn from(config: YamlConfig) -> Self {
         ParsedYamlConfig {
-            test_ism: ContractId::from_str(&config.test_ism.as_str().strip_prefix("0x").unwrap())
+            test_ism: ContractId::from_str(config.test_ism.as_str().strip_prefix("0x").unwrap())
                 .unwrap(),
             test_recipient: ContractId::from_str(
-                &config.test_recipient.as_str().strip_prefix("0x").unwrap(),
+                config.test_recipient.as_str().strip_prefix("0x").unwrap(),
             )
             .unwrap(),
             aggregation_ism: ContractId::from_str(
-                &config.aggregation_ism.as_str().strip_prefix("0x").unwrap(),
+                config.aggregation_ism.as_str().strip_prefix("0x").unwrap(),
             )
             .unwrap(),
             domain_routing_ism: ContractId::from_str(
-                &config
+                config
                     .domain_routing_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -72,7 +72,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             fallback_domain_routing_ism: ContractId::from_str(
-                &config
+                config
                     .fallback_domain_routing_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -80,7 +80,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             message_id_multisig_ism: ContractId::from_str(
-                &config
+                config
                     .message_id_multisig_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -88,7 +88,7 @@ impl From<YamlConfig> for ParsedYamlConfig {
             )
             .unwrap(),
             merkle_root_multisig_ism: ContractId::from_str(
-                &config
+                config
                     .merkle_root_multisig_ism
                     .as_str()
                     .strip_prefix("0x")
@@ -147,7 +147,7 @@ pub async fn get_bridged_balance(provider: &Provider, asset_id: AssetId) -> u64 
         .unwrap()
 }
 
-pub async fn get_native_balance_of_wallet(provider: &Provider, wallet: &WalletUnlocked) -> u64 {
+pub async fn _get_native_balance_of_wallet(provider: &Provider, wallet: &WalletUnlocked) -> u64 {
     let asset = get_native_asset();
     provider
         .get_asset_balance(&wallet.address().into(), asset)
@@ -170,8 +170,8 @@ pub async fn send_token_to_contract(from: WalletUnlocked, to: &Bech32ContractId,
         .await;
 }
 
-pub fn write_demo_run_to_file(entires: Vec<String>) {
-    let full_path = format!("./demo-run.log");
+pub fn _write_demo_run_to_file(entires: Vec<String>) {
+    let full_path = "./demo-run.log".to_string();
     let path = Path::new(&full_path);
 
     if let Some(parent) = path.parent() {

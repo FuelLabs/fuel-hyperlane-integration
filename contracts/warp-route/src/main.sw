@@ -240,7 +240,7 @@ impl WarpRoute for Contract {
         log(SentTransferRemoteEvent {
             destination: destination_domain,
             recipient,
-            amount,
+            amount: adjusted_amount,
         });
 
         message_id
@@ -683,8 +683,6 @@ fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -
     if local_decimals < remote_decimals {
         amount * factor
     } else {
-        //require(amount % factor == 0, WarpRouteError::PrecisionLoss); 
-        //Commented out - precision loss will be handled in WarpUI
         amount / factor
     }
 }
@@ -702,10 +700,8 @@ fn _adjust_recieved_decimals(amount: u64, local_decimals: u8, remote_decimals: u
 
     let factor = 10u64.pow(difference.as_u32());
 
-    //Here we have the recieved amount in the remote decimals
+    //recieved amount is in the remote decimals - should be converted to local
     if local_decimals < remote_decimals {
-        //require(amount % factor == 0, WarpRouteError::PrecisionLoss); 
-        //Commented out - precision loss will be handled in WarpUI
         amount / factor
     } else {
         amount * factor
