@@ -342,34 +342,6 @@ impl WarpRoute for Contract {
     fn set_ism(module: ContractId) {
         storage.default_ism.write(module)
     }
-
-    // TODO: must be removed after unit and E2E testing 
-    #[storage(read, write)]
-    fn mint_tokens(recipient: Address, amount: u64) {
-        let recipient_identity = Identity::Address(recipient);
-        let asset = storage.asset_id.read();
-        let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-        require(
-            cumulative_supply + amount <= MAX_SUPPLY,
-            WarpRouteError::MaxMinted,
-        );
-        storage
-            .cumulative_supply
-            .insert(asset, cumulative_supply + amount);
-
-        let _ = _mint(
-            storage
-                .total_assets,
-            storage
-                .total_supply,
-            recipient_identity,
-            storage
-                .sub_id
-                .read(),
-            amount,
-        );
-    }
 }
 
 impl TokenRouter for Contract {

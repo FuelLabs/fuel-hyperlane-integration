@@ -49,7 +49,7 @@ pub fn _test_message(
     }
 }
 
-fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
+pub fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
     let mut buffer = Vec::new();
 
     let amount_u256 = U256::from(amount);

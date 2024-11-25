@@ -134,10 +134,6 @@ abi WarpRoute {
     /// * `module`: [ContractId] - The ISM contract ID
     #[storage(read, write)]
     fn set_ism(module: ContractId);
-
-    // TODO: must be removed after unit and E2E testing 
-    #[storage(read, write)]
-    fn mint_tokens(recipient: Address, amount: u64);
 }
 
 // --------------- Events ---------------

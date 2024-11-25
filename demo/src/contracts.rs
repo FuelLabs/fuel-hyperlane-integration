@@ -18,8 +18,8 @@ use fuels::{
     macros::abigen,
     programs::calls::{CallParameters, Execution},
     types::{
-        bech32::Bech32ContractId, transaction_builders::VariableOutputPolicy, Address, AssetId,
-        Bits256, Bytes, ContractId,
+        bech32::Bech32ContractId, transaction_builders::VariableOutputPolicy, AssetId, Bits256,
+        Bytes, ContractId,
     },
 };
 use futures_util::StreamExt;
@@ -703,7 +703,7 @@ impl Contracts {
     }
 
     /// Fuel (FST) -> Sepolia (FST)
-    pub async fn fuel_transfer_remote_bridged(&self, wallet: WalletUnlocked, amount: u64) {
+    pub async fn fuel_transfer_remote_bridged(&self, amount: u64) {
         let recipient_address = self.sepolia.recipient.address().to_vec();
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
@@ -750,18 +750,19 @@ impl Contracts {
 
         let asset_id = self.fuel_get_minted_asset_id().await;
 
-        let _token_mint_res = self
-            .fuel
-            .warp_route_bridged
-            .methods()
-            .mint_tokens(Address::from(wallet.address()), amount)
-            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-            .determine_missing_contracts(Some(5))
-            .await
-            .unwrap()
-            .call()
-            .await
-            .unwrap();
+        // TEST token mint is removed - ensure recieve happens first than the user will have some tokens to send
+        // let _token_mint_res = self
+        //     .fuel
+        //     .warp_route_bridged
+        //     .methods()
+        //     .mint_tokens(Address::from(wallet.address()), amount)
+        //     .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+        //     .determine_missing_contracts(Some(5))
+        //     .await
+        //     .unwrap()
+        //     .call()
+        //     .await
+        //     .unwrap();
 
         let res = self
             .fuel

@@ -275,23 +275,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("-----------------------------------------------------------");
 
     ////////////////////////////////////////////////////
-    // Case 6: Bridged Fuel (FST) to Sepolia (FST) //
-    ////////////////////////////////////////////////////
-
-    let amount = 300_000;
-    println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
-    println!("-----------------------------------------------------------");
-    println!("transfer amount is {}", amount);
-
-    contracts
-        .fuel_transfer_remote_bridged(fuel_wallet.clone(), amount)
-        .await;
-
-    contracts.monitor_sepolio_for_asset_delivery(true).await;
-    println!("-----------------------------------------------------------");
-
-    ////////////////////////////////////////////////////
-    // Case 7: Bridged Sepolia (FST) to Fuel (FST) //
+    // Case 6: Bridged Sepolia (FST) to Fuel (FST) //
     ////////////////////////////////////////////////////
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
@@ -312,6 +296,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x{}/transactions",
         TEST_RECIPIENT_IN_FUEL
     );
+    println!("-----------------------------------------------------------");
+
+    ////////////////////////////////////////////////////
+    // Case 7: Bridged Fuel (FST) to Sepolia (FST) //
+    ////////////////////////////////////////////////////
+
+    let amount = 300_000;
+    println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
+    println!("-----------------------------------------------------------");
+    println!("transfer amount is {}", amount);
+
+    contracts.fuel_transfer_remote_bridged(amount).await;
+
+    contracts.monitor_sepolio_for_asset_delivery(true).await;
     println!("-----------------------------------------------------------");
 
     ////////////////////////////////////////////////////
