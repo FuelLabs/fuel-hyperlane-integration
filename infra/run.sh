@@ -273,7 +273,7 @@ mkdir -p "$OUTPUT_PATH/agents"
 set_environment_config() {
     if [ "$ENVIRONMENT" == "TESTNET" ]; then
         FUEL_CHAIN_NAME="fueltestnet"
-        EVM_CHAIN_NAME="sepolia"
+        EVM_CHAIN_NAME="basesepolia"
         export CONFIG_FILES="$INFRA_PATH/configs/agent-config.json"
     else
         FUEL_CHAIN_NAME="fueltest1"
