@@ -166,9 +166,9 @@ $ cargo run -- TESTNET
 
 After the script is done, the contract addresses will be written to the `deployments` folder. These contracts need to be copied over to the agent configuration files in the `infra` directory.
 
-The file to edit is `infra/configs/agent-configs.toml` and the contract addresses need to be set on the `fueltestnet` network.
+The file to edit is `infra/configs/agent-configs.json` and the contract addresses need to be set on the `fueltestnet` network.
 
-In the output logs of the deployment, there also be a `Config Sync Block` output, this block needs to be set in the `infra/configs/agent-configs.toml` file under the `fueltestnet` network, `"index" : { "from": <block_number> }`.
+In the output logs of the deployment, there also be a `Config Sync Block` output, this block needs to be set in the `infra/configs/agent-configs.json` file under the `fueltestnet` network, `"index" : { "from": <block_number> }`.
 
 After the contracts and sync block are set, the demo can be run by executing:
 
