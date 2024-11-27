@@ -420,7 +420,12 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
-        recipient.interchain_security_module()
+        let ism = recipient.interchain_security_module();
+        if ism == ContractId::from(ZERO_B256) {
+            storage.default_ism.read()
+        } else {
+            ism
+        }
     }
 }
 
