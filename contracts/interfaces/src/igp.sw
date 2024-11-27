@@ -24,7 +24,6 @@ abi IGP {
         owner: b256,
         beneficiary: b256,
         token_exchange_rate: u64,
-        base_asset_decimal: u8,
         default_gas_amount: u64,
     );
     /// Qupote payment total payment for a given gas amount.

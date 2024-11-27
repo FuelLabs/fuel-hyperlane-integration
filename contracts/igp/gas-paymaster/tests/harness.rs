@@ -22,9 +22,6 @@ mod gas_oracle {
     ));
 }
 
-const INITIAL_BENEFICIARY_ADDRESS: &str =
-    "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
-
 const NON_OWNER_PRIVATE_KEY: &str =
     "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
@@ -39,7 +36,7 @@ const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 const BASE_ASSET_DECIMALS: u8 = 9;
 
 fn get_base_asset() -> AssetId {
-    AssetId::default()
+    AssetId::BASE
 }
 
 fn get_non_base_asset() -> AssetId {
@@ -89,7 +86,12 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
     let owner_identity = Identity::Address(wallet.address().into());
 
     igp.methods()
-        .initialize_ownership(owner_identity)
+        .initialize(
+            Bits256(Address::from(wallet.address()).into()),
+            Bits256(Address::from(wallet.address()).into()),
+            TOKEN_EXCHANGE_RATE_SCALE as u64,
+            TEST_GAS_AMOUNT,
+        )
         .call()
         .await
         .unwrap();
@@ -146,9 +148,9 @@ async fn test_claim() {
 
     let provider = wallet.provider().unwrap();
 
-    let beneficiary = Address::from_str(INITIAL_BENEFICIARY_ADDRESS).unwrap();
-
-    let beneficiary_balance_before = get_balance(provider, &beneficiary.into()).await.unwrap();
+    let beneficiary_balance_before = get_balance(provider, &wallet.address().into())
+        .await
+        .unwrap();
     let igp_balance_before = get_contract_balance(provider, igp.contract_id())
         .await
         .unwrap();
@@ -156,7 +158,7 @@ async fn test_claim() {
     // Claim the tokens
     let call = igp
         .methods()
-        .claim()
+        .claim(get_base_asset())
         .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
         .call()
         .await
@@ -166,19 +168,21 @@ async fn test_claim() {
     assert_eq!(
         events,
         vec![ClaimEvent {
-            beneficiary: Bits256::from_hex_str(INITIAL_BENEFICIARY_ADDRESS).unwrap(),
+            beneficiary: Bits256(Address::from(wallet.address()).into()),
             amount,
         }]
     );
 
-    let beneficiary_balance_after = get_balance(provider, &beneficiary.into()).await.unwrap();
+    let beneficiary_balance_after = get_balance(provider, &wallet.address().into())
+        .await
+        .unwrap();
     let igp_balance_after = get_contract_balance(provider, igp.contract_id())
         .await
         .unwrap();
 
     assert_eq!(igp_balance_before - igp_balance_after, amount);
     assert_eq!(
-        beneficiary_balance_after - beneficiary_balance_before,
+        beneficiary_balance_after - beneficiary_balance_before + 1,
         amount
     );
 }
@@ -215,8 +219,8 @@ async fn get_contract_balance(
 async fn test_initial_beneficiary() {
     let (igp, _) = get_contract_instances().await;
 
-    let expected_beneficiary: Identity =
-        Identity::Address(Address::from_str(INITIAL_BENEFICIARY_ADDRESS).unwrap());
+    let wallet = igp.account();
+    let expected_beneficiary: Identity = Identity::Address(wallet.address().into());
 
     let beneficiary = igp
         .methods()

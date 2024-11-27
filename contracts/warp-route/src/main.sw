@@ -61,7 +61,7 @@ storage {
     /// The address of the default hook contract to use for message dispatch
     default_hook: ContractId = ContractId::zero(),
     /// The address of the beneficiary
-    beneficiary: Identity = Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)),
+    beneficiary: Identity = Identity::ContractId(ContractId::zero()),
     /// The address of the default ISM contract to use for message dispatch
     default_ism: ContractId = ContractId::zero(),
     /// Mapping of domain identifiers to their corresponding router addresses
@@ -211,8 +211,10 @@ impl WarpRoute for Contract {
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let hook_contract = storage.default_hook.read();
 
-        let remote_decimals = _get_remote_router_decimals(remote_domain_router); // will get the remote decimals - or 18 as default
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(9);
+        let remote_decimals = _get_remote_router_decimals(remote_domain_router); 
+        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
+
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
         let adjusted_amount = _adjust_send_decimals(amount, local_decimals, remote_decimals);
 
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
@@ -458,8 +460,11 @@ impl MessageRecipient for Contract {
         let (recipient, amount) = _extract_asset_data_from_body(message_body);
         let recipient_identity = Identity::Address(Address::from(recipient));
 
-        let remote_decimals = _get_remote_router_decimals(sender); // will get the remote decimals - or 18 as default
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(9);
+
+        let remote_decimals = _get_remote_router_decimals(sender); 
+        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
+
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
         let adjusted_amount = _adjust_recieved_decimals(amount, local_decimals, remote_decimals);
 
         let asset = storage.asset_id.read();
@@ -523,8 +528,7 @@ impl Claimable for Contract {
     }
 
     #[storage(read)]
-    fn claim() {
-        let asset = storage.asset_id.read();
+    fn claim(asset: AssetId) {
         let beneficiary = storage.beneficiary.read();
         let balance = this_balance(asset);
 
@@ -636,7 +640,7 @@ fn _insert_route_to_state(domain: u32, router: b256) {
 
 #[storage(read)]
 fn _get_remote_router_decimals(router: b256) -> u8 {
-    storage.remote_router_decimals.get(router).try_read().unwrap_or(18)
+    storage.remote_router_decimals.get(router).try_read().unwrap_or(0)
 }
 
 fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {

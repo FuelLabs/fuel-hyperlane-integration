@@ -41,7 +41,7 @@ mod warp_route {
     const TEST_LOCAL_DOMAIN: u32 = 1717982312;
     const TEST_REMOTE_DOMAIN: u32 = 11155111;
     const TEST_RECIPIENT: &str =
-        "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
+        "0x2407159311d2abbf43ef472a9fd20a526abeadb048116b2ab5c93f7d1c733682";
 
     const TOKEN_NAME: &str = "TestToken";
     const TOKEN_SYMBOL: &str = "TT";
@@ -266,8 +266,7 @@ mod warp_route {
             .await;
         assert!(set_ism_res.is_ok(), "Failed to set default ISM.");
 
-        //For all cases warp route requires a remote wr adress to send assets
-        //Remote router decimals will be set to 18 by default
+        //For all cases warp route requires a remote wr adress and corresponding decimals to send assets
         let enroll_router_res = warp_route
             .methods()
             .enroll_remote_router(
@@ -277,6 +276,19 @@ mod warp_route {
             .call()
             .await;
         assert!(enroll_router_res.is_ok(), "Failed to enroll remote router.");
+
+        let enroll_router_decimals_res = warp_route
+            .methods()
+            .set_remote_router_decimals(
+                Bits256(Address::from_str(REMOTE_ROUTER_ADDRESS).unwrap().into()),
+                18,
+            )
+            .call()
+            .await;
+        assert!(
+            enroll_router_decimals_res.is_ok(),
+            "Failed to enroll remote router decimals."
+        );
 
         (
             warp_route,
@@ -518,7 +530,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
                 .call()
                 .await
                 .unwrap()
@@ -567,7 +579,7 @@ mod warp_route {
             let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let remote_decimals = 18;
             let amount = 2 * 10u64.pow(remote_decimals);
 
@@ -682,7 +694,7 @@ mod warp_route {
             // Claim the balance as the owner
             warp_route
                 .methods()
-                .claim()
+                .claim(config.asset_id.unwrap())
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await
@@ -992,7 +1004,7 @@ mod warp_route {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let amount = 100_000_000_000_000_000;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
@@ -1256,7 +1268,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
                 .call()
                 .await
                 .unwrap()
@@ -1301,7 +1313,7 @@ mod warp_route {
             let (_, warp_route, _, _, _) = get_native_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let amount = 181_555_123_444_000_000;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
@@ -1310,7 +1322,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(sender)
                 .call()
                 .await
                 .unwrap()
@@ -1366,7 +1378,7 @@ mod warp_route {
         /// ============ claim_native ============  
         #[tokio::test]
         async fn test_claim_native() {
-            let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
                 get_native_contract_instance().await;
 
             let wallet = warp_route.account();
@@ -1401,7 +1413,7 @@ mod warp_route {
             // Claim the balance
             warp_route
                 .methods()
-                .claim()
+                .claim(config.asset_id.unwrap())
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await

@@ -8,12 +8,12 @@ pub enum WarpRouteError {
     PaymentError: (),
     Unauthorized: (),
     InsufficientFunds: (),
-    MessageAlreadyDelivered: (),
     AlreadyInitialized: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),
     NoRouter: u32,
+    RemoteDecimalsNotSet: (),
 }
 
 /// The mode of the WarpRoute contract

@@ -6,8 +6,8 @@
             "symbol": "USDC",
             "totalSupply": 409521401958845568,
             "decimals": 6,
-            "token": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-            "warpRoute": "0x78026106472a7FB10668fED0301Af9dD321cf16B",
+            "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            "warpRoute": "0x13F558Fbf6E98eDfA158E9b6bC447f356201E649",
             "standard": "EvmHypCollateral"
         },
         "fuel": {
@@ -33,11 +33,11 @@
         },
         "basesepolia": {
             "type": "bridged",
-            "name": "FuelSepoliaUSDC",
-            "symbol": "FST",
+            "name": "BasesepoliaFuelUSDC",
+            "symbol": "BFU",
             "totalSupply": 10000000,
             "decimals": 18,
-            "warpRoute": "0xb018793a4Bed2b5e859286786DFCD7eC0322a34E"
+            "warpRoute": "0xc10f47030fEB9E4111e6b591354dd0EB01C02919"
         }
     }
 }

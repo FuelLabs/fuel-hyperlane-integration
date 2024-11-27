@@ -16,8 +16,8 @@ use alloy_provider::{
     Identity, RootProvider,
 };
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::fs;
+use std::{collections::HashMap, env};
 
 use sepolia_warp_route_bridged::SepoliaWarpRouteBridged::SepoliaWarpRouteBridgedInstance;
 use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
@@ -175,9 +175,9 @@ pub fn get_evm_metadata_from_yaml() -> Metadata {
 }
 
 pub async fn get_evm_wallet() -> EthereumWallet {
-    let sepolia_pk_bytes =
-        hex::decode("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-            .expect("Failed to decode hex string");
+    let sepolia_pk_env = env::var("SEPOLIA_PRIVATE_KEY").expect("SEPOLIA_PRIVATE_KEY must be set");
+    let sepolia_pk_bytes = hex::decode(sepolia_pk_env).expect("Failed to decode hex string");
+
     let sepolia_pk = SepoliaPrivateKey::from_slice(&sepolia_pk_bytes)
         .expect("Failed to create SepoliaPrivateKey from slice");
 

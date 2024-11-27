@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Pre Demo Setup //
     ////////////////////
 
-    // contracts.set_sepolia_ism_to_test_ism().await;
+    //contracts.set_sepolia_ism_to_test_ism().await;
     contracts.set_fuel_ism_to_test_ism().await;
     contracts.set_fuel_mailbox_ism_to_test_ism().await;
 
@@ -214,6 +214,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Case 4: Send message from Fuel to Sepolia, make sure Fuel MerkleTreeHook can get indexed properly //
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    println!("-----------------------------------------------------------");
+    println!("Case 4: make sure Fuel MerkleTreeHook can get indexed properly");
     // Validator indexes MerkleHook for Message ID Multisig ISM
     contracts.set_sepolia_ism_to_message_id_multisig().await;
 
@@ -250,28 +252,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
 
-    let amount = 6;
+    let amount = 1;
     println!("transfer amount is {}", amount);
 
     send_token_to_contract(
         fuel_wallet.clone(),
         contracts.fuel.warp_route_collateral.contract_id(),
-        amount,
+        amount * 10u64.pow(3),
     )
     .await;
 
-    let initial_balance = get_native_balance(&fuel_provider).await;
+    let recipient = contracts.fuel.test_recipient.contract_id();
+
+    let initial_balance = get_native_balance(&fuel_provider, recipient.into()).await;
     println!("Initial recipient balance: {}", initial_balance);
 
     let message_id = contracts.sepolia_transfer_remote_collateral(amount).await;
     contracts.monitor_fuel_for_delivery(message_id).await;
 
-    let final_balance = get_native_balance(&fuel_provider).await;
+    let final_balance = get_native_balance(&fuel_provider, recipient.into()).await;
     println!("Final recipient balance: {}", final_balance);
     println!("Difference: {}", final_balance - initial_balance);
-    println!(
-        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b/transactions",
-    );
     println!("-----------------------------------------------------------");
 
     ////////////////////////////////////////////////////
@@ -280,29 +281,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
 
-    let amount = 470;
+    let amount = 40;
     println!("transfer amount is {}", amount);
     let asset_id = contracts.fuel_get_minted_asset_id().await;
+    let recipient_contract_id = contracts.fuel.test_recipient.contract_id().into();
 
-    let balance_before: u64 = get_bridged_balance(&fuel_provider, asset_id).await;
+    let balance_before: u64 =
+        get_bridged_balance(&fuel_provider, asset_id, recipient_contract_id).await;
     println!("Balance before: {}", balance_before);
 
     let message_id = contracts.sepolia_transfer_remote_bridged(amount).await;
     contracts.monitor_fuel_for_delivery(message_id).await;
 
-    let balance_after = get_bridged_balance(&fuel_provider, asset_id).await;
+    let balance_after = get_bridged_balance(&fuel_provider, asset_id, recipient_contract_id).await;
     println!("Balance after: {}", balance_after);
-    println!(
-        "Recipient transactions can be verified from: https://app-testnet.fuel.network/contract/0x{}/transactions",
-        TEST_RECIPIENT_IN_FUEL
-    );
-    println!("-----------------------------------------------------------");
 
     ////////////////////////////////////////////////////
     // Case 7: Bridged Fuel (FST) to Sepolia (FST) //
     ////////////////////////////////////////////////////
 
-    let amount = 300_000;
+    let amount = 1;
     println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
     println!("-----------------------------------------------------------");
     println!("transfer amount is {}", amount);
@@ -343,7 +341,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     contracts
         .fuel_send_dispatch(DispatchType::WithIGPHook)
         .await;
-    contracts.monitor_sepolia_for_delivery().await;
 
     let igp_balance =
         get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
