@@ -155,7 +155,7 @@ Before running the demo, the `.env` files of both the `demo` and the `deploy` di
 For the `BaseSepolia` RPCs, we recommend something without a limit on the number of requests.
 For the Private Keys, remember to have testnet funds in for both `FuelTestnet` and `BaseSepolia`.
 
-For running the Validators required, the `SEPOLIA_PRIVATE_KEY` parameters from the `deploy/.env` file must be copied to the `infra/run-val.sh` script _in the same order as described by the comments_.
+For running the Validators required, the `SEPOLIA_PRIVATE_KEY` parameters from the `deploy/.env` file must be copied to the `infra/run-val.sh` script _in the same order as described by the comments_. Make sure the private keys are different for each validator.
 
 **Note:** Sepolia addresses in `deploy/env` should be without 0x prefix, but all the addresses in `infra/run-val.sh` script should have 0x prefix.
 
