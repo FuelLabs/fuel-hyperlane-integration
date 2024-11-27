@@ -155,7 +155,7 @@ Before running the demo, the `.env` files of both the `demo` and the `deploy` di
 For the `BaseSepolia` RPCs, we recommend something without a limit on the number of requests.
 For the Private Keys, remember to have testnet funds in for both `FuelTestnet` and `BaseSepolia`.
 
-For running the Validators required, the `SEPOLIA_PRIVATE_KEY` parameters from the `deploy/.env` file must be copied to the `infra/run-val.sh` script _in the same order as described by the comments_.
+For running the Validators required, the `SEPOLIA_PRIVATE_KEY` parameters from the `deploy/.env` file must be copied to the `infra/run-val.sh` script _in the same order as described by the comments_. Make sure the private keys are different for each validator.
 
 After all the private keys and RPC urls are set, the Sway smart contracts need to be deployed on `FuelTestnet`, this can be done using the deploy script:
 
