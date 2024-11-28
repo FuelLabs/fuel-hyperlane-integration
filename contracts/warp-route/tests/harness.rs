@@ -41,7 +41,7 @@ mod warp_route {
     const TEST_LOCAL_DOMAIN: u32 = 1717982312;
     const TEST_REMOTE_DOMAIN: u32 = 11155111;
     const TEST_RECIPIENT: &str =
-        "0xa347fa1775198aa68fb1a4523a4925f891cca8f4dc79bf18ca71274c49f600c3";
+        "0x2407159311d2abbf43ef472a9fd20a526abeadb048116b2ab5c93f7d1c733682";
 
     const TOKEN_NAME: &str = "TestToken";
     const TOKEN_SYMBOL: &str = "TT";
@@ -101,6 +101,39 @@ mod warp_route {
             asset_id: config.asset_id.unwrap(),
             sub_id: AssetId::zeroed().into(),
         }
+    }
+
+    // For testing the bridged asset, we actually need to have the tokens
+    // Since the asset is managed by the warp route - we can mock the asset minting with handle call
+    // So in order to have a test wallet with 100 tokens with 6 decimals, we will mock someone sending 100*10^(remote_decimals - 6) tokens
+    async fn mock_recieve_for_mint(
+        wallet: WalletUnlocked,
+        warp_route: WarpRoute<WalletUnlocked>,
+        amount: u64,
+        remote_decimals: u32,
+        local_decimals: u32,
+    ) {
+        let remote_adjusted_amount = amount * 10u64.pow(remote_decimals - local_decimals);
+
+        let body = build_message_body(
+            Bits256(Address::from(wallet.address()).into()),
+            remote_adjusted_amount,
+        );
+
+        warp_route
+            .methods()
+            .handle(
+                TEST_REMOTE_DOMAIN,
+                Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap(),
+                body,
+            )
+            .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+            .determine_missing_contracts(Some(5))
+            .await
+            .unwrap()
+            .call()
+            .await
+            .unwrap();
     }
 
     // Storing Test Configuration
@@ -233,8 +266,7 @@ mod warp_route {
             .await;
         assert!(set_ism_res.is_ok(), "Failed to set default ISM.");
 
-        //For all cases warp route requires a remote wr adress to send assets
-        //Remote router decimals will be set to 18 by default
+        //For all cases warp route requires a remote wr adress and corresponding decimals to send assets
         let enroll_router_res = warp_route
             .methods()
             .enroll_remote_router(
@@ -244,6 +276,19 @@ mod warp_route {
             .call()
             .await;
         assert!(enroll_router_res.is_ok(), "Failed to enroll remote router.");
+
+        let enroll_router_decimals_res = warp_route
+            .methods()
+            .set_remote_router_decimals(
+                Bits256(Address::from_str(REMOTE_ROUTER_ADDRESS).unwrap().into()),
+                18,
+            )
+            .call()
+            .await;
+        assert!(
+            enroll_router_decimals_res.is_ok(),
+            "Failed to enroll remote router decimals."
+        );
 
         (
             warp_route,
@@ -485,7 +530,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
                 .call()
                 .await
                 .unwrap()
@@ -534,7 +579,7 @@ mod warp_route {
             let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let remote_decimals = 18;
             let amount = 2 * 10u64.pow(remote_decimals);
 
@@ -649,7 +694,7 @@ mod warp_route {
             // Claim the balance as the owner
             warp_route
                 .methods()
-                .claim()
+                .claim(config.asset_id.unwrap())
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await
@@ -786,6 +831,7 @@ mod warp_route {
     /// Bridged Token Mode Test Cases
     #[cfg(test)]
     mod bridged {
+
         use super::*;
 
         static BRIDGED_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
@@ -876,7 +922,17 @@ mod warp_route {
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
             let asset = config.asset_id.unwrap();
-            let mint_amount = 100_000_000;
+            let local_decimals = config.decimals as u32;
+
+            let remote_decimals = warp_route
+                .methods()
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
+                .call()
+                .await
+                .unwrap()
+                .value;
+
+            let amount = 100;
 
             let wallet_balance_before_mint = get_balance(provider, wallet.address(), asset)
                 .await
@@ -884,23 +940,20 @@ mod warp_route {
 
             assert_eq!(wallet_balance_before_mint, 0);
 
-            // Mint tokens for the test wallet
-            warp_route
-                .methods()
-                .mint_tokens(Address::from(wallet.address()), mint_amount)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .determine_missing_contracts(Some(5))
-                .await
-                .unwrap()
-                .call()
-                .await
-                .unwrap();
+            mock_recieve_for_mint(
+                wallet.clone(),
+                warp_route.clone(),
+                amount,
+                remote_decimals as u32,
+                local_decimals,
+            )
+            .await;
 
             let wallet_balance = get_balance(provider, wallet.address(), asset)
                 .await
                 .unwrap();
 
-            assert_eq!(wallet_balance_before_mint + mint_amount, wallet_balance);
+            assert_eq!(wallet_balance_before_mint + amount, wallet_balance);
 
             //For gas payment
             let (_, _) = wallet
@@ -914,8 +967,6 @@ mod warp_route {
                 .unwrap();
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-            let amount = 100;
-
             let call_params = CallParameters::new(amount, asset, 2_000_000);
 
             let call = warp_route
@@ -953,7 +1004,7 @@ mod warp_route {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let amount = 100_000_000_000_000_000;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
@@ -1007,7 +1058,16 @@ mod warp_route {
         /// ============ get_cumulative_supply_before_and_after_mint ============
         #[tokio::test]
         async fn test_get_cumulative_supply_before_and_after_mint() {
-            let (_, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let wallet = warp_route.account();
+            let local_decimals = config.decimals as u32;
+            let remote_decimals = warp_route
+                .methods()
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
+                .call()
+                .await
+                .unwrap()
+                .value;
 
             // Assert that the initial cumulative supply is 0
             let initial_cumulative_supply = warp_route
@@ -1024,16 +1084,15 @@ mod warp_route {
 
             // Mint some tokens and verify the updated cumulative supply
             let mint_amount = 100_000u64;
-            warp_route
-                .methods()
-                .mint_tokens(Address::from(warp_route.account().address()), mint_amount)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .determine_missing_contracts(Some(5))
-                .await
-                .unwrap()
-                .call()
-                .await
-                .unwrap();
+
+            mock_recieve_for_mint(
+                wallet.clone(),
+                warp_route.clone(),
+                mint_amount,
+                remote_decimals as u32,
+                local_decimals,
+            )
+            .await;
 
             // Fetch the updated cumulative supply after minting
             let updated_cumulative_supply = warp_route
@@ -1049,24 +1108,32 @@ mod warp_route {
             );
         }
 
-        /// ============ over_burn ============
+        /// ============ sending_more_than_minted ============
         #[tokio::test]
-        async fn test_over_burn() {
+        async fn test_sending_more_than_minted() {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
 
             let wallet = warp_route.account();
             let asset = config.asset_id.unwrap();
-
-            // Mint some tokens for testing burn
-            warp_route
+            let mint_amount = 1_000;
+            let local_decimals = config.decimals as u32;
+            let remote_decimals = warp_route
                 .methods()
-                .mint_tokens(Address::from(wallet.address()), 1_000)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
                 .call()
                 .await
-                .unwrap();
+                .unwrap()
+                .value;
 
-            // Attempt to burn more than the total supply
+            mock_recieve_for_mint(
+                wallet.clone(),
+                warp_route.clone(),
+                mint_amount,
+                remote_decimals as u32,
+                local_decimals,
+            )
+            .await;
+
             let call = warp_route
                 .methods()
                 .transfer_remote(
@@ -1087,16 +1154,29 @@ mod warp_route {
         /// ============ max_supply_enforcement_handle_message ============
         #[tokio::test]
         async fn test_max_supply_enforcement_handle_message() {
-            let (_, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
             let wallet = warp_route.account();
+            let local_decimals = config.decimals as u32;
 
             warp_route
                 .methods()
-                .mint_tokens(Address::from(wallet.address()), MAX_SUPPLY - 1)
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+                .set_remote_router_decimals(
+                    Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap(),
+                    local_decimals as u8,
+                )
                 .call()
                 .await
+                .map_err(|e| format!("Error occured while setting decimals: {:?}", e))
                 .unwrap();
+
+            mock_recieve_for_mint(
+                wallet.clone(),
+                warp_route.clone(),
+                MAX_SUPPLY - 1,
+                local_decimals,
+                local_decimals,
+            )
+            .await;
 
             // Assert that the initial cumulative supply is just below the max
             let initial_cumulative_supply = warp_route
@@ -1108,9 +1188,15 @@ mod warp_route {
                 .value;
             assert_eq!(initial_cumulative_supply, MAX_SUPPLY - 1);
 
+            let body = build_message_body(Bits256(Address::from(wallet.address()).into()), 5);
+
             let call = warp_route
                 .methods()
-                .mint_tokens(Address::from(wallet.address()), 5)
+                .handle(
+                    TEST_REMOTE_DOMAIN,
+                    Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap(),
+                    body,
+                )
                 .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
                 .call()
                 .await;
@@ -1182,7 +1268,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
                 .call()
                 .await
                 .unwrap()
@@ -1227,7 +1313,7 @@ mod warp_route {
             let (_, warp_route, _, _, _) = get_native_contract_instance().await;
 
             let wallet = warp_route.account();
-            let sender = Bits256(Address::from(wallet.address()).into());
+            let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let amount = 181_555_123_444_000_000;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
@@ -1236,7 +1322,7 @@ mod warp_route {
 
             let remote_decimals = warp_route
                 .methods()
-                .remote_router_decimals(recipient)
+                .remote_router_decimals(sender)
                 .call()
                 .await
                 .unwrap()
@@ -1292,7 +1378,7 @@ mod warp_route {
         /// ============ claim_native ============  
         #[tokio::test]
         async fn test_claim_native() {
-            let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
                 get_native_contract_instance().await;
 
             let wallet = warp_route.account();
@@ -1327,7 +1413,7 @@ mod warp_route {
             // Claim the balance
             warp_route
                 .methods()
-                .claim()
+                .claim(config.asset_id.unwrap())
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await

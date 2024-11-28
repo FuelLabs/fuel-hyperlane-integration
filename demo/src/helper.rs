@@ -123,6 +123,18 @@ pub fn get_contract_id_from_json(chain_name: &str, path: &[&str]) -> ContractId 
     stip_address_prefix(value)
 }
 
+pub fn get_fuel_chain_id() -> u32 {
+    get_value_from_json("fueltestnet", &["domainId"])
+        .as_u64()
+        .unwrap() as u32
+}
+
+pub fn get_basesepolia_chain_id() -> u32 {
+    get_value_from_json("basesepolia", &["domainId"])
+        .as_u64()
+        .unwrap() as u32
+}
+
 pub fn stip_address_prefix(value: Value) -> ContractId {
     let value_str = value.as_str().unwrap_or_default();
     let value_str_stripped = value_str.strip_prefix("0x").unwrap();
@@ -138,8 +150,12 @@ pub async fn get_native_balance(provider: &Provider) -> u64 {
         .unwrap()
 }
 
-pub async fn get_bridged_balance(provider: &Provider, asset_id: AssetId) -> u64 {
-    let address = Address::from_str(TEST_RECIPIENT_IN_FUEL).unwrap();
+pub async fn get_bridged_balance(
+    provider: &Provider,
+    asset_id: AssetId,
+    recipient: ContractId,
+) -> u64 {
+    let address = Address::from_str(recipient.to_string().as_str()).unwrap();
 
     provider
         .get_asset_balance(&address.into(), asset_id)

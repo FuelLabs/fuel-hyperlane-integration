@@ -26,10 +26,6 @@ async fn set_gas_configs() -> Result<f64, String> {
     let gas_oracle = GasOracle::new(gas_oracle_id, wallet.clone());
 
     let owner = Bits256(Address::from(wallet.address()).into());
-    let base_asset_decimals = get_value_from_agent_config_json("fueltest1", "nativeToken.decimals")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u8)
-        .unwrap_or(18);
 
     let default_gas = get_value_from_agent_config_json("fueltest1", "defaultGas")
         .and_then(|v| v.as_u64())
@@ -37,7 +33,7 @@ async fn set_gas_configs() -> Result<f64, String> {
 
     let _ = igp
         .methods()
-        .initialize(owner, owner, 1, base_asset_decimals, default_gas)
+        .initialize(owner, owner, 1, default_gas)
         .call()
         .await
         .map_err(|e| format!("Failed to initialize IGP: {:?}", e));

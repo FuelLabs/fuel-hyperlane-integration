@@ -2,7 +2,7 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        get_remote_domain,
+        build_message_body, get_remote_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{
             get_balance, get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2,
@@ -23,10 +23,22 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
-    let base_asset = get_local_fuel_base_asset();
+    let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
+    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
+    let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
+    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
+    let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
 
+    let base_asset = get_local_fuel_base_asset();
     let remote_domain = get_remote_domain();
     let amount = 100_000;
+
+    let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+    let remote_wr = load_remote_wr_addresses("STR").unwrap();
+    let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
+
+    let mut remote_wr_array = [0u8; 32];
+    remote_wr_array[12..].copy_from_slice(&remote_wr_hex);
 
     //get token info
     let token_info = warp_route_instance
@@ -43,17 +55,23 @@ async fn bridged_asset_send() -> Result<f64, String> {
             .await
             .unwrap();
 
-    //mint testing tokens to owner
+    //minting is same as recieving remote adjusted amount
+    //if 1*10^18 is sent, the minted amount is 1*10^(18-local_decimals)
+    let local_decimals = token_info.value.decimals;
+    let remote_adjusted_amount = amount * 10u64.pow(18 - local_decimals as u32);
+
+    let body = build_message_body(
+        Bits256(Address::from(wallet.address()).into()),
+        remote_adjusted_amount,
+    );
+
     warp_route_instance
         .methods()
-        .mint_tokens(Address::from(wallet.address()), amount)
-        .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-        .determine_missing_contracts(Some(5))
-        .await
-        .unwrap()
+        .handle(remote_domain, test_recipient, body)
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .call()
         .await
-        .map_err(|e| format!("Failed to mint and transfer tokens: {:?}", e))?;
+        .unwrap();
 
     let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), asset_id)
         .await
@@ -81,14 +99,6 @@ async fn bridged_asset_send() -> Result<f64, String> {
         ));
     }
 
-    let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
-    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
-    let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
-    let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
-    let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
-
-    let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-
     let _ = send_gas_to_contract_2(
         wallet.clone(),
         warp_route_instance.contract_id(),
@@ -96,12 +106,6 @@ async fn bridged_asset_send() -> Result<f64, String> {
         base_asset,
     )
     .await;
-
-    let remote_wr = load_remote_wr_addresses("STR").unwrap();
-    let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
-
-    let mut remote_wr_array = [0u8; 32];
-    remote_wr_array[12..].copy_from_slice(&remote_wr_hex);
 
     warp_route_instance
         .methods()

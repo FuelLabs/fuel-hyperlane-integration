@@ -20,7 +20,7 @@ abi Claimable {
 
     /// Claims the contract's balance and sends it to the beneficiary.
     #[storage(read)]
-    fn claim();
+    fn claim(asset: AssetId);
 }
 
 //  ----------------- Events -----------------

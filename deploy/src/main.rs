@@ -291,7 +291,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Test ISM deployed with ID: {}",
+        "interchainSecurityModule: 0x{}",
         ContractId::from(test_ism_id.clone())
     );
 
@@ -305,7 +305,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Aggregation ISM deployed with ID: {}",
+        "AggregationISM: 0x{}",
         ContractId::from(aggregation_ism_id.clone())
     );
 
@@ -319,7 +319,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Domain Routing ISM deployed with ID: {}",
+        "DomainRoutingISM: 0x{}",
         ContractId::from(domain_routing_ism_id.clone())
     );
 
@@ -333,7 +333,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Fallback Domain Routing ISM deployed with ID: {}",
+        "FallbackDomainRoutingISM: 0x{}",
         ContractId::from(fallback_domain_routing_ism_id.clone())
     );
 
@@ -347,7 +347,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Message ID Multisig ISM deployed with ID: {}",
+        "MessageIdMultisigISM: 0x{}",
         ContractId::from(message_id_multisig_ism_id.clone())
     );
 
@@ -361,7 +361,7 @@ async fn main() {
     .unwrap();
 
     println!(
-        "Merkle Root Multisig ISM deployed with ID: {}",
+        "MerkleRootMultisigISM: 0x{}",
         ContractId::from(merkle_root_multisig_ism_id.clone())
     );
 
@@ -642,7 +642,7 @@ async fn main() {
 
     let init_res = igp
         .methods()
-        .initialize(wallet_address, wallet_address, 15_000_000_000_000, 9, 5000)
+        .initialize(wallet_address, wallet_address, 15_000_000_000_000, 5000)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
@@ -659,7 +659,7 @@ async fn main() {
     let set_gas_data_res = gas_oracle
         .methods()
         .set_remote_gas_data_configs(vec![RemoteGasDataConfig {
-            domain: 11155111,
+            domain: 84532,
             remote_gas_data: RemoteGasData {
                 // Numbers from BSC and Optimism testnets - 15000000000
                 token_exchange_rate: 15000000000,
@@ -677,7 +677,7 @@ async fn main() {
 
     let set_gas_oracle_res = igp
         .methods()
-        .set_gas_oracle(11155111, Bits256(gas_oracle_id.hash().into()))
+        .set_gas_oracle(84532, Bits256(gas_oracle_id.hash().into()))
         .call()
         .await;
 

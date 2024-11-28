@@ -31,17 +31,20 @@ enum IgpError {
     ContractAlreadyInitialized: (),
 }
 
+configurable {
+    BASE_ASSET_DECIMALS: u8 = 9,
+}
+
 storage {
-    // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
-    // PRIVATE KEY, which is the first default account when running fuel-client locally.
-    beneficiary: Identity = Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)),
+    /// The address of the beneficiary who can claim the collected gas payments
+    beneficiary: Identity = Identity::ContractId(ContractId::zero()),
+    /// The mapping of domain identifiers to their corresponding gas oracle addresses
     gas_oracles: StorageMap<u32, b256> = StorageMap {},
     /// The intended use is for applications to not need to worry about ISM gas costs themselves.
     gas_overheads: StorageMap<u32, u64> = StorageMap {},
     /// The scale of a token exchange rate. 1e19.
     token_exchange_rate_scale: u64 = 10_000_000_000_000_000_000,
-    base_asset_decimal: u8 = 9,
-    /// local default gas amount
+    /// The local default gas amount
     default_gas_amount: u64 = 5_000,
 }
 
@@ -51,9 +54,9 @@ impl IGP for Contract {
     /// ### Arguments
     ///
     /// * `owner`: [b256] - The owner of the contract.
-    /// * `default_ism`: [b256] - The default ISM contract Id.
-    /// * `default_hook`: [b256] - The default hook contract Id.
-    /// * `required_hook`: [b256] - The required hook contract Id.
+    /// * `beneficiary`: [b256] - The beneficiary of the contract.
+    /// * `token_exchange_rate`: [u64] - The token exchange rate.
+    /// * `default_gas_amount`: [u64] - The default gas amount.
     ///
     /// ### Reverts
     ///
@@ -63,7 +66,6 @@ impl IGP for Contract {
         owner: b256,
         beneficiary: b256,
         token_exchange_rate: u64,
-        base_asset_decimal: u8,
         default_gas_amount: u64,
     ) {
         require(
@@ -77,7 +79,6 @@ impl IGP for Contract {
             .write(Identity::Address(Address::from(beneficiary)));
 
         storage.token_exchange_rate_scale.write(token_exchange_rate);
-        storage.base_asset_decimal.write(base_asset_decimal);
         storage.default_gas_amount.write(default_gas_amount);
     }
 
@@ -217,13 +218,11 @@ impl Claimable for Contract {
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
     #[storage(read)]
-    fn claim() {
-        let BASE_ASSET_ID = AssetId::base();
-
+    fn claim(asset: AssetId) {
         let beneficiary = storage.beneficiary.read();
-        let balance = this_balance(BASE_ASSET_ID);
+        let balance = this_balance(asset);
 
-        transfer(beneficiary, BASE_ASSET_ID, balance);
+        transfer(beneficiary, asset, balance);
 
         log(ClaimEvent {
             beneficiary: beneficiary.bits(),
@@ -336,9 +335,7 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
     let origin_cost = convert_decimals(
         origin_cost,
         token_decimals,
-        storage
-            .base_asset_decimal
-            .read(),
+        BASE_ASSET_DECIMALS
     );
 
     u256_to_u64(origin_cost).expect("quote_gas_payment overflow")
