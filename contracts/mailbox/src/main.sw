@@ -274,9 +274,9 @@ impl Mailbox for Contract {
         let nonce = _nonce();
         storage.nonce.write(nonce + 1);
         log(DispatchEvent {
-            message_id: id,
+            sender: message.sender(),
             destination_domain,
-            recipient_address: recipient_address,
+            recipient_address,
             message: message.message_clean(),
         });
         log(DispatchIdEvent { message_id: id });
@@ -397,11 +397,11 @@ impl Mailbox for Contract {
         msg_recipient.handle(origin_domain, sender, message.body());
 
         log(ProcessEvent {
-            message_id: id,
             origin: origin_domain,
             sender,
             recipient,
         });
+        log(ProcessIdEvent { message_id: id });
     }
 
     /// Returns the ISM set by a recipient.

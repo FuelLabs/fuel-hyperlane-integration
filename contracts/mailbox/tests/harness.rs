@@ -215,6 +215,9 @@ async fn test_dispatch_logs_message() {
     let dispatch_events = dispatch_call
         .decode_logs_with_type::<DispatchEvent>()
         .unwrap();
+    let dispatch_id_events = dispatch_call
+        .decode_logs_with_type::<DispatchIdEvent>()
+        .unwrap();
     let dispatch_message: Vec<u8> = dispatch_events
         .first()
         .unwrap()
@@ -225,6 +228,12 @@ async fn test_dispatch_logs_message() {
     let decoded_message = HyperlaneAgentMessage::from(dispatch_message);
 
     assert_eq!(decoded_message.id(), message_id);
+    assert_eq!(
+        dispatch_id_events,
+        vec![DispatchIdEvent {
+            message_id: h256_to_bits256(message_id),
+        }],
+    );
 
     // Also make sure the DispatchIdEvent was logged
     let dispatch_id_events = dispatch_call
@@ -312,13 +321,23 @@ async fn test_process_event() {
         .decode_logs_with_type::<ProcessEvent>()
         .unwrap();
 
+    let process_id_event = process_call
+        .decode_logs_with_type::<ProcessIdEvent>()
+        .unwrap();
+
     assert_eq!(
         process_events,
         vec![ProcessEvent {
-            message_id: h256_to_bits256(message.id()),
             origin: message.origin,
             sender: h256_to_bits256(message.sender),
             recipient: h256_to_bits256(message.recipient),
+        }],
+    );
+
+    assert_eq!(
+        process_id_event,
+        vec![ProcessIdEvent {
+            message_id: h256_to_bits256(message.id()),
         }],
     );
 }
