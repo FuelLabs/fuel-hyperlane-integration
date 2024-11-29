@@ -204,7 +204,7 @@ async fn all_isms_accept() {
         .unwrap()
         .value;
 
-    assert_eq!(result, true);
+    assert!(result);
 }
 
 #[tokio::test]

@@ -1,15 +1,16 @@
 # The configuration of the Local network
 
 ## Chain config
+
 - The `ChainId` is `0`.
 - The initial `privileged_address` which can perform the network upgrade:
-    ```shell
-    {"address":"9f0e19d6c2a6283a3222426ab2630d35516b1799b503f37b02105bebe1b8a3e9","secret":"d80a243ef91956f626d1dad2f23bdfeb73fd0b363282b1eb2227ac5964144afb","type":"block_production"}
-    ```
-- The public address of the authority node that produces blocks: 
-    ```shell
-    {"address":"e0a9fcde1b73f545252e01b30b50819eb9547d07531fa3df0385c5695736634d","secret":"4dd0cdca64ef56a01fc81891f9beb6d898f19a22b2e287bce91d807fdf46589a","type":"block_production"}
-    ```
+  ```shell
+  {"address":"9f0e19d6c2a6283a3222426ab2630d35516b1799b503f37b02105bebe1b8a3e9","secret":"d80a243ef91956f626d1dad2f23bdfeb73fd0b363282b1eb2227ac5964144afb","type":"block_production"}
+  ```
+- The public address of the authority node that produces blocks:
+  ```shell
+  {"address":"e0a9fcde1b73f545252e01b30b50819eb9547d07531fa3df0385c5695736634d","secret":"4dd0cdca64ef56a01fc81891f9beb6d898f19a22b2e287bce91d807fdf46589a","type":"block_production"}
+  ```
 - The block gas limit is `100000000`.
 
 ### Gas costs
@@ -19,14 +20,16 @@ The `new_storage_per_byte` is manually set to be `233`.
 The `gas_per_byte` is manually set to be `233`.
 
 ### State transition
+
 The state transition bytecode from [`0.36.0` release](https://github.com/FuelLabs/fuel-core/releases/download/v0.36.0/fuel-core-0.36.0-aarch64-apple-darwin.tar.gz).
 This state transition function is used for any blocks produced with the `state_transition_bytecode_version` equal to `11`.
 
 ## State config
-- The `coinbase` address hard coded in the genesis contract: 
-    ```shell
-    {"address":"7b4b30b2437b0073e5ba5a9324cf55831d180a89f66332b541827e12e647b751","secret":"9e24cfa071f6c1c4984a17ecf18061a8d0c9c304e7dd7703788bd122bd578650","type":"block_production"}
-    ```
+
+- The `coinbase` address hard coded in the genesis contract:
+  ```shell
+  {"address":"7b4b30b2437b0073e5ba5a9324cf55831d180a89f66332b541827e12e647b751","secret":"9e24cfa071f6c1c4984a17ecf18061a8d0c9c304e7dd7703788bd122bd578650","type":"block_production"}
+  ```
 - Contains 1 wallet with fake ETHs:
   - Wallet 1:
     ```shell

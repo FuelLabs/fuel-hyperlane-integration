@@ -25,7 +25,6 @@ abi Mailbox {
     /// ### Returns
     ///
     /// * [u32] - The domain of the contract.
-    #[storage(read)]
     fn local_domain() -> u32;
 
     /// Returns true if the message has been processed.
@@ -168,6 +167,6 @@ abi Mailbox {
     /// ### Returns
     ///
     /// * [ContractId] - The ISM contract Id.
-    #[storage(read, write)]
+    #[storage(read)]
     fn recipient_ism(recipient: ContractId) -> ContractId;
 }

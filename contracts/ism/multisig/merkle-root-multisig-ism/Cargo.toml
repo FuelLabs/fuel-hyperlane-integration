@@ -13,10 +13,10 @@ hyperlane-core = { workspace = true }
 sha3 = { workspace = true }
 futures = { workspace = true }
 test-utils = { path = "../../../../test-utils" }
-hex = "0.4"
-alloy-signer = "0.2.1"
-alloy-signer-local = "0.2.1"
-alloy-primitives = "0.7.7"
+hex = { workspace = true }
+alloy-signer = { workspace = true }
+alloy-signer-local = { workspace = true }
+alloy-primitives = { workspace = true }
 fuel-merkle = { version = "0.56.0" }
 
 

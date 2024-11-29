@@ -1,15 +1,16 @@
 mod cases;
+mod evm;
 mod setup;
 mod utils;
 
 use cases::{pull_test_cases, FailedTestCase};
-use setup::{cleanup, setup};
-use tokio::{sync::mpsc, task, time::Instant};
+use setup::setup;
+use tokio::{sync::mpsc, time::Instant};
 use utils::summary;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let fuel_node = setup().await;
+    setup().await;
     println!("\nRunning E2E tests\n");
     let start = Instant::now();
 
@@ -21,10 +22,9 @@ async fn main() {
 
     for test in all_test_cases {
         let tx = tx.clone();
-        task::spawn(async move {
-            let result = (test.name(), test.run().await);
-            tx.send(result).await.unwrap();
-        });
+        let test_name = test.name().clone();
+        let result = test.run().await;
+        tx.send((test_name, result)).await.unwrap();
     }
     drop(tx);
 

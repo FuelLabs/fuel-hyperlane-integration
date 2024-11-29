@@ -18,6 +18,7 @@ use std::{
             write,
         },
         storage_key::*,
+        storage_vec::*,
     },
 };
 
@@ -89,7 +90,7 @@ const ZERO_HASHES: [b256; 32] = [
 pub struct StorageMerkleTree {}
 
 pub struct MerkleTree {
-    pub branch: [b256; 32], // [b256; TREE_DEPTH]
+    pub branch: Vec<b256>, // [b256; TREE_DEPTH]
     pub count: u32,
 }
 
@@ -103,7 +104,6 @@ impl StorageKey<StorageMerkleTree> {
     /// ### Returns
     ///
     /// * [b256] - The storage key.
-    #[storage(read)]
     fn get_branch_storage_key(self, index: u64) -> b256 {
         sha256((index, self.field_id()))
     }
@@ -222,11 +222,11 @@ impl StorageKey<StorageMerkleTree> {
     #[storage(read)]
     pub fn load(self) -> MerkleTree {
         let count = self.get_count();
-        let mut branch: [b256; 32] = [ZERO_B256; 32];
+        let mut branch: Vec<b256> = Vec::with_capacity(TREE_DEPTH);
 
         let mut i = 0;
         while i < TREE_DEPTH {
-            branch[i] = self.get_branch(i);
+            branch.insert(i, self.get_branch(i));
             i += 1;
         }
 

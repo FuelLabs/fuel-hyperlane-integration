@@ -127,7 +127,7 @@ async fn get_contract_instance() -> (
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
-fn test_message(
+pub fn test_message(
     mailbox: &Mailbox<WalletUnlocked>,
     recipient: &Bech32ContractId,
     outbound: bool,
@@ -215,6 +215,9 @@ async fn test_dispatch_logs_message() {
     let dispatch_events = dispatch_call
         .decode_logs_with_type::<DispatchEvent>()
         .unwrap();
+    let dispatch_id_events = dispatch_call
+        .decode_logs_with_type::<DispatchIdEvent>()
+        .unwrap();
     let dispatch_message: Vec<u8> = dispatch_events
         .first()
         .unwrap()
@@ -225,6 +228,12 @@ async fn test_dispatch_logs_message() {
     let decoded_message = HyperlaneAgentMessage::from(dispatch_message);
 
     assert_eq!(decoded_message.id(), message_id);
+    assert_eq!(
+        dispatch_id_events,
+        vec![DispatchIdEvent {
+            message_id: h256_to_bits256(message_id),
+        }],
+    );
 
     // Also make sure the DispatchIdEvent was logged
     let dispatch_id_events = dispatch_call
@@ -294,7 +303,7 @@ async fn test_dispatch_reverts_if_paused() {
 async fn test_process_event() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     let process_call = mailbox
         .methods()
@@ -312,13 +321,23 @@ async fn test_process_event() {
         .decode_logs_with_type::<ProcessEvent>()
         .unwrap();
 
+    let process_id_event = process_call
+        .decode_logs_with_type::<ProcessIdEvent>()
+        .unwrap();
+
     assert_eq!(
         process_events,
         vec![ProcessEvent {
-            message_id: h256_to_bits256(message.id()),
             origin: message.origin,
             sender: h256_to_bits256(message.sender),
             recipient: h256_to_bits256(message.recipient),
+        }],
+    );
+
+    assert_eq!(
+        process_id_event,
+        vec![ProcessIdEvent {
+            message_id: h256_to_bits256(message.id()),
         }],
     );
 }
@@ -327,7 +346,7 @@ async fn test_process_event() {
 async fn test_process_handled() {
     let (mailbox, _, recipient, _, ism_id) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     mailbox
         .methods()
@@ -352,7 +371,7 @@ async fn test_process_handled() {
 async fn test_process_deliver_twice() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     mailbox
         .methods()
@@ -393,7 +412,7 @@ async fn test_process_deliver_twice() {
 async fn test_process_ism_reject() {
     let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
 
-    let (message, metadata, _) = test_message(&mailbox, &recipient, true);
+    let (message, metadata, _) = test_message(&mailbox, &recipient, false);
 
     let test_ism = TestInterchainSecurityModule::new(default_ism.clone(), mailbox.account());
     test_ism.methods().set_accept(false).call().await.unwrap();

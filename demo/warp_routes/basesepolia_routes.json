@@ -1,0 +1,43 @@
+{
+    "collateral": {
+        "basesepolia": {
+            "type": "collateral",
+            "name": "USDC",
+            "symbol": "USDC",
+            "totalSupply": 409521401958845568,
+            "decimals": 6,
+            "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            "warpRoute": "0x13F558Fbf6E98eDfA158E9b6bC447f356201E649",
+            "standard": "EvmHypCollateral"
+        },
+        "fuel": {
+            "type": "collateral",
+            "name": "Ethereum",
+            "symbol": "ETH",
+            "totalSupply": 10000000,
+            "decimals": 9,
+            "token": "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
+            "warpRoute": "WarpRouteNative"
+        }
+    },
+    "bridged": {
+        "fuel": {
+            "type": "bridged",
+            "name": "FuelSepoliaUSDC",
+            "symbol": "FST",
+            "totalSupply": 10000000,
+            "decimals": 6,
+            "token": "DeterminedDuringDeployment",
+            "warpRoute": "WarpRouteBridged",
+            "standard": "EvmHypSynthetic"
+        },
+        "basesepolia": {
+            "type": "bridged",
+            "name": "BasesepoliaFuelUSDC",
+            "symbol": "BFU",
+            "totalSupply": 10000000,
+            "decimals": 18,
+            "warpRoute": "0xc10f47030fEB9E4111e6b591354dd0EB01C02919"
+        }
+    }
+}

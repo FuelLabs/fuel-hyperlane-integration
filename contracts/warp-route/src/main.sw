@@ -28,6 +28,7 @@ use std::{
     call_frames::msg_asset_id,
     constants::ZERO_B256,
     context::{
+        balance_of,
         msg_amount,
         this_balance,
     },
@@ -41,7 +42,14 @@ use std::{
     u128::U128,
 };
 
-use interfaces::{mailbox::mailbox::*, ownable::Ownable, warp_route::*};
+use interfaces::{
+    claimable::*,
+    mailbox::mailbox::*,
+    message_recipient::MessageRecipient,
+    ownable::Ownable,
+    token_router::*,
+    warp_route::*,
+};
 use standards::src5::State;
 use message::{EncodedMessage, Message};
 
@@ -52,17 +60,24 @@ storage {
     mailbox: ContractId = ContractId::zero(),
     /// The address of the default hook contract to use for message dispatch
     default_hook: ContractId = ContractId::zero(),
-    /// Mapping of message IDs to whether they have been delivered
-    delivered_messages: StorageMap<b256, bool> = StorageMap {},
-    // TOKEN
+    /// The address of the beneficiary
+    beneficiary: Identity = Identity::ContractId(ContractId::zero()),
+    /// The address of the default ISM contract to use for message dispatch
+    default_ism: ContractId = ContractId::zero(),
+    /// Mapping of domain identifiers to their corresponding router addresses
+    /// Each domain has a unique router that handles token transfers
+    routers: StorageMap<u32, b256> = StorageMap {},
+    /// Mapping of remote router decimals
+    remote_router_decimals: StorageMap<b256, u8> = StorageMap {},
+    /// Asset
     /// The asset ID of the token managed by the WarpRoute contract
     asset_id: AssetId = AssetId::zero(),
     /// The sub ID of the token managed by the WarpRoute contract
     sub_id: SubId = SubId::zero(),
     /// The total number of unique assets minted by this contract.
-    total_assets: u64 = 0, 
+    total_assets: u64 = 0,
     /// The current total number of coins minted for a particular asset.
-    total_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    total_supply: StorageMap<AssetId, u64> = StorageMap {},
     /// The mapping of asset ID to the name of the token
     name: StorageMap<AssetId, StorageString> = StorageMap {},
     /// The mapping of asset ID to the symbol of the token
@@ -70,7 +85,7 @@ storage {
     /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
     /// The total number of coins ever minted for an asset.
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {}, 
+    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
 }
 
 configurable {
@@ -79,7 +94,7 @@ configurable {
 }
 
 impl WarpRoute for Contract {
-     /// Initializes the WarpRoute contract
+    /// Initializes the WarpRoute contract
     ///
     /// ### Arguments
     ///
@@ -117,6 +132,7 @@ impl WarpRoute for Contract {
 
         let owner_id = Identity::Address(Address::from(owner));
         initialize_ownership(owner_id);
+        storage.beneficiary.write(owner_id);
         storage.mailbox.write(ContractId::from(mailbox_address));
         storage.default_hook.write(ContractId::from(hook));
         storage.token_mode.write(mode);
@@ -166,23 +182,28 @@ impl WarpRoute for Contract {
     /// * If any external call fails
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) {
+    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) -> b256 {
         reentrancy_guard();
         require_not_paused();
 
-        require(msg_amount() >= amount, WarpRouteError::InsufficientFunds);
+        require(msg_amount() == amount, WarpRouteError::InsufficientFunds);
+
+        let remote_domain_router = _get_router(destination_domain);
+        require(
+            remote_domain_router != b256::zero(),
+            TokenRouterError::RouterNotSet,
+        );
 
         let asset = storage.asset_id.read();
         require(msg_asset_id() == asset, WarpRouteError::PaymentError);
 
-        // Depending on the mode, handle the token transfer
         match storage.token_mode.read() {
             WarpRouteTokenMode::BRIDGED => {
                 //Burn has checks inside along with decreasing total supply
                 _burn(storage.total_supply, storage.sub_id.read(), amount);
             }
             WarpRouteTokenMode::COLLATERAL => {
-                //TODO: should not be transfered to the contract in the future
+                //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
             }
         }
@@ -190,95 +211,41 @@ impl WarpRoute for Contract {
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let hook_contract = storage.default_hook.read();
 
-        let asset_metadata = _get_metadata_of_asset(asset);
-        let message_body = _build_token_metadata_bytes(recipient, amount, asset_metadata);
+        let remote_decimals = _get_remote_router_decimals(remote_domain_router); 
+        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
+
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let adjusted_amount = _adjust_send_decimals(amount, local_decimals, remote_decimals);
+
+        let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
+
+        let quote = mailbox.quote_dispatch(
+            destination_domain,
+            remote_domain_router,
+            message_body,
+            Bytes::new(),
+            hook_contract,
+        );
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
-            coins: this_balance(AssetId::base()),
+            coins: quote,
             asset_id: b256::from(AssetId::base()),
-            gas: this_balance(AssetId::base()),
         }(
             destination_domain,
-            recipient,
+            remote_domain_router,
             message_body,
-            Bytes::new(), // TODO: check if metadata is required
+            Bytes::new(),
             hook_contract,
         );
 
-        log(TransferRemoteEvent {
-            destination_domain,
-            hook_contract,
-            message_id,
-        });
-    }
-
-    /// Handles a transfer from a remote domain
-    ///
-    /// ### Arguments
-    ///
-    /// * `id`: [b256] - The ID of the message
-    /// * `origin`: [u32] - The domain of the origin
-    /// * `sender`: [b256] - The address of the sender
-    /// * `message_body`: [bytes] - The message body
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is paused
-    /// * If the message has already been delivered
-    /// * If the cumulative supply exceeds the maximum supply
-    #[storage(read, write)]
-    fn handle_message(id: b256, _origin: u32, _sender: b256, message_body: Bytes) {
-        require_not_paused();
-        require(
-            !storage
-                .delivered_messages
-                .get(id)
-                .try_read()
-                .unwrap_or(false),
-            WarpRouteError::MessageAlreadyDelivered,
-        );
-
-        storage.delivered_messages.insert(id, true);
-
-        let (recipient, amount, token_metadata) = _extract_asset_data_from_body(message_body);
-        let recipient_identity = Identity::Address(Address::from(recipient));
-        let asset = storage.asset_id.read();
-
-        match storage.token_mode.read() {
-            WarpRouteTokenMode::BRIDGED => {
-                let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-                require(
-                    cumulative_supply + amount <= MAX_SUPPLY,
-                    WarpRouteError::MaxMinted,
-                );
-                storage
-                    .cumulative_supply
-                    .insert(asset, cumulative_supply + amount);
-                let _ = _mint(
-                    storage
-                        .total_assets,
-                    storage
-                        .total_supply,
-                    recipient_identity,
-                    storage
-                        .sub_id
-                        .read(),
-                    amount,
-                );
-            }
-            WarpRouteTokenMode::COLLATERAL => {
-                transfer(recipient_identity, asset, amount);
-            }
-        }
-
-        // Log the successful message handling
-        log(HandleMessageEvent {
+        log(SentTransferRemoteEvent {
+            destination: destination_domain,
             recipient,
-            amount,
-            token_metadata,
+            amount: adjusted_amount,
         });
+
+        message_id
     }
 
     /// Gets the token mode of the WarpRoute contract
@@ -306,7 +273,7 @@ impl WarpRoute for Contract {
     /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Returns
-    /// 
+    ///
     /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256 {
@@ -368,50 +335,211 @@ impl WarpRoute for Contract {
         storage.default_hook.write(ContractId::from(hook));
     }
 
-    /// Checks if a message has been delivered
+    /// Sets the default ISM
     ///
     /// ### Arguments
     ///
-    /// * `message_id`: [b256] - The ID of the message
-    ///
-    /// ### Returns
-    ///
-    /// * [bool] - Whether the message has been delivered
-    #[storage(read)]
-    fn is_message_delivered(message_id: b256) -> bool {
-        storage.delivered_messages.get(message_id).try_read().unwrap_or(false)
-    }
-
-    // TODO: must be removed after unit and E2E testing 
+    /// * `module`: [ContractId] - The ISM contract ID
     #[storage(read, write)]
-    fn mint_tokens(recipient: Address, amount: u64) {
-        let recipient_identity = Identity::Address(recipient);
-        let asset = storage.asset_id.read();
-        let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-        require(
-            cumulative_supply + amount <= MAX_SUPPLY,
-            WarpRouteError::MaxMinted,
-        );
-        storage
-            .cumulative_supply
-            .insert(asset, cumulative_supply + amount);
-
-        let _ = _mint(
-            storage
-                .total_assets,
-            storage
-                .total_supply,
-            recipient_identity,
-            storage
-                .sub_id
-                .read(),
-            amount,
-        );
+    fn set_ism(module: ContractId) {
+        storage.default_ism.write(module)
     }
 }
 
-// ---------------  Pausable and Ownable  ---------------
+impl TokenRouter for Contract {
+    /// Gets the router address for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to query
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The router address (zero address if not set)
+    #[storage(read)]
+    fn router(domain: u32) -> b256 {
+        _get_router(domain)
+    }
+
+    /// Removes a router for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to remove the router for
+    #[storage(write)]
+    fn unenroll_remote_router(domain: u32) -> bool {
+        storage.routers.remove(domain)
+    }
+
+    /// Enrolls a new router for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to enroll
+    /// * `router`: [b256] - The router address to enroll
+    #[storage(read, write)]
+    fn enroll_remote_router(domain: u32, router: b256) {
+        _insert_route_to_state(domain, router);
+    }
+
+    /// Batch enrolls multiple routers for multiple domains
+    ///
+    /// ### Arguments
+    ///
+    /// * `domains`: [Vec<u32>] - The domains to enroll
+    /// * `routers`: [Vec<b256>] - The router addresses to enroll
+    ///
+    /// ### Reverts
+    ///
+    /// * If the lengths of domains and routers arrays don't match
+    #[storage(read, write)]
+    fn enroll_remote_routers(domains: Vec<u32>, routers: Vec<b256>) {
+        require(
+            domains
+                .len() == routers
+                .len(),
+            TokenRouterError::RouterLengthMismatch,
+        );
+
+        let mut domains = domains;
+        let mut routers = routers;
+
+        while true {
+            let domain = domains.pop();
+            let router = routers.pop();
+            if domain.is_some() && router.is_some() {
+                _insert_route_to_state(domain.unwrap(), router.unwrap());
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Gets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to query
+    #[storage(read)]
+    fn remote_router_decimals(router: b256) -> u8 {
+        _get_remote_router_decimals(router)
+    }
+
+    /// Sets the decimals for a specific remote router
+    ///
+    /// ### Arguments
+    ///
+    /// * `router`: [b256] - The router to set
+    /// * `decimals`: [u8] - The decimals to set
+    #[storage(write)]
+    fn set_remote_router_decimals(router: b256, decimals: u8) {
+        storage.remote_router_decimals.insert(router, decimals);
+    }
+}
+
+impl MessageRecipient for Contract {
+    /// Handles a transfer from a remote domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `origin`: [u32] - The domain of the origin
+    /// * `sender`: [b256] - The address of the sender
+    /// * `message_body`: [bytes] - The message body
+    ///
+    /// ### Reverts
+    ///
+    /// * If the contract is paused
+    /// * If the message has already been delivered
+    /// * If the cumulative supply exceeds the maximum supply
+    #[storage(read, write)]
+    fn handle(origin: u32, sender: b256, message_body: Bytes) {
+        reentrancy_guard();
+        require_not_paused();
+
+        let asset = storage.asset_id.read();
+        let (recipient, amount) = _extract_asset_data_from_body(message_body);
+        let recipient_identity = Identity::Address(Address::from(recipient));
+
+
+        let remote_decimals = _get_remote_router_decimals(sender); 
+        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
+
+        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let adjusted_amount = _adjust_recieved_decimals(amount, local_decimals, remote_decimals);
+
+        let asset = storage.asset_id.read();
+
+        match storage.token_mode.read() {
+            WarpRouteTokenMode::BRIDGED => {
+                let cumulative_supply = storage.cumulative_supply.get(asset).read();
+
+                require(
+                    cumulative_supply + adjusted_amount <= MAX_SUPPLY,
+                    WarpRouteError::MaxMinted,
+                );
+                storage
+                    .cumulative_supply
+                    .insert(asset, cumulative_supply + adjusted_amount);
+                let _ = _mint(
+                    storage
+                        .total_assets,
+                    storage
+                        .total_supply,
+                    recipient_identity,
+                    storage
+                        .sub_id
+                        .read(),
+                    adjusted_amount,
+                );
+            }
+            WarpRouteTokenMode::COLLATERAL => {
+                transfer(recipient_identity, asset, adjusted_amount);
+            }
+        }
+
+        log(ReceivedTransferRemoteEvent {
+            origin,
+            recipient,
+            amount: adjusted_amount,
+        });
+    }
+
+    #[storage(read)]
+    fn interchain_security_module() -> ContractId {
+        storage.default_ism.read()
+    }
+}
+
+// ---------------  Pausable, Claimable and Ownable  ---------------
+
+impl Claimable for Contract {
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        storage.beneficiary.write(beneficiary);
+        log(BeneficiarySetEvent {
+            beneficiary: beneficiary.bits(),
+        });
+    }
+
+    #[storage(read)]
+    fn claim(asset: AssetId) {
+        let beneficiary = storage.beneficiary.read();
+        let balance = this_balance(asset);
+
+        transfer(beneficiary, asset, balance);
+
+        log(ClaimEvent {
+            beneficiary: beneficiary.bits(),
+            amount: balance,
+        });
+    }
+}
 
 impl Pausable for Contract {
     #[storage(write)]
@@ -459,7 +587,9 @@ impl Ownable for Contract {
     }
 }
 
-// ---------------  Internal Functions  ---------------
+// ------------------------------------------------------------
+// ------------------ Internal Functions ----------------------
+// ------------------------------------------------------------
 
 #[storage(read)]
 fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
@@ -473,37 +603,83 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
     }
 }
 
-fn _build_token_metadata_bytes(recipient: b256, amount: u64, metadata: TokenMetadata) -> Bytes {
+fn _build_token_metadata_bytes(recipient: b256, amount: u64) -> Bytes {
     let mut buffer = Buffer::new();
 
     buffer = recipient.abi_encode(buffer);
-    buffer = amount.abi_encode(buffer);
-    buffer = metadata.decimals.abi_encode(buffer);
-    buffer = metadata.total_supply.abi_encode(buffer);
+
+    let amount_u256 = u256::from(amount); // Convert `u64` to `U256` for 32-byte padding
+    buffer = amount_u256.abi_encode(buffer);
+
+    let metadata = Bytes::new();
+    buffer = metadata.abi_encode(buffer);
 
     let bytes = Bytes::from(buffer.as_raw_slice());
     bytes
 }
 
-#[storage(read)]
-fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64, TokenMetadata) {
+fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
     let mut buffer_reader = BufferReader::from_parts(body.ptr(), body.len());
 
     let recipient = buffer_reader.read::<b256>();
-    let amount = buffer_reader.read::<u64>();
-    let decimals = buffer_reader.read::<u8>();
-    let total_supply = buffer_reader.read::<u64>();
+    let amount_u256 = buffer_reader.read::<u256>();
 
-    let asset_id = storage.asset_id.read();
-    let sub_id = storage.sub_id.read();
+    let amount = <u64 as TryFrom<u256>>::try_from(amount_u256).expect("Amount exceeds u64 range");
+    (recipient, amount)
+}
 
-    let metadata = TokenMetadata {
-        name: _name(storage.name, asset_id).unwrap_or(String::new()),
-        symbol: _symbol(storage.symbol, asset_id).unwrap_or(String::new()),
-        decimals,
-        total_supply,
-        asset_id,
-        sub_id,
+#[storage(read)]
+fn _get_router(domain: u32) -> b256 {
+    storage.routers.get(domain).try_read().unwrap_or(b256::zero())
+}
+
+#[storage(read, write)]
+fn _insert_route_to_state(domain: u32, router: b256) {
+    storage.routers.insert(domain, router);
+}
+
+#[storage(read)]
+fn _get_remote_router_decimals(router: b256) -> u8 {
+    storage.remote_router_decimals.get(router).try_read().unwrap_or(0)
+}
+
+fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
+    if local_decimals == remote_decimals {
+        return amount;
+    }
+
+    let difference = if local_decimals > remote_decimals {
+        local_decimals - remote_decimals
+    } else {
+        remote_decimals - local_decimals
     };
-    (recipient, amount, metadata)
+
+    let factor = 10u64.pow(difference.as_u32());
+
+    if local_decimals < remote_decimals {
+        amount * factor
+    } else {
+        amount / factor
+    }
+}
+
+fn _adjust_recieved_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
+    if local_decimals == remote_decimals {
+        return amount;
+    }
+
+    let difference = if local_decimals > remote_decimals {
+        local_decimals - remote_decimals
+    } else {
+        remote_decimals - local_decimals
+    };
+
+    let factor = 10u64.pow(difference.as_u32());
+
+    //recieved amount is in the remote decimals - should be converted to local
+    if local_decimals < remote_decimals {
+        amount / factor
+    } else {
+        amount * factor
+    }
 }

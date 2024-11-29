@@ -1,0 +1,83 @@
+[[package]]
+name = "checkpoint"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "core"
+source = "path+from-root-7053AAA90CC5E690"
+
+[[package]]
+name = "interfaces"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = [
+    "merkle",
+    "message",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
+name = "merkle"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = ["std"]
+
+[[package]]
+name = "message"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "message-id-multisig-ism-test"
+source = "member"
+dependencies = [
+    "checkpoint",
+    "interfaces",
+    "message",
+    "message_id_multisig_ism_metadata",
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "message_id_multisig_ism_metadata"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18"
+dependencies = ["std"]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c"
+dependencies = ["std"]
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?tag=v0.66.2#31486c0b47669612acb7c64d66ecb50aea281282"
+dependencies = ["core"]
+
+[[package]]
+name = "std_lib_extended"
+source = "path+from-root-3AE9C945402A241E"
+dependencies = ["std"]
+
+[[package]]
+name = "sway_libs"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#03f8ff9939471f0a5b6659e1b91c14e4bf39a9b7"
+dependencies = [
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
+    "std",
+]

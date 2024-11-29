@@ -10,11 +10,10 @@ license = "Apache-2.0"
 fuels = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
-hex = "0.4"
-alloy-signer = "0.2.1"
-alloy-signer-local = "0.2.1"
-alloy-primitives = "0.7.7"
-
+hex = { workspace = true }
+alloy-signer = { workspace = true }
+alloy-signer-local = { workspace = true }
+alloy-primitives = { workspace = true }
 
 [[test]]
 harness = true

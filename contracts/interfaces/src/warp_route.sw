@@ -8,12 +8,12 @@ pub enum WarpRouteError {
     PaymentError: (),
     Unauthorized: (),
     InsufficientFunds: (),
-    MessageAlreadyDelivered: (),
     AlreadyInitialized: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),
     NoRouter: u32,
+    RemoteDecimalsNotSet: (),
 }
 
 /// The mode of the WarpRoute contract
@@ -69,18 +69,7 @@ abi WarpRoute {
     /// * `amount`: [u64] - The amount of tokens to transfer
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64);
-
-    /// Handles a transfer from a remote domain
-    ///
-    /// ### Arguments
-    ///
-    /// * `id`: [b256] - The ID of the message
-    /// * `origin`: [u32] - The domain of the origin
-    /// * `sender`: [b256] - The address of the sender
-    /// * `message_body`: [bytes] - The message body
-    #[storage(read, write)]
-    fn handle_message(id: b256, origin: u32, sender: b256, message_body: Bytes);
+    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) -> b256;
 
     /// Gets the token mode of the WarpRoute contract
     ///
@@ -101,7 +90,7 @@ abi WarpRoute {
     /// Gets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Returns
-    /// 
+    ///
     /// * [b256] - The mailbox contract ID
     #[storage(read)]
     fn get_mailbox() -> b256;
@@ -130,43 +119,49 @@ abi WarpRoute {
     #[storage(write)]
     fn set_hook(hook: b256);
 
-    /// Checks if a message has been delivered
-    ///
-    /// ### Arguments
-    ///
-    /// * `message_id`: [b256] - The ID of the message
-    ///
-    /// ### Returns
-    ///
-    /// * [bool] - Whether the message has been delivered
-    #[storage(read)]
-    fn is_message_delivered(message_id: b256) -> bool;
-
     /// Gets the total number of coins ever minted for an asset.
     ///
     /// ### Returns
     ///
     /// * [u64] - The total number of coins ever minted for an asset.
     #[storage(read)]
-    fn get_cumulative_supply() -> u64; 
+    fn get_cumulative_supply() -> u64;
 
-    // TODO: must be removed after unit and E2E testing 
+    /// Sets the default ISM
+    ///
+    /// ### Arguments
+    ///
+    /// * `module`: [ContractId] - The ISM contract ID
     #[storage(read, write)]
-    fn mint_tokens(recipient: Address, amount: u64);
+    fn set_ism(module: ContractId);
 }
 
 // --------------- Events ---------------
 
-/// Event emitted when tokens are transferred to a remote domain
-pub struct TransferRemoteEvent {
-    pub destination_domain: u32,
-    pub hook_contract: ContractId,
-    pub message_id: b256,
+/// Event emitted when tokens are transferred to a remote domain.
+/// This event contains information about the destination chain, recipient, and amount.
+pub struct SentTransferRemoteEvent {
+    /// The identifier of the destination chain
+    pub destination: u32,
+    /// The address of the recipient on the destination chain
+    pub recipient: b256,
+    /// The amount of tokens being transferred
+    pub amount: u64,
 }
 
-/// Event emitted when a message is handled
-pub struct HandleMessageEvent {
+/// Event emitted when tokens are received from a remote domain.
+/// This event contains information about the origin chain, recipient, and amount.
+pub struct ReceivedTransferRemoteEvent {
+    /// The identifier of the origin chain
+    pub origin: u32,
+    /// The address of the recipient on this chain
     pub recipient: b256,
+    /// The amount of tokens received
     pub amount: u64,
-    pub token_metadata: TokenMetadata,
+}
+
+/// Event emitted when tokens are locked in the WarpRoute contract
+pub struct TokensLockedEvent {
+    pub amount: u64,
+    pub asset: AssetId,
 }

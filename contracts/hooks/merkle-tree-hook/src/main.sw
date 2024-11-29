@@ -1,8 +1,9 @@
 contract;
 
 use merkle::*;
-use message::{EncodedMessage, Message};
-use std::{bytes::Bytes, context::msg_amount,};
+use message::EncodedMessage;
+use std::storage::storage_vec::*;
+use std::{block::height, bytes::Bytes, context::msg_amount};
 use interfaces::{mailbox::mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*};
 
 storage {
@@ -24,7 +25,7 @@ impl MerkleTreeHook for Contract {
     fn initialize(mailbox: ContractId) {
         require(
             !_is_initialized(),
-            MerkleTreeError::ContractAlreadyInitialized,
+            MerkleTreeHookError::ContractAlreadyInitialized,
         );
         storage.mailbox.write(mailbox);
     }
@@ -39,6 +40,18 @@ impl MerkleTreeHook for Contract {
         _count()
     }
 
+    /// Gets the stored count of the MerkleTree.
+    /// And the current block number.
+    /// Used since we cannot query point in time data.
+    ///
+    /// ### Returns
+    ///
+    /// * [(u32, u32)] - The count and the current block number.
+    #[storage(read)]
+    fn count_and_block() -> (u32, u32) {
+        (_count(), height())
+    }
+
     /// Returns the root from the MerkleTree.
     ///
     /// ### Returns
@@ -46,7 +59,7 @@ impl MerkleTreeHook for Contract {
     /// * [b256] - The root from the MerkleTree.
     #[storage(read)]
     fn root() -> b256 {
-        storage.merkle_tree.root()
+        _root()
     }
 
     /// Returns the latest checkpoint from the MerkleTree.
@@ -62,7 +75,7 @@ impl MerkleTreeHook for Contract {
 
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        (storage.merkle_tree.root(), storage.merkle_tree.get_count() - 1)
+        _checkpoint()
     }
 }
 
@@ -72,7 +85,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [PostDispatchHookType] - The type of the hook.
-    #[storage(read)]
     fn hook_type() -> PostDispatchHookType {
         PostDispatchHookType::MERKLE_TREE
     }
@@ -107,8 +119,11 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(_metadata: Bytes, message: Bytes) {
-        require(msg_amount() == 0, MerkleTreeError::NoValueExpected);
-        require(_is_initialized(), MerkleTreeError::ContractNotInitialized);
+        require(msg_amount() == 0, MerkleTreeHookError::NoValueExpected);
+        require(
+            _is_initialized(),
+            MerkleTreeHookError::ContractNotInitialized,
+        );
 
         let message = EncodedMessage::from_bytes(message);
 
@@ -118,12 +133,15 @@ impl PostDispatchHook for Contract {
 
         require(
             latest_dispatched == id,
-            MerkleTreeError::MessageNotDispatching(id),
+            MerkleTreeHookError::MessageNotDispatching(id),
         );
 
         let index = _count();
         storage.merkle_tree.insert(id);
-        log(MerkleTreeEvent::InsertedIntoTree((id, index)));
+        log(InsertedIntoTreeEvent {
+            message_id: id,
+            index,
+        });
     }
 
     /// Compute the payment required by the postDispatch call
@@ -146,13 +164,26 @@ impl PostDispatchHook for Contract {
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
 
+// ------------------ Base Read Functions ---------------------
+
 #[storage(read)]
 fn _count() -> u32 {
     storage.merkle_tree.get_count()
 }
 
 #[storage(read)]
+fn _root() -> b256 {
+    storage.merkle_tree.root()
+}
+
+#[storage(read)]
+fn _checkpoint() -> (b256, u32) {
+    (_root(), _count() - 1)
+}
+
+// ------------------------ Checks ----------------------------
+
+#[storage(read)]
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
 }
-

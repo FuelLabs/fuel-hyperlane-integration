@@ -18,6 +18,10 @@ abigen!(
         abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
     ),
     Contract(
+        name = "WarpRoute",
+        abi = "contracts/warp-route/out/debug/warp-route-abi.json",
+    ),
+    Contract(
         name = "MerkleTreeHook",
         abi = "contracts/hooks/merkle-tree-hook/out/debug/merkle-tree-hook-abi.json",
     ),
@@ -44,5 +48,13 @@ abigen!(
     Contract(
         name = "DefaultFallbackDomainRoutingISM",
         abi = "contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism-abi.json",
+    ),
+    Contract(
+        name = "MsgRecipient",
+        abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
+    ),
+    Contract(
+        name = "PostDispatchHook",
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
     ),
 );

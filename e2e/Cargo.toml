@@ -9,5 +9,23 @@ tokio = { workspace = true }
 hyperlane-core = { workspace = true }
 rand = { workspace = true }
 futures = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }
+ethers = { workspace = true }
+serde = { workspace = true }
+alloy = { version = "0.4.0", features = [
+  "full",
+  "providers",
+  "rpc-types",
+  "transport-ws",
+] }
+alloy-provider = { version = "0.4.0", features = ["ws"] }
+alloy-contract = { version = "0.4.0" }
+alloy-rpc-types = { version = "0.4.2" }
+alloy-transport-ipc = { version = "0.4.2" }
+futures-util = "0.3"
 dotenv = "0.15"
 once_cell = "1.10.0"
+serde_yaml = "0.9.34"
+bech32 = "0.11.0"
+test-utils = { path = "../test-utils" }

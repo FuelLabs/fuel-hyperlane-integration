@@ -100,7 +100,6 @@ impl Mailbox for Contract {
     /// ### Returns
     ///
     /// * [u32] - The domain of the contract.
-    #[storage(read)]
     fn local_domain() -> u32 {
         LOCAL_DOMAIN
     }
@@ -275,9 +274,9 @@ impl Mailbox for Contract {
         let nonce = _nonce();
         storage.nonce.write(nonce + 1);
         log(DispatchEvent {
-            message_id: id,
+            sender: message.sender(),
             destination_domain,
-            recipient_address: recipient_address,
+            recipient_address,
             message: message.message_clean(),
         });
         log(DispatchIdEvent { message_id: id });
@@ -294,12 +293,12 @@ impl Mailbox for Contract {
             .post_dispatch {
                 asset_id: b256::from(base),
                 coins: required_value,
-            }(metadata, message.bytes);
+            }(metadata, message.message_clean().bytes);
         hook
             .post_dispatch {
                 asset_id: b256::from(base),
                 coins: msg_amount() - required_value,
-            }(metadata, message.bytes);
+            }(metadata, message.message_clean().bytes);
 
         id
     }
@@ -370,10 +369,10 @@ impl Mailbox for Contract {
             version == VERSION,
             MailboxError::InvalidProtocolVersion(version),
         );
-        let domain = message.origin();
+        let origin_domain = message.origin();
         require(
-            domain == LOCAL_DOMAIN,
-            MailboxError::InvalidMessageOrigin(domain),
+            origin_domain != LOCAL_DOMAIN,
+            MailboxError::InvalidMessageOrigin(origin_domain),
         );
         let id = message.id();
         require(!_delivered(id), MailboxError::MessageAlreadyDelivered);
@@ -390,19 +389,19 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(
             ism
-                .verify(metadata, message.bytes),
+                .verify(metadata, message.message_clean().bytes),
             MailboxError::MessageVerificationFailed,
         );
 
         let sender = message.sender();
-        msg_recipient.handle(domain, sender, message.body());
+        msg_recipient.handle(origin_domain, sender, message.body());
 
         log(ProcessEvent {
-            message_id: id,
-            origin: domain,
+            origin: origin_domain,
             sender,
             recipient,
         });
+        log(ProcessIdEvent { message_id: id });
     }
 
     /// Returns the ISM set by a recipient.
@@ -418,10 +417,15 @@ impl Mailbox for Contract {
     /// ### Reverts
     ///
     /// * If recipient call fails.
-    #[storage(read, write)]
+    #[storage(read)]
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
-        recipient.interchain_security_module()
+        let ism = recipient.interchain_security_module();
+        if ism == ContractId::from(ZERO_B256) {
+            storage.default_ism.read()
+        } else {
+            ism
+        }
     }
 }
 
@@ -442,7 +446,6 @@ fn _build_message(
     let sender: b256 = match msg_sender().unwrap() {
         Identity::Address(address) => address.into(),
         Identity::ContractId(contract_id) => contract_id.into(),
-        _ => revert(0x111),
     };
 
     EncodedMessage::new(

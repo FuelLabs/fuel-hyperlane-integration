@@ -28,7 +28,7 @@ abi ValidatorAnnounce {
     #[storage(read)]
     fn get_announced_validators() -> Vec<b256>;
 
-    /// Returns a list of all announced storage locations   
+    /// Returns a list of all announced storage locations
     ///
     /// ### Arguments
     ///
@@ -40,7 +40,7 @@ abi ValidatorAnnounce {
     #[storage(read)]
     fn get_announced_storage_locations(validators: Vec<b256>) -> Vec<Vec<String>>;
 
-    /// Announces a validator signature storage location    
+    /// Announces a validator signature storage location
     ///
     /// ### Arguments
     ///

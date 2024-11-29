@@ -4,7 +4,6 @@ use std::bytes::Bytes;
 use interfaces::post_dispatch_hook::*;
 
 impl PostDispatchHook for Contract {
-    #[storage(read)]
     fn hook_type() -> PostDispatchHookType {
         PostDispatchHookType::UNUSED
     }

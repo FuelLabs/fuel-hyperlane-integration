@@ -290,7 +290,7 @@ async fn route_verify_success() {
             .unwrap()
             .value;
 
-        assert_eq!(success, true);
+        assert!(success);
     }
 }
 
@@ -329,10 +329,6 @@ async fn route_verify_fail() {
             .unwrap()
             .value;
 
-        assert_eq!(success, false);
+        assert!(!success);
     }
 }
-
-// Test that the domain routing ISM can route messages to the correct ISM
-// use the `route` function to route messages to the correct ISM
-// setup the test domain modules and test isms and should be prety straight forward

@@ -1,4 +1,7 @@
-use fuels::{prelude::*, types::{errors::transaction::Reason, Bits256, Identity}};
+use fuels::{
+    prelude::*,
+    types::{Bits256, Identity},
+};
 use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage, H256};
 use rand::{thread_rng, Rng};
 
@@ -6,7 +9,7 @@ use rand::{thread_rng, Rng};
 abigen!(Contract(
     name = "DefaultFallbackRoutingIsm",
     abi = "contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism-abi.json"
-), 
+),
 Contract(
     name = "TestIsm",
     abi = "contracts/test/ism-test/out/debug/ism-test-abi.json"
@@ -50,7 +53,13 @@ fn generate_test_message() -> RawHyperlaneMessage {
     })
 }
 
-async fn get_contract_instance() -> (DefaultFallbackRoutingIsm<WalletUnlocked>, Mailbox<WalletUnlocked>, Bits256, Bits256, TestIsm<WalletUnlocked>) {
+async fn get_contract_instance() -> (
+    DefaultFallbackRoutingIsm<WalletUnlocked>,
+    Mailbox<WalletUnlocked>,
+    Bits256,
+    Bits256,
+    TestIsm<WalletUnlocked>,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -84,30 +93,31 @@ async fn get_contract_instance() -> (DefaultFallbackRoutingIsm<WalletUnlocked>, 
     .unwrap();
 
     let mailbox = Mailbox::new(mailbox_id, wallet.clone());
-    let fallback_routing_ism = DefaultFallbackRoutingIsm::new(fallback_routing_ism_id.clone(), wallet.clone());
+    let fallback_routing_ism =
+        DefaultFallbackRoutingIsm::new(fallback_routing_ism_id.clone(), wallet.clone());
     let test_ism = deploy_test_ism(&wallet).await;
     let wallet_address = Bits256(Address::from(wallet.address()).into());
-
 
     // Setup default mailbox ISM
     let test_ism_id = Bits256(ContractId::from(test_ism.id()).into());
     mailbox
-    .methods()
-    .initialize(
+        .methods()
+        .initialize(wallet_address, test_ism_id, test_ism_id, test_ism_id)
+        .call()
+        .await
+        .unwrap();
+
+    (
+        fallback_routing_ism,
+        mailbox,
         wallet_address,
         test_ism_id,
-        test_ism_id,
-        test_ism_id,
+        test_ism,
     )
-    .call()
-    .await.unwrap();
-    
-
-    (fallback_routing_ism, mailbox, wallet_address, test_ism_id, test_ism)
 }
 
 // -----------------------------------------------------------------------------------------------
-// This contract is the same as the Domain Routing ISM, but has the functionality to 
+// This contract is the same as the Domain Routing ISM, but has the functionality to
 // fall back to the default ISM set on the mailbox if no domain is found.
 
 // Since the main functionality is the same, we can only test the module fallback functionality
@@ -133,12 +143,16 @@ async fn initialize_with_mailbox() {
         .unwrap()
         .value;
 
-    assert_eq!(owner_res, State::Initialized(Identity::Address(Address::from(wallet_address.0))));
+    assert_eq!(
+        owner_res,
+        State::Initialized(Identity::Address(Address::from(wallet_address.0)))
+    );
 }
 
 #[tokio::test]
-async fn route_fallback(){
-    let (fallback_routing_ism, mailbox, wallet_address, test_ism_id, _) = get_contract_instance().await;
+async fn route_fallback() {
+    let (fallback_routing_ism, mailbox, wallet_address, test_ism_id, _) =
+        get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
@@ -158,12 +172,10 @@ async fn route_fallback(){
         .unwrap()
         .call()
         .await
-        .unwrap().value;
-
+        .unwrap()
+        .value;
 
     assert_eq!(fallback_routed_ism, test_ism_id);
-
-    
 }
 
 #[tokio::test]
@@ -192,12 +204,13 @@ async fn verify_fallback_success() {
         .unwrap()
         .value;
 
-    assert_eq!(success, true);
+    assert!(success);
 }
 
 #[tokio::test]
 async fn verify_fallback_fail() {
-    let (fallback_routing_ism, mailbox, wallet_address, _, test_ism) = get_contract_instance().await;
+    let (fallback_routing_ism, mailbox, wallet_address, _, test_ism) =
+        get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
@@ -223,5 +236,5 @@ async fn verify_fallback_fail() {
         .unwrap()
         .value;
 
-    assert_eq!(success, false);
+    assert!(!success);
 }
