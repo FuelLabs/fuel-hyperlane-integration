@@ -43,7 +43,7 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
         .unwrap();
     assert!(!is_paused.value, "Warp route is paused");
 
-    let remote_wr = load_remote_wr_addresses("STR").unwrap();
+    let remote_wr = load_remote_wr_addresses("NTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
 
     let mut remote_wr_array = [0u8; 32];
@@ -63,7 +63,7 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 
     let remote_wallet = get_evm_wallet().await;
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
-    let remote_wr = contracts.warp_route_collateral;
+    let remote_wr = contracts.warp_route_bridged;
 
     let fuel_domain = get_local_domain();
     let recipient = get_fuel_test_recipient();
