@@ -69,6 +69,13 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
     let recipient = get_fuel_test_recipient();
     let fuel_wr_parsed = FixedBytes::from_slice(warp_route_id.as_slice());
 
+    warp_route_instance
+        .methods()
+        .set_remote_router_decimals(Bits256(remote_wr_array), 18)
+        .call()
+        .await
+        .unwrap();
+
     let _ = remote_wr
         .enrollRemoteRouter(fuel_domain, fuel_wr_parsed)
         .send()

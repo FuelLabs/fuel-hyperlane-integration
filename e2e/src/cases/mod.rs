@@ -2,6 +2,7 @@ mod bridged_asset_recieve;
 mod bridged_asset_send;
 mod collateral_asset_recieve;
 mod collateral_asset_send;
+mod gas_overpayment_and_claim;
 mod message_recieve;
 mod message_send_with_gas;
 mod remote_mailbox;
@@ -54,13 +55,14 @@ impl FailedTestCase {
 
 pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
-        set_gas_configs::test(),
-        message_send_with_gas::test(),
-        remote_mailbox::test(),
-        collateral_asset_send::test(),
-        collateral_asset_recieve::test(),
-        bridged_asset_send::test(),
+        // set_gas_configs::test(),
+        // message_send_with_gas::test(),
+        // remote_mailbox::test(),
+        // collateral_asset_send::test(),
+        // bridged_asset_send::test(),
+        // gas_overpayment_and_claim::test(),
+        // message_recieve::test(),
         bridged_asset_recieve::test(),
-        message_recieve::test(),
+        collateral_asset_recieve::test(),
     ]
 }

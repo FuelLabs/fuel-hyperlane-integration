@@ -67,6 +67,13 @@ async fn bridged_asset_send() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
+        .set_remote_router_decimals(test_recipient, 18)
+        .call()
+        .await
+        .unwrap();
+
+    warp_route_instance
+        .methods()
         .handle(remote_domain, test_recipient, body)
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .call()
@@ -113,6 +120,13 @@ async fn bridged_asset_send() -> Result<f64, String> {
         .call()
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
+
+    warp_route_instance
+        .methods()
+        .set_remote_router_decimals(Bits256(remote_wr_array), 18)
+        .call()
+        .await
+        .map_err(|e| format!("Failed to set remote router decimals: {:?}", e))?;
 
     let _ = warp_route_instance
         .methods()

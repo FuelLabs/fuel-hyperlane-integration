@@ -50,7 +50,11 @@ abigen!(
         abi = "contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism-abi.json",
     ),
     Contract(
-      name = "MsgRecipient",
-      abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json"
-  ),
+        name = "MsgRecipient",
+        abi = "contracts/test/msg-recipient-test/out/debug/msg-recipient-test-abi.json",
+    ),
+    Contract(
+        name = "PostDispatchHook",
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
+    ),
 );

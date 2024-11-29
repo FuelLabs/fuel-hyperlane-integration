@@ -397,7 +397,10 @@ async fn main() {
     .await
     .unwrap();
 
-    println!("gasOracle: 0x{}", ContractId::from(gas_oracle_id.clone()));
+    println!(
+        "storageGasOracle: 0x{}",
+        ContractId::from(gas_oracle_id.clone())
+    );
 
     // IGP deployment
     let igp_id = Contract::load_from(
@@ -424,7 +427,10 @@ async fn main() {
     .await
     .unwrap();
 
-    println!("igpHook: 0x{}", ContractId::from(igp_hook_id.clone()));
+    println!(
+        "interchainGasPaymasterHook: 0x{}",
+        ContractId::from(igp_hook_id.clone())
+    );
 
     ///////////////////////////
     // Warp Route Deployment //

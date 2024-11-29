@@ -53,6 +53,13 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
 
+    warp_route_instance
+        .methods()
+        .set_remote_router_decimals(Bits256(remote_wr_array), 18)
+        .call()
+        .await
+        .unwrap();
+
     let test_recipient = get_remote_test_recipient();
 
     let warp_balance_before = get_contract_balance(

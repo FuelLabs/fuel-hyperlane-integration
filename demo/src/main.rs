@@ -281,7 +281,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
 
-    let amount = 40;
+    let amount = 40_000;
     println!("transfer amount is {}", amount);
     let asset_id = contracts.fuel_get_minted_asset_id().await;
     let recipient_contract_id = contracts.fuel.test_recipient.contract_id().into();
@@ -300,7 +300,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Case 7: Bridged Fuel (FST) to Sepolia (FST) //
     ////////////////////////////////////////////////////
 
-    let amount = 1;
+    let amount = 10;
     println!("Case: Transferring Custom (FST) Token from Fuel to Sepolia");
     println!("-----------------------------------------------------------");
     println!("transfer amount is {}", amount);
@@ -316,7 +316,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Transferring Fuel (ETH) to Sepolia (USDC)");
 
-    let amount = 1;
+    let amount = 100;
     println!("transfer amount is {}", amount);
 
     contracts.fuel_transfer_remote_collateral(amount).await;

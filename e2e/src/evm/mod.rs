@@ -247,7 +247,7 @@ impl SepoliaContracts {
         );
 
         let collateral_wr = load_remote_wr_addresses("NTR").unwrap();
-        let bridged_wr = load_remote_wr_addresses("STR").unwrap();
+        let bridged_wr = load_remote_wr_addresses("NTR").unwrap();
 
         let warp_route_collateral = SepoliaWarpRouteCollateralInstance::new(
             collateral_wr.parse().expect("Invalid address format"),

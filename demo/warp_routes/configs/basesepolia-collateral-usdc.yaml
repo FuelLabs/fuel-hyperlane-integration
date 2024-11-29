@@ -16,12 +16,3 @@ basesepolia:
         owner: '0xfaD1C94469700833717Fa8a3017278BC1cA8031C'
     token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
     type: collateral
-# output
-# tokens:
-#     - chainName: basesepolia
-#      standard: EvmHypCollateral
-#     decimals: 6
-#    symbol: USDC
-#   name: USDC
-#  addressOrDenom: "0x13F558Fbf6E98eDfA158E9b6bC447f356201E649"
-# collateralAddressOrDenom: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"

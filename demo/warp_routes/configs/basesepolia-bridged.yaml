@@ -7,13 +7,3 @@ basesepolia:
     symbol: 'BFU'
     totalSupply: 10000000
     decimals: 18
-
-    # output
-
-    #tokens:
-    #    - chainName: basesepolia
-    #      standard: EvmHypSynthetic
-    #      decimals: 18
-    #      symbol: BFU
-    #      name: BasesepoliaFuelUSDC
-    #      addressOrDenom: '0xc10f47030fEB9E4111e6b591354dd0EB01C02919'

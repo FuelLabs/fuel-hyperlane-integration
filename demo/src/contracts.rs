@@ -828,7 +828,7 @@ impl Contracts {
             .fuel
             .warp_route_bridged
             .methods()
-            .set_remote_router_decimals(Bits256(remote_wr_address_array), 9)
+            .set_remote_router_decimals(Bits256(remote_wr_address_array), 6)
             .call()
             .await
             .unwrap();

@@ -9,9 +9,6 @@ use std::io::Write;
 use std::path::Path;
 use std::{fs, str::FromStr};
 
-pub const TEST_RECIPIENT_IN_FUEL: &str =
-    "45eef0a12f9bd3590ca07f81f32bc6e15e6b5e6c2440451c8b4af2126adf718b";
-
 pub fn get_native_asset() -> AssetId {
     AssetId::from_str("0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07").unwrap()
 }
@@ -141,9 +138,10 @@ pub fn stip_address_prefix(value: Value) -> ContractId {
     ContractId::from_str(value_str_stripped).unwrap()
 }
 
-pub async fn get_native_balance(provider: &Provider) -> u64 {
+pub async fn get_native_balance(provider: &Provider, recipient: ContractId) -> u64 {
     let asset = get_native_asset();
-    let address = Address::from_str(TEST_RECIPIENT_IN_FUEL).unwrap();
+    let address = Address::from_str(recipient.to_string().as_str()).unwrap();
+
     provider
         .get_asset_balance(&address.into(), asset)
         .await
