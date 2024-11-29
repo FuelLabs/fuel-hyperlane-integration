@@ -55,13 +55,13 @@ impl FailedTestCase {
 
 pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
-        // set_gas_configs::test(),
-        // message_send_with_gas::test(),
-        // remote_mailbox::test(),
-        // collateral_asset_send::test(),
-        // bridged_asset_send::test(),
-        // gas_overpayment_and_claim::test(),
-        // message_recieve::test(),
+        set_gas_configs::test(),
+        message_send_with_gas::test(),
+        remote_mailbox::test(),
+        collateral_asset_send::test(),
+        bridged_asset_send::test(),
+        gas_overpayment_and_claim::test(),
+        message_recieve::test(),
         bridged_asset_recieve::test(),
         collateral_asset_recieve::test(),
     ]
