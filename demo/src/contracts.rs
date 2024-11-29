@@ -1018,8 +1018,8 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let ism = get_contract_id_from_json("fueltestnet", &["interchainSecurityModule"]);
     let merkle_tree_hook = get_contract_id_from_json("fueltestnet", &["merkleTreeHook"]);
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
-    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["igpHook"]);
-    let gas_oracle = get_contract_id_from_json("fueltestnet", &["gasOracle"]);
+    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
+    let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
     let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
     let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteBridged"]);
     let recipient = get_contract_id_from_json("fueltestnet", &["recipient"]);
