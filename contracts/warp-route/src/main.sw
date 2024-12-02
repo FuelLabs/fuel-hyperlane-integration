@@ -57,9 +57,9 @@ storage {
     /// The mode of the WarpRoute contract
     token_mode: WarpRouteTokenMode = WarpRouteTokenMode::BRIDGED, // Default mode is Bridged
     /// The address of the mailbox contract to use for message dispatch
-    mailbox: ContractId = ContractId::zero(),
+    mailbox: ContractId = ContractId::from(ZERO_B256),
     /// The address of the default hook contract to use for message dispatch
-    default_hook: ContractId = ContractId::zero(),
+    default_hook: ContractId = ContractId::from(ZERO_B256),
     /// The address of the beneficiary
     beneficiary: Identity = Identity::ContractId(ContractId::zero()),
     /// The address of the default ISM contract to use for message dispatch
@@ -186,46 +186,58 @@ impl WarpRoute for Contract {
         reentrancy_guard();
         require_not_paused();
 
-        require(msg_amount() == amount, WarpRouteError::InsufficientFunds);
-
         let remote_domain_router = _get_router(destination_domain);
         require(
             remote_domain_router != b256::zero(),
             TokenRouterError::RouterNotSet,
         );
 
+        let remote_decimals = _get_remote_router_decimals(remote_domain_router);
+        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
+
         let asset = storage.asset_id.read();
-        require(msg_asset_id() == asset, WarpRouteError::PaymentError);
-
-        match storage.token_mode.read() {
-            WarpRouteTokenMode::BRIDGED => {
-                //Burn has checks inside along with decreasing total supply
-                _burn(storage.total_supply, storage.sub_id.read(), amount);
-            }
-            WarpRouteTokenMode::COLLATERAL => {
-                //Locked in the contract
-                transfer(Identity::ContractId(ContractId::this()), asset, amount);
-            }
-        }
-
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
         let hook_contract = storage.default_hook.read();
 
-        let remote_decimals = _get_remote_router_decimals(remote_domain_router); 
-        require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
-
         let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
-        let adjusted_amount = _adjust_send_decimals(amount, local_decimals, remote_decimals);
-
+        let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
-        let quote = mailbox.quote_dispatch(
+        let quote = _get_quote_for_gas_payment(
             destination_domain,
             remote_domain_router,
             message_body,
             Bytes::new(),
             hook_contract,
         );
+
+        let token_mode = storage.token_mode.read();
+
+        let required_payment = match token_mode {
+            WarpRouteTokenMode::BRIDGED => quote,
+            WarpRouteTokenMode::COLLATERAL => amount + quote,
+        };
+
+        require(
+            msg_amount() == required_payment,
+            WarpRouteError::PaymentNotEqualToRequired,
+        );
+
+        match token_mode {
+            WarpRouteTokenMode::BRIDGED => {
+                require(
+                    msg_asset_id() == AssetId::base(),
+                    WarpRouteError::InvalidAssetSend,
+                );
+                //Burn has checks inside along with decreasing total supply
+                _burn(storage.total_supply, storage.sub_id.read(), amount);
+            }
+            WarpRouteTokenMode::COLLATERAL => {
+                require(msg_asset_id() == asset, WarpRouteError::InvalidAssetSend);
+                //Locked in the contract
+                transfer(Identity::ContractId(ContractId::this()), asset, amount);
+            }
+        }
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
@@ -274,10 +286,10 @@ impl WarpRoute for Contract {
     ///
     /// ### Returns
     ///
-    /// * [b256] - The mailbox contract ID
+    /// * [ContractId] - The mailbox contract ID
     #[storage(read)]
-    fn get_mailbox() -> b256 {
-        storage.mailbox.read().into()
+    fn get_mailbox() -> ContractId {
+        storage.mailbox.read()
     }
 
     /// Gets the total number of coins ever minted for an asset.
@@ -295,44 +307,44 @@ impl WarpRoute for Contract {
     ///
     /// ### Returns
     ///
-    /// * [b256] - The post dispatch hook contract ID
+    /// * [ContractId] - The post dispatch hook contract ID
     #[storage(read)]
-    fn get_hook() -> b256 {
-        storage.default_hook.read().into()
+    fn get_hook() -> ContractId {
+        storage.default_hook.read()
     }
 
     /// Sets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Arguments
     ///
-    /// * `mailbox_address`: [b256] - The mailbox contract ID
+    /// * `mailbox_address`: [ContractId] - The mailbox contract ID
     ///
     /// ### Reverts
     ///
     /// * If the caller is not the owner
     /// * If the mailbox address is zero
     #[storage(write)]
-    fn set_mailbox(mailbox_address: b256) {
+    fn set_mailbox(mailbox_address: ContractId) {
         only_owner();
         require(!mailbox_address.is_zero(), WarpRouteError::InvalidAddress);
-        storage.mailbox.write(ContractId::from(mailbox_address));
+        storage.mailbox.write(mailbox_address);
     }
 
     /// Sets the post dispatch hook contract ID that the WarpRoute contract is using
     ///
     /// ### Arguments
     ///
-    /// * `hook`: [b256] - The post dispatch hook contract ID
+    /// * `hook`: [ContractId] - The post dispatch hook contract ID
     ///
     /// ### Reverts
     ///
     /// * If the caller is not the owner
     /// * If the hook address is zero
     #[storage(write)]
-    fn set_hook(hook: b256) {
+    fn set_hook(hook: ContractId) {
         only_owner();
         require(!hook.is_zero(), WarpRouteError::InvalidAddress);
-        storage.default_hook.write(ContractId::from(hook));
+        storage.default_hook.write(hook);
     }
 
     /// Sets the default ISM
@@ -343,6 +355,16 @@ impl WarpRoute for Contract {
     #[storage(read, write)]
     fn set_ism(module: ContractId) {
         storage.default_ism.write(module)
+    }
+
+    /// Gets the quote for gas payment
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination_domain`: [u32] - The destination domain
+    #[storage(read)]
+    fn quote_gas_payment(destination_domain: u32) -> u64 {
+        _get_quote_for_gas_payment(destination_domain, b256::zero(), Bytes::new(), Bytes::new(), storage.default_hook.read())
     }
 }
 
@@ -460,13 +482,11 @@ impl MessageRecipient for Contract {
         let (recipient, amount) = _extract_asset_data_from_body(message_body);
         let recipient_identity = Identity::Address(Address::from(recipient));
 
-
-        let remote_decimals = _get_remote_router_decimals(sender); 
+        let remote_decimals = _get_remote_router_decimals(sender);
         require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
 
         let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
-        let adjusted_amount = _adjust_recieved_decimals(amount, local_decimals, remote_decimals);
-
+        let adjusted_amount = _adjust_decimals(amount, remote_decimals, local_decimals);
         let asset = storage.asset_id.read();
 
         match storage.token_mode.read() {
@@ -607,13 +627,8 @@ fn _build_token_metadata_bytes(recipient: b256, amount: u64) -> Bytes {
     let mut buffer = Buffer::new();
 
     buffer = recipient.abi_encode(buffer);
-
     let amount_u256 = u256::from(amount); // Convert `u64` to `U256` for 32-byte padding
     buffer = amount_u256.abi_encode(buffer);
-
-    let metadata = Bytes::new();
-    buffer = metadata.abi_encode(buffer);
-
     let bytes = Bytes::from(buffer.as_raw_slice());
     bytes
 }
@@ -643,43 +658,35 @@ fn _get_remote_router_decimals(router: b256) -> u8 {
     storage.remote_router_decimals.get(router).try_read().unwrap_or(0)
 }
 
-fn _adjust_send_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
-    if local_decimals == remote_decimals {
+fn _adjust_decimals(amount: u64, from_decimals: u8, to_decimals: u8) -> u64 {
+    if from_decimals == to_decimals {
         return amount;
     }
 
-    let difference = if local_decimals > remote_decimals {
-        local_decimals - remote_decimals
+    let difference = if from_decimals > to_decimals {
+        from_decimals - to_decimals
     } else {
-        remote_decimals - local_decimals
+        to_decimals - from_decimals
     };
 
     let factor = 10u64.pow(difference.as_u32());
 
-    if local_decimals < remote_decimals {
-        amount * factor
-    } else {
+    if from_decimals > to_decimals {
+        require(amount >= factor, WarpRouteError::AmountNotConvertible);
         amount / factor
+    } else {
+        amount * factor
     }
 }
 
-fn _adjust_recieved_decimals(amount: u64, local_decimals: u8, remote_decimals: u8) -> u64 {
-    if local_decimals == remote_decimals {
-        return amount;
-    }
-
-    let difference = if local_decimals > remote_decimals {
-        local_decimals - remote_decimals
-    } else {
-        remote_decimals - local_decimals
-    };
-
-    let factor = 10u64.pow(difference.as_u32());
-
-    //recieved amount is in the remote decimals - should be converted to local
-    if local_decimals < remote_decimals {
-        amount / factor
-    } else {
-        amount * factor
-    }
+#[storage(read)]
+fn _get_quote_for_gas_payment(
+    destination_domain: u32,
+    recipient: b256,
+    message_body: Bytes,
+    metadata: Bytes,
+    hook: ContractId,
+) -> u64 {
+    let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
+    mailbox.quote_dispatch(destination_domain, recipient, message_body, metadata, hook)
 }

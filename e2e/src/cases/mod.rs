@@ -1,3 +1,4 @@
+mod asset_send_with_gas;
 mod bridged_asset_recieve;
 mod bridged_asset_send;
 mod collateral_asset_recieve;
@@ -61,6 +62,7 @@ pub fn pull_test_cases() -> Vec<TestCase> {
         collateral_asset_send::test(),
         bridged_asset_send::test(),
         gas_overpayment_and_claim::test(),
+        asset_send_with_gas::test(),
         message_recieve::test(),
         bridged_asset_recieve::test(),
         collateral_asset_recieve::test(),

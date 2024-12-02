@@ -1,10 +1,13 @@
 use crate::{
     cases::TestCase,
-    setup::{abis::WarpRoute, get_loaded_wallet},
+    setup::{
+        abis::{InterchainGasPaymaster, WarpRoute},
+        get_loaded_wallet,
+    },
     utils::{
         get_remote_domain, get_remote_test_recipient,
         local_contracts::*,
-        token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
+        token::{get_contract_balance, get_local_fuel_base_asset},
     },
 };
 use fuels::{
@@ -17,28 +20,22 @@ async fn collateral_asset_send() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let warp_route_id = get_contract_address_from_yaml("warpRoute");
-
-    let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
-
-    let remote_domain = get_remote_domain();
-    let amount = 1000;
 
     let base_asset: fuels::types::AssetId = get_local_fuel_base_asset();
 
-    let _ = send_gas_to_contract_2(
-        wallet.clone(),
-        warp_route_instance.contract_id(),
-        1_000_000_000,
-        base_asset,
-    )
-    .await;
+    let remote_domain = get_remote_domain();
+    let amount = 1000;
+    let test_recipient = get_remote_test_recipient();
 
+    let warp_route_id = get_contract_address_from_yaml("warpRoute");
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
     let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
+
+    let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
+    let igp_instance = InterchainGasPaymaster::new(igp_id, wallet.clone());
 
     let remote_wr = load_remote_wr_addresses("CTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
@@ -60,7 +57,13 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .await
         .unwrap();
 
-    let test_recipient = get_remote_test_recipient();
+    let quote = igp_instance
+        .methods()
+        .quote_gas_payment(remote_domain, 5000)
+        .with_contract_ids(&[gas_oracle_id.into()])
+        .call()
+        .await
+        .map_err(|e| format!("Failed to get quote: {:?}", e))?;
 
     let warp_balance_before = get_contract_balance(
         wallet.provider().unwrap(),
@@ -73,7 +76,11 @@ async fn collateral_asset_send() -> Result<f64, String> {
     let _ = warp_route_instance
         .methods()
         .transfer_remote(remote_domain, test_recipient, amount)
-        .call_params(CallParameters::new(amount, base_asset, 20_000_000))
+        .call_params(CallParameters::new(
+            amount + quote.value,
+            base_asset,
+            20_000_000,
+        ))
         .unwrap()
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[

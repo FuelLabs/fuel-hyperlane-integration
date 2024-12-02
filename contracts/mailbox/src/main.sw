@@ -334,11 +334,12 @@ impl Mailbox for Contract {
         }
 
         let message = _build_message(destination_domain, recipient_address, message_body);
+        let msg_bytes = message.message_clean().bytes;
 
         let required_hook = abi(PostDispatchHook, b256::from(storage.required_hook.read()));
         let hook = abi(PostDispatchHook, b256::from(hook));
 
-        required_hook.quote_dispatch(metadata, message_body) + hook.quote_dispatch(metadata, message_body)
+        required_hook.quote_dispatch(metadata, msg_bytes) + hook.quote_dispatch(metadata, msg_bytes)
     }
 
     /// Processes a message.

@@ -6,12 +6,13 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_fuel_test_recipient, get_local_domain,
-        local_contracts::get_contract_address_from_yaml,
+        get_fuel_test_recipient, get_local_domain, get_remote_domain,
+        local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
+use fuels::types::Bits256;
 use tokio::time::Instant;
 
 async fn collateral_asset_recieve() -> Result<f64, String> {
@@ -19,6 +20,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
     let base_asset = get_local_fuel_base_asset();
+    let remote_domain = get_remote_domain();
     let amount = 10_000_000_000_000;
 
     let warp_route_id = get_contract_address_from_yaml("warpRoute");
@@ -32,7 +34,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     let _ = send_gas_to_contract_2(
         wallet.clone(),
         warp_route_instance.contract_id(),
-        1_000_000_000_000,
+        amount,
         base_asset,
     )
     .await;
@@ -44,6 +46,26 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     )
     .await
     .unwrap();
+
+    let remote_wr_address = load_remote_wr_addresses("NTR").unwrap();
+    let remote_wr_hex = hex::decode(remote_wr_address.strip_prefix("0x").unwrap()).unwrap();
+
+    let mut remote_wr_array = [0u8; 32];
+    remote_wr_array[12..].copy_from_slice(&remote_wr_hex);
+
+    warp_route_instance
+        .methods()
+        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .call()
+        .await
+        .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
+
+    warp_route_instance
+        .methods()
+        .set_remote_router_decimals(Bits256(remote_wr_array), 18)
+        .call()
+        .await
+        .unwrap();
 
     let recipient = get_fuel_test_recipient();
     let fuel_domain = get_local_domain();

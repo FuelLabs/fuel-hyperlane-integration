@@ -7,7 +7,6 @@ use fuels::{
 
 use crate::{
     cases::TestCase,
-    //evm::monitor_sepolia_for_delivery,
     setup::{
         abis::{GasOracle, IGPHook, InterchainGasPaymaster, Mailbox},
         get_loaded_wallet,
