@@ -247,33 +247,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     ////////////////////////////////////////////////////
-    // Case 5: Collateral Sepolia (USDC) -> Fuel (ETH)//
+    // Case 5: Collateral Fuel (ETH) to Sepolia (USDC)//
     ////////////////////////////////////////////////////
 
-    println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
+    println!("Case: Transferring Fuel (ETH) to Sepolia (USDC)");
 
-    let amount = 1;
+    let amount = 1_000;
     println!("transfer amount is {}", amount);
 
-    send_token_to_contract(
-        fuel_wallet.clone(),
-        contracts.fuel.warp_route_collateral.contract_id(),
-        amount * 10u64.pow(3),
-    )
-    .await;
-
-    let recipient = contracts.fuel.test_recipient.contract_id();
-
-    let initial_balance = get_native_balance(&fuel_provider, recipient.into()).await;
-    println!("Initial recipient balance: {}", initial_balance);
-
-    let message_id = contracts.sepolia_transfer_remote_collateral(amount).await;
-    contracts.monitor_fuel_for_delivery(message_id).await;
-
-    let final_balance = get_native_balance(&fuel_provider, recipient.into()).await;
-    println!("Final recipient balance: {}", final_balance);
-    println!("Difference: {}", final_balance - initial_balance);
-    println!("-----------------------------------------------------------");
+    contracts.fuel_transfer_remote_collateral(amount).await;
+    contracts.monitor_sepolio_for_asset_delivery(false).await;
 
     ////////////////////////////////////////////////////
     // Case 6: Bridged Sepolia (FST) to Fuel (FST) //
@@ -281,7 +264,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
 
-    let amount = 40_000;
+    let amount = 40_000_000_000;
     println!("transfer amount is {}", amount);
     let asset_id = contracts.fuel_get_minted_asset_id().await;
     let recipient_contract_id = contracts.fuel.test_recipient.contract_id().into();
@@ -305,46 +288,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("-----------------------------------------------------------");
     println!("transfer amount is {}", amount);
 
-    contracts.fuel_transfer_remote_bridged(amount).await;
+    contracts
+        .fuel_transfer_remote_bridged(fuel_wallet.clone(), amount)
+        .await;
 
     contracts.monitor_sepolio_for_asset_delivery(true).await;
     println!("-----------------------------------------------------------");
 
     ////////////////////////////////////////////////////
-    // Case 8: Collateral Fuel (ETH) to Sepolia (USDC)//
+    // Case 9: Collateral Sepolia (USDC) -> Fuel (ETH)//
     ////////////////////////////////////////////////////
 
-    println!("Case: Transferring Fuel (ETH) to Sepolia (USDC)");
+    println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
 
-    let amount = 100;
+    let amount = 1_000;
     println!("transfer amount is {}", amount);
 
-    contracts.fuel_transfer_remote_collateral(amount).await;
-    contracts.monitor_sepolio_for_asset_delivery(false).await;
+    send_token_to_contract(
+        fuel_wallet.clone(),
+        contracts.fuel.warp_route_collateral.contract_id(),
+        amount * 10u64.pow(5),
+    )
+    .await;
+
+    let recipient = contracts.fuel.test_recipient.contract_id();
+
+    let initial_balance = get_native_balance(&fuel_provider, recipient.into()).await;
+    println!("Initial recipient balance: {}", initial_balance);
+
+    let message_id = contracts.sepolia_transfer_remote_collateral(amount).await;
+    contracts.monitor_fuel_for_delivery(message_id).await;
+
+    let final_balance = get_native_balance(&fuel_provider, recipient.into()).await;
+    println!("Final recipient balance: {}", final_balance);
+    println!("Difference: {}", final_balance - initial_balance);
+    println!("-----------------------------------------------------------");
 
     ///////////////////////////////////////////////
     // Case 9: Claim IGP payment from Fuel //
     ///////////////////////////////////////////////
 
     println!("Case: Claiming gas payment from Fuel IGP");
-
-    // let initial_balance = get_native_balance_of_wallet(&fuel_provider, &fuel_wallet).await;
-    // println!("Initial wallet balance: {}", initial_balance);
-
     let igp_balance_first =
         get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
-    println!("IGP balance before message dispatch: {}", igp_balance_first);
-
-    let gas_payment_quote = contracts.fuel_quote_dispatch().await;
-    println!("Gas payment quote: {}", gas_payment_quote);
-
-    contracts
-        .fuel_send_dispatch(DispatchType::WithIGPHook)
-        .await;
-
-    let igp_balance =
-        get_contract_balance(&fuel_provider, contracts.fuel.igp.contract_id().into()).await;
-    println!("IGP balance after message dispatch: {}", igp_balance);
+    println!("IGP balance: {}", igp_balance_first);
 
     contracts.claim_gas_payment().await;
 

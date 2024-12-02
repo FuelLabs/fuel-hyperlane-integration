@@ -5,15 +5,16 @@ use message::Message;
 
 /// Errors that can occur when interacting with the WarpRoute contract
 pub enum WarpRouteError {
-    PaymentError: (),
+    InvalidAssetSend: (),
+    PaymentNotEqualToRequired: (),
     Unauthorized: (),
-    InsufficientFunds: (),
     AlreadyInitialized: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),
     NoRouter: u32,
     RemoteDecimalsNotSet: (),
+    AmountNotConvertible: (),
 }
 
 /// The mode of the WarpRoute contract
@@ -91,33 +92,33 @@ abi WarpRoute {
     ///
     /// ### Returns
     ///
-    /// * [b256] - The mailbox contract ID
+    /// * [ContractId] - The mailbox contract ID
     #[storage(read)]
-    fn get_mailbox() -> b256;
+    fn get_mailbox() -> ContractId;
 
     /// Gets the post dispatch hook contract ID that the WarpRoute contract is using
     ///
     /// ### Returns
     ///
-    /// * [b256] - The post dispatch hook contract ID
+    /// * [ContractId] - The post dispatch hook contract ID
     #[storage(read)]
-    fn get_hook() -> b256;
+    fn get_hook() -> ContractId;
 
     /// Sets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Arguments
     ///
-    /// * `mailbox_address`: [b256] - The mailbox contract ID
+    /// * `mailbox_address`: [ContractId] - The mailbox contract ID
     #[storage(write)]
-    fn set_mailbox(mailbox_address: b256);
+    fn set_mailbox(mailbox_address: ContractId);
 
     /// Sets the post dispatch hook contract ID that the WarpRoute contract is using
     ///
     /// ### Arguments
     ///
-    /// * `hook`: [b256] - The post dispatch hook contract ID
+    /// * `hook`: [ContractId] - The post dispatch hook contract ID
     #[storage(write)]
-    fn set_hook(hook: b256);
+    fn set_hook(hook: ContractId);
 
     /// Gets the total number of coins ever minted for an asset.
     ///
@@ -134,6 +135,14 @@ abi WarpRoute {
     /// * `module`: [ContractId] - The ISM contract ID
     #[storage(read, write)]
     fn set_ism(module: ContractId);
+
+    /// Gets the quote for gas payment
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination_domain`: [u32] - The destination domain
+    #[storage(read)]
+    fn quote_gas_payment(destination_domain: u32) -> u64;
 }
 
 // --------------- Events ---------------

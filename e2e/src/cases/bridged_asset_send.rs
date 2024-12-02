@@ -4,16 +4,11 @@ use crate::{
     utils::{
         build_message_body, get_remote_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{
-            get_balance, get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2,
-        },
+        token::{get_balance, get_contract_balance, send_gas_to_contract_2},
         TEST_RECIPIENT,
     },
 };
-use fuels::{
-    programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Address, Bits256},
-};
+use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256};
 use tokio::time::Instant;
 
 async fn bridged_asset_send() -> Result<f64, String> {
@@ -29,7 +24,6 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
 
-    let base_asset = get_local_fuel_base_asset();
     let remote_domain = get_remote_domain();
     let amount = 100_000;
 
@@ -109,8 +103,8 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let _ = send_gas_to_contract_2(
         wallet.clone(),
         warp_route_instance.contract_id(),
-        50_000_000,
-        base_asset,
+        amount,
+        asset_id,
     )
     .await;
 
@@ -131,8 +125,6 @@ async fn bridged_asset_send() -> Result<f64, String> {
     let _ = warp_route_instance
         .methods()
         .transfer_remote(remote_domain, test_recipient, amount)
-        .call_params(CallParameters::new(amount, asset_id, 20_000_000))
-        .unwrap()
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),
