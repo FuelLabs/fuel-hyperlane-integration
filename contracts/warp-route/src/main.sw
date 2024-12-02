@@ -207,7 +207,6 @@ impl WarpRoute for Contract {
             destination_domain,
             remote_domain_router,
             message_body,
-            Bytes::new(),
             hook_contract,
         );
 
@@ -364,7 +363,7 @@ impl WarpRoute for Contract {
     /// * `destination_domain`: [u32] - The destination domain
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32) -> u64 {
-        _get_quote_for_gas_payment(destination_domain, b256::zero(), Bytes::new(), Bytes::new(), storage.default_hook.read())
+        _get_quote_for_gas_payment(destination_domain, b256::zero(), Bytes::new(), storage.default_hook.read())
     }
 }
 
@@ -684,9 +683,8 @@ fn _get_quote_for_gas_payment(
     destination_domain: u32,
     recipient: b256,
     message_body: Bytes,
-    metadata: Bytes,
     hook: ContractId,
 ) -> u64 {
     let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
-    mailbox.quote_dispatch(destination_domain, recipient, message_body, metadata, hook)
+    mailbox.quote_dispatch(destination_domain, recipient, message_body, Bytes::new(), hook)
 }
