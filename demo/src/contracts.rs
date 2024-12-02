@@ -659,6 +659,15 @@ impl Contracts {
             .await
             .unwrap();
 
+        let _set_hook_res = self
+            .fuel
+            .warp_route_collateral
+            .methods()
+            .set_hook(self.fuel.igp_hook.contract_id())
+            .call()
+            .await
+            .unwrap();
+
         let _res = self
             .sepolia
             .warp_route_collateral
@@ -683,13 +692,19 @@ impl Contracts {
             .watch()
             .await;
 
+        let quote = self.fuel_quote_dispatch().await;
+
         let res = self
             .fuel
             .warp_route_collateral
             .methods()
             .transfer_remote(get_basesepolia_chain_id(), Bits256(address_array), amount)
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-            .call_params(CallParameters::new(amount, get_native_asset(), 223_526))
+            .call_params(CallParameters::new(
+                amount + quote,
+                get_native_asset(),
+                3_000_000,
+            ))
             .unwrap()
             .determine_missing_contracts(Some(8))
             .await
@@ -711,7 +726,7 @@ impl Contracts {
     }
 
     /// Fuel (FST) -> Sepolia (FST)
-    pub async fn fuel_transfer_remote_bridged(&self, amount: u64) {
+    pub async fn fuel_transfer_remote_bridged(&self, wallet: WalletUnlocked, amount: u64) {
         let recipient_address = self.sepolia.recipient.address().to_vec();
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
@@ -748,6 +763,15 @@ impl Contracts {
             .await
             .unwrap();
 
+        let _set_hook_res = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .set_hook(self.fuel.igp_hook.contract_id())
+            .call()
+            .await
+            .unwrap();
+
         let _res = self
             .sepolia
             .warp_route_bridged
@@ -773,6 +797,9 @@ impl Contracts {
             .await;
 
         let asset_id = self.fuel_get_minted_asset_id().await;
+        let quote = self.fuel_quote_dispatch().await;
+
+        send_token_to_contract(wallet, self.fuel.warp_route_bridged.contract_id(), amount).await;
 
         let res = self
             .fuel
@@ -780,7 +807,7 @@ impl Contracts {
             .methods()
             .transfer_remote(get_basesepolia_chain_id(), Bits256(address_array), amount)
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-            .call_params(CallParameters::new(amount, asset_id, 223_526))
+            .call_params(CallParameters::new(quote, asset_id, 223_526))
             .unwrap()
             .determine_missing_contracts(Some(5))
             .await
@@ -823,6 +850,15 @@ impl Contracts {
         let remote_wr_address = self.sepolia.warp_route_bridged.address().to_vec();
         let mut remote_wr_address_array = [0u8; 32];
         remote_wr_address_array[12..].copy_from_slice(&remote_wr_address);
+
+        let _set_router = self
+            .fuel
+            .warp_route_bridged
+            .methods()
+            .enroll_remote_router(get_basesepolia_chain_id(), Bits256(remote_wr_address_array))
+            .call()
+            .await
+            .unwrap();
 
         let _adjust_decimals_res = self
             .fuel
