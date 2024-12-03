@@ -1,142 +1,142 @@
 {
-    "chains": {
-        "fueltestnet": {
-            "blockExplorers": [
-                {
-                    "apiUrl": "https://app.fuel.network/",
-                    "family": "other",
-                    "name": "Fuel Explorer",
-                    "url": "https://app.fuel.network/"
-                }
-            ],
-            "blocks": {
-                "confirmations": 1,
-                "estimateBlockTime": 1,
-                "reorgPeriod": 1
-            },
-            "chainId": 1717982312,
-            "deployer": {
-                "name": "Abacus Works",
-                "url": "https://www.hyperlane.xyz"
-            },
-            "displayName": "FuelTestnet",
-            "domainId": 1717982312,
-            "gasCurrencyCoinGeckoId": "fuel-2",
-            "name": "fueltestnet",
-            "nativeToken": {
-                "decimals": 18,
-                "name": "Ethereum",
-                "symbol": "ETH"
-            },
-            "protocol": "fuel",
-            "rpcUrls": [
-                {
-                    "http": "https://testnet.fuel.network/v1/graphql"
-                }
-            ],
-            "mailbox": "0xa3fccaeceb957e17da2c9c3500c5a03bccfcdf62f57a02cd806355e23ca55cb9",
-            "postDispatch": "0xaa65a337783480fe295bfd6d37c671aa6ec20d015cd9fc6475fd9ea6a83cc8bc",
-            "recipient": "0xf815f42422852089d240a5f99a627aed137d18e00c3134c25fa03eb994665822",
-            "interchainSecurityModule": "0x2e1faf77aef4bfb99c723ace3c02c62796cbada2f1dc1813940f7dd7bc0dda11",
-            "AggregationISM": "0x449ac562a2094c086628236ca71dba826e2a18a4332a46ba29728f15e9f5f840",
-            "DomainRoutingISM": "0x76e08a329c41ec5cef6fc5903615c2b1d0c00f0b6c549c52f128f50c1dc4367a",
-            "FallbackDomainRoutingISM": "0xb6e9cb65cfe2ee3b3a0f8c40f82c45bd7b54d7a6ccb23440f2e12c5cdd040bf0",
-            "MessageIdMultisigISM": "0xa17e1168f86058b87ca4f512773e9e3de1fa6b6aa279fdfd0f3877f86093a5fe",
-            "MerkleRootMultisigISM": "0x6bcce70090521c62a8c2917da4ee88625fa4f880e6e2852e0c27c80b599c2dfa",
-            "merkleTreeHook": "0xe27083c4db7bd12133ee50785b565d69e8ef115d3b7e38318c35a11d71a8d7f2",
-            "storageGasOracle": "0x512c9dfbdcdf5ff326dfbdc69170ce06aa2e71aca2e6afae54afd51e58002684",
-            "interchainGasPaymaster": "0xb9686e8c4caabaab8fc9d341af6154101028c977b57c133b447f5f50a043c22f",
-            "interchainGasPaymasterHook": "0x457dedd619eed8dffd50ba2bbc74e6f60f55f2f5f80413781f8ae0967a7722a3",
-            "warpRouteNative": "0xe4582f4e0bf3ff1dece741b7771868e4bb1b519a16f6bf49c884c88b896ddb93",
-            "warpRouteBridged": "0x7c139f5d8627a1497fcb3cf1ba8b8be57a7ae075339e729fa94435080e37b35c",
-            "validatorAnnounce": "0xb8c9d37ccc9cef1b7a1c25cbc4e44040eaa94387accc34ecefcc9debda21929a",
-            "index": {
-                "from": 17119248,
-                "chunk": 10
-            }
-        },
-        "basesepolia": {
-            "aggregationHook": "0xccA408a6A9A6dc405C3278647421eb4317466943",
-            "blockExplorers": [
-                {
-                    "apiUrl": "https://api-sepolia.basescan.org/api",
-                    "family": "etherscan",
-                    "name": "BaseScan",
-                    "url": "https://sepolia.basescan.org"
-                }
-            ],
-            "blocks": {
-                "confirmations": 1,
-                "estimateBlockTime": 2,
-                "reorgPeriod": 1
-            },
-            "chainId": 84532,
-            "deployer": {
-                "name": "Abacus Works",
-                "url": "https://www.hyperlane.xyz"
-            },
-            "displayName": "Base Sepolia",
-            "domainId": 84532,
-            "domainRoutingIsm": "0x4ac19e0bafc2aF6B98094F0a1B817dF196551219",
-            "domainRoutingIsmFactory": "0x16B710b86CAd07E6F1C531861a16F5feC29dba37",
-            "fallbackRoutingHook": "0xddf4C3e791caCaFd26D7fb275549739B38ae6e75",
-            "index": {
-                "from": 13851043,
-                "chunk": 5000
-            },
-            "interchainGasPaymaster": "0x28B02B97a850872C4D33C3E024fab6499ad96564",
-            "interchainSecurityModule": "0x3E857CB33b76f680F3dB557Ce3BBf2591A98d92d",
-            "isTestnet": true,
-            "mailbox": "0x6966b0E55883d49BFB24539356a2f8A673E02039",
-            "merkleTreeHook": "0x86fb9F1c124fB20ff130C41a79a432F770f67AFD",
-            "name": "basesepolia",
-            "nativeToken": {
-                "decimals": 18,
-                "name": "Ether",
-                "symbol": "ETH"
-            },
-            "pausableHook": "0x19Be55D859368e02d7b9C00803Eb677BDC1359Bd",
-            "pausableIsm": "0xAD34A66Bf6dB18E858F6B686557075568c6E031C",
-            "protocol": "ethereum",
-            "protocolFee": "0x1b33611fCc073aB0737011d5512EF673Bff74962",
-            "proxyAdmin": "0x44b764045BfDC68517e10e783E69B376cef196B2",
-            "rpcUrls": [
-                {
-                    "http": "https://84532.rpc.thirdweb.com/"
-                },
-                {
-                    "http": "https://sepolia.base.org"
-                },
-                {
-                    "http": "https://base-sepolia-rpc.publicnode.com"
-                }
-            ],
-            "placeHolder": [
-                {
-                    "http": "https://84532.rpc.thirdweb.com/"
-                },
-                {
-                    "http": "https://sepolia.base.org"
-                },
-                {
-                    "http": "https://base-sepolia-rpc.publicnode.com"
-                }
-            ],
-            "staticAggregationHookFactory": "0xeb6f11189197223c656807a83B0DD374f9A6dF44",
-            "staticAggregationIsm": "0x815a9642497Ee1E9F061f8b828C85Eb7193DecfC",
-            "staticAggregationIsmFactory": "0x275aCcCa81cAD931dC6fB6E49ED233Bc99Bed4A7",
-            "staticMerkleRootMultisigIsmFactory": "0x6E7b29CB2A7617405B4d30C6f84bBD51b4Bb4be8",
-            "staticMessageIdMultisigIsmFactory": "0xfc6e546510dC9d76057F1f76633FCFfC188CB213",
-            "storageGasOracle": "0x5821f3B6eE05F3dC62b43B74AB1C8F8E6904b1C8",
-            "testRecipient": "0xDE05F3A5A62357ac9670351d89145851c087BB78",
-            "validatorAnnounce": "0x20c44b1E3BeaDA1e9826CFd48BeEDABeE9871cE9",
-            "staticMerkleRootWeightedMultisigIsmFactory": "0xB057Fb841027a8554521DcCdeC3c3474CaC99AB5",
-            "staticMessageIdWeightedMultisigIsmFactory": "0xe0B988062A0C6492177d64823Ab95a9c256c2a5F",
-            "gasCurrencyCoinGeckoId": "ethereum",
-            "interchainAccountIsm": "0xDa5177080f7fC5d9255eB32cC64B9b4e5136A716",
-            "interchainAccountRouter": "0xd876C01aB40e8cE42Db417fBC79c726d45504dE4",
-            "timelockController": "0x0000000000000000000000000000000000000000"
+  "chains": {
+    "fueltestnet": {
+      "blockExplorers": [
+        {
+          "apiUrl": "https://app.fuel.network/",
+          "family": "other",
+          "name": "Fuel Explorer",
+          "url": "https://app.fuel.network/"
         }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 1,
+        "reorgPeriod": 1
+      },
+      "chainId": 1717982312,
+      "deployer": {
+        "name": "Abacus Works",
+        "url": "https://www.hyperlane.xyz"
+      },
+      "displayName": "FuelTestnet",
+      "domainId": 1717982312,
+      "gasCurrencyCoinGeckoId": "fuel-2",
+      "name": "fueltestnet",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Ethereum",
+        "symbol": "ETH"
+      },
+      "protocol": "fuel",
+      "rpcUrls": [
+        {
+          "http": "https://testnet.fuel.network/v1/graphql"
+        }
+      ],
+      "mailbox": "0xe4a4ff432fd7f17eb26b63599fab853b308a9ed6bf6b3e1a4f377481c029ec04",
+      "postDispatch": "0xb2e8442158e956e82ff3e22d9c62b56a79a66ea0a7750d7594411a0c9d4cad9b",
+      "recipient": "0x2e0fb48e633ccf134c970c388b1a6aea8ececf0ec2b30125ce12372800704d00",
+      "interchainSecurityModule": "0x627b20a2d00fd9fd0fefbe0637a825f4b541219893f160f44db980c0506f6b1f",
+      "aggregationISM": "0x7f15fcdb852532c0fa932fb66da5305ee979e884318d9454fcf83407d295d571",
+      "domainRoutingISM": "0x9b705648d180f22f68c9276ceb1516372aa5e04eb3a0274b2c20325c10580d19",
+      "fallbackDomainRoutingISM": "0x71d485569eafc814e8d307fa69e39c420295f43d0fbe3e16552e482f275db2b2",
+      "messageIdMultisigISM": "0x71e4e331a786f4e2d836e754696fe56f1c324e1b0357fd5f45c05ed1193fb2e3",
+      "merkleRootMultisigISM": "0x1aa805b502925a0e4a088e17ce95ef90104e9439713c13b8250136675f8f0bd0",
+      "merkleTreeHook": "0xa37d9c006c4412be3e6c2cf83c2ead4ebe2507cf5683af58b35e75cf0e63efb9",
+      "storageGasOracle": "0xf3c09e2eaf3a64229a5f6ac3f980482c54aec0dec148233c1c6afe4c574f8767",
+      "interchainGasPaymaster": "0x554b24fa165db134e164bc3f8910b25b0dacba5d7a8eb4a635a51cd76cde2853",
+      "interchainGasPaymasterHook": "0xc07039ece27d6faa9381be81d681c27fef1b079e29a736d7e5b8863a378b62eb",
+      "warpRouteNative": "0xe4582f4e0bf3ff1dece741b7771868e4bb1b519a16f6bf49c884c88b896ddb93",
+      "warpRouteBridged": "0x7c139f5d8627a1497fcb3cf1ba8b8be57a7ae075339e729fa94435080e37b35c",
+      "validatorAnnounce": "0x7a02e00c33879afe4c6d43b247bc6ea09ec580d8d94a51ddd8e16c44f9a3e03a",
+      "index": {
+        "from": 17194851,
+        "chunk": 10
+      }
     },
-    "defaultRpcConsensusType": "fallback"
+    "basesepolia": {
+      "aggregationHook": "0xccA408a6A9A6dc405C3278647421eb4317466943",
+      "blockExplorers": [
+        {
+          "apiUrl": "https://api-sepolia.basescan.org/api",
+          "family": "etherscan",
+          "name": "BaseScan",
+          "url": "https://sepolia.basescan.org"
+        }
+      ],
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 2,
+        "reorgPeriod": 1
+      },
+      "chainId": 84532,
+      "deployer": {
+        "name": "Abacus Works",
+        "url": "https://www.hyperlane.xyz"
+      },
+      "displayName": "Base Sepolia",
+      "domainId": 84532,
+      "domainRoutingIsm": "0x4ac19e0bafc2aF6B98094F0a1B817dF196551219",
+      "domainRoutingIsmFactory": "0x16B710b86CAd07E6F1C531861a16F5feC29dba37",
+      "fallbackRoutingHook": "0xddf4C3e791caCaFd26D7fb275549739B38ae6e75",
+      "index": {
+        "from": 13851043,
+        "chunk": 5000
+      },
+      "interchainGasPaymaster": "0x28B02B97a850872C4D33C3E024fab6499ad96564",
+      "interchainSecurityModule": "0x3E857CB33b76f680F3dB557Ce3BBf2591A98d92d",
+      "isTestnet": true,
+      "mailbox": "0x6966b0E55883d49BFB24539356a2f8A673E02039",
+      "merkleTreeHook": "0x86fb9F1c124fB20ff130C41a79a432F770f67AFD",
+      "name": "basesepolia",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Ether",
+        "symbol": "ETH"
+      },
+      "pausableHook": "0x19Be55D859368e02d7b9C00803Eb677BDC1359Bd",
+      "pausableIsm": "0xAD34A66Bf6dB18E858F6B686557075568c6E031C",
+      "protocol": "ethereum",
+      "protocolFee": "0x1b33611fCc073aB0737011d5512EF673Bff74962",
+      "proxyAdmin": "0x44b764045BfDC68517e10e783E69B376cef196B2",
+      "rpcUrls": [
+        {
+          "http": "https://84532.rpc.thirdweb.com/"
+        },
+        {
+          "http": "https://sepolia.base.org"
+        },
+        {
+          "http": "https://base-sepolia-rpc.publicnode.com"
+        }
+      ],
+      "placeHolder": [
+        {
+          "http": "https://84532.rpc.thirdweb.com/"
+        },
+        {
+          "http": "https://sepolia.base.org"
+        },
+        {
+          "http": "https://base-sepolia-rpc.publicnode.com"
+        }
+      ],
+      "staticAggregationHookFactory": "0xeb6f11189197223c656807a83B0DD374f9A6dF44",
+      "staticAggregationIsm": "0x815a9642497Ee1E9F061f8b828C85Eb7193DecfC",
+      "staticAggregationIsmFactory": "0x275aCcCa81cAD931dC6fB6E49ED233Bc99Bed4A7",
+      "staticMerkleRootMultisigIsmFactory": "0x6E7b29CB2A7617405B4d30C6f84bBD51b4Bb4be8",
+      "staticMessageIdMultisigIsmFactory": "0xfc6e546510dC9d76057F1f76633FCFfC188CB213",
+      "storageGasOracle": "0x5821f3B6eE05F3dC62b43B74AB1C8F8E6904b1C8",
+      "testRecipient": "0xDE05F3A5A62357ac9670351d89145851c087BB78",
+      "validatorAnnounce": "0x20c44b1E3BeaDA1e9826CFd48BeEDABeE9871cE9",
+      "staticMerkleRootWeightedMultisigIsmFactory": "0xB057Fb841027a8554521DcCdeC3c3474CaC99AB5",
+      "staticMessageIdWeightedMultisigIsmFactory": "0xe0B988062A0C6492177d64823Ab95a9c256c2a5F",
+      "gasCurrencyCoinGeckoId": "ethereum",
+      "interchainAccountIsm": "0xDa5177080f7fC5d9255eB32cC64B9b4e5136A716",
+      "interchainAccountRouter": "0xd876C01aB40e8cE42Db417fBC79c726d45504dE4",
+      "timelockController": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "defaultRpcConsensusType": "fallback"
 }
