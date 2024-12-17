@@ -2,7 +2,7 @@
 mod warp_route {
     use fuels::{
         prelude::*,
-        types::{Bits256, U256},
+        types::{Bits256, Identity, U256},
     };
     use once_cell::sync::Lazy;
     use std::str::FromStr;
@@ -26,6 +26,10 @@ mod warp_route {
         Contract(
             name = "TestInterchainSecurityModule",
             abi = "contracts/test/ism-test/out/debug/ism-test-abi.json",
+        ),
+        Contract(
+            name = "SRC20Test",
+            abi = "contracts/test/src20-test/out/debug/src20-test-abi.json",
         ),
     );
 
@@ -58,7 +62,7 @@ mod warp_route {
     }
 
     fn get_native_asset() -> AssetId {
-        AssetId::default()
+        AssetId::BASE
     }
 
     fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
@@ -94,10 +98,10 @@ mod warp_route {
 
     fn _get_token_metadata(config: WarpRouteConfig) -> TokenMetadata {
         TokenMetadata {
-            name: config.token_name,
-            symbol: config.token_symbol,
-            decimals: config.decimals,
-            total_supply: config.total_supply,
+            name: config.token_name.unwrap(),
+            symbol: config.token_symbol.unwrap(),
+            decimals: config.decimals.unwrap(),
+            total_supply: config.total_supply.unwrap(),
             asset_id: config.asset_id.unwrap(),
             sub_id: AssetId::zeroed().into(),
         }
@@ -140,10 +144,10 @@ mod warp_route {
     #[derive(Clone, Debug)]
     struct WarpRouteConfig {
         token_mode: WarpRouteTokenMode,
-        token_name: String,
-        token_symbol: String,
-        decimals: u8,
-        total_supply: u64,
+        token_name: Option<String>,
+        token_symbol: Option<String>,
+        decimals: Option<u8>,
+        total_supply: Option<u64>,
         asset_id: Option<AssetId>,
     }
 
@@ -156,6 +160,7 @@ mod warp_route {
         ContractId,
         ContractId,
         ContractId,
+        AssetId,
     ) {
         let mut wallets = launch_custom_provider_and_get_wallets(
             WalletsConfig::new_multiple_assets(
@@ -235,21 +240,69 @@ mod warp_route {
         let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
         let hook_address = Bits256(ContractId::from(post_dispatch.id()).into());
         let default_ism_address = Bits256(ContractId::from(default_ism.id()).into());
-        let warp_init_res = warp_route
+
+        let collateral_token_contract_id = Contract::load_from(
+            "../test/src20-test/out/debug/src20-test.bin",
+            LoadConfiguration::default(),
+        )
+        .unwrap()
+        .deploy(&wallet, TxPolicies::default())
+        .await
+        .unwrap();
+
+        let collateral_token_contract =
+            SRC20Test::new(collateral_token_contract_id.clone(), wallet.clone());
+
+        let _ = collateral_token_contract
             .methods()
-            .initialize(
-                owner,
-                mailbox_address,
-                config.token_mode.clone(),
-                hook_address,
-                config.token_name.clone(),
-                config.token_symbol.clone(),
-                config.decimals,
-                config.total_supply,
-                Some(config.asset_id.unwrap()),
+            .mint(
+                Identity::Address(wallet.address().into()),
+                Some(Bits256::zeroed()),
+                TOTAL_SUPPLY,
             )
+            .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
             .call()
-            .await;
+            .await
+            .unwrap();
+
+        let collateral_token_id = collateral_token_contract_id.asset_id(&Bits256::zeroed());
+
+        let balance = get_balance(
+            wallet.provider().unwrap(),
+            wallet.address(),
+            collateral_token_id,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(balance, TOTAL_SUPPLY);
+
+        let mut asset_id = Some(config.asset_id.unwrap());
+        let mut asset_contract_id = None;
+
+        if config.token_mode == WarpRouteTokenMode::COLLATERAL {
+            asset_id = Some(collateral_token_id);
+            asset_contract_id = Some(Bits256(collateral_token_contract_id.hash().into()));
+        }
+
+        let mut call_handler = warp_route.methods().initialize(
+            owner,
+            mailbox_address,
+            config.token_mode.clone(),
+            hook_address,
+            Some(config.token_name.clone().unwrap()),
+            Some(config.token_symbol.clone().unwrap()),
+            Some(config.decimals.unwrap()),
+            Some(config.total_supply.unwrap()),
+            asset_id,
+            asset_contract_id,
+        );
+
+        if config.token_mode == WarpRouteTokenMode::COLLATERAL {
+            call_handler = call_handler.with_contract_ids(&[collateral_token_contract_id]);
+        }
+
+        let warp_init_res = call_handler.call().await;
         assert!(warp_init_res.is_ok(), "Failed to initialize Warp Route.");
 
         let mailbox_init_res = mailbox
@@ -289,6 +342,7 @@ mod warp_route {
             mailbox_id.into(),
             post_dispatch_id.into(),
             recipient_id.into(),
+            collateral_token_id,
         )
     }
 
@@ -299,10 +353,10 @@ mod warp_route {
         static COLLATERAL_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
             Mutex::new(WarpRouteConfig {
                 token_mode: WarpRouteTokenMode::COLLATERAL,
-                token_name: TOKEN_NAME.to_string(),
-                token_symbol: TOKEN_SYMBOL.to_string(),
-                decimals: DECIMALS,
-                total_supply: TOTAL_SUPPLY,
+                token_name: Some(TOKEN_NAME.to_string()),
+                token_symbol: Some(TOKEN_SYMBOL.to_string()),
+                decimals: Some(DECIMALS),
+                total_supply: Some(TOTAL_SUPPLY),
                 asset_id: Some(get_collateral_asset()),
             })
         });
@@ -314,9 +368,11 @@ mod warp_route {
             ContractId,
             ContractId,
         ) {
-            let (warp_route, contract_id, mailbox_id, post_dispatch_id, _) =
+            let (warp_route, contract_id, mailbox_id, post_dispatch_id, _, collateral_token_id) =
                 get_contract_instance(&COLLATERAL_CONFIG).await;
-            let config = COLLATERAL_CONFIG.lock().await.clone();
+
+            let mut config = COLLATERAL_CONFIG.lock().await.clone();
+            config.asset_id = Some(collateral_token_id);
 
             (
                 config,
@@ -377,10 +433,10 @@ mod warp_route {
                 .unwrap()
                 .value;
 
-            assert_eq!(token_info.name, config.token_name);
-            assert_eq!(token_info.symbol, config.token_symbol);
-            assert_eq!(token_info.decimals, config.decimals);
-            assert_eq!(token_info.total_supply, config.total_supply);
+            assert_eq!(token_info.name, config.token_name.unwrap());
+            assert_eq!(token_info.symbol, config.token_symbol.unwrap());
+            assert_eq!(token_info.decimals, config.decimals.unwrap());
+            assert_eq!(token_info.total_supply, config.total_supply.unwrap());
         }
 
         /// ============ get_token_mode ============
@@ -397,6 +453,76 @@ mod warp_route {
                 .value;
 
             assert_eq!(token_mode, config.token_mode);
+        }
+
+        /// ============ get_all_domains_and_routers ============
+        #[tokio::test]
+        async fn test_get_all_domains_and_routers() {
+            let (_, warp_route, _, _, _) = get_collateral_contract_instance().await;
+
+            // Insert test data
+            let test_domains = [1, 2, 3];
+            let test_routers = [
+                Bits256::from_hex_str(
+                    "0x0000000000000000000000000000000000000000000000000000000000000001",
+                )
+                .unwrap(),
+                Bits256::from_hex_str(
+                    "0x0000000000000000000000000000000000000000000000000000000000000002",
+                )
+                .unwrap(),
+                Bits256::from_hex_str(
+                    "0x0000000000000000000000000000000000000000000000000000000000000003",
+                )
+                .unwrap(),
+            ];
+
+            for (domain, router) in test_domains.iter().zip(test_routers.iter()) {
+                warp_route
+                    .methods()
+                    .enroll_remote_router(*domain, *router)
+                    .call()
+                    .await
+                    .unwrap();
+            }
+
+            // Retrieve all domains
+            let domains = warp_route
+                .methods()
+                .all_domains()
+                .call()
+                .await
+                .unwrap()
+                .value;
+            assert_eq!(
+                domains,
+                [
+                    TEST_REMOTE_DOMAIN,
+                    test_domains[0],
+                    test_domains[1],
+                    test_domains[2]
+                ],
+                "Domains do not match expected values."
+            );
+
+            // Retrieve all routers
+            let routers = warp_route
+                .methods()
+                .all_routers()
+                .call()
+                .await
+                .unwrap()
+                .value;
+            assert_eq!(
+                routers,
+                [
+                    Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap(),
+                    test_routers[0],
+                    test_routers[1],
+                    test_routers[2]
+                ],
+                "Routers do not match expected values."
+            );
         }
 
         /// ============ set_and_get_hook ============
@@ -501,12 +627,19 @@ mod warp_route {
         /// ============ transfer_remote_collateral ============
         #[tokio::test]
         async fn test_transfer_remote() {
-            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+            let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =
                 get_collateral_contract_instance().await;
 
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
-            let asset = config.asset_id.unwrap();
+            let asset = warp_route
+                .methods()
+                .get_token_info()
+                .call()
+                .await
+                .unwrap()
+                .value
+                .asset_id;
 
             let wallet_balance_before = get_balance(provider, wallet.address(), asset)
                 .await
@@ -528,13 +661,19 @@ mod warp_route {
                 .unwrap()
                 .value;
 
-            let call_params = CallParameters::new(amount, asset, 5_000_000);
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    amount,
+                    asset,
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
 
             let call = warp_route
                 .methods()
                 .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
-                .call_params(call_params)
-                .unwrap()
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox.into(),
@@ -573,11 +712,6 @@ mod warp_route {
             let wallet = warp_route.account();
             let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
             let remote_decimals = 18;
-            let amount = 2 * 10u64.pow(remote_decimals);
-
-            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-            let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
-            let body = build_message_body(recipient, amount);
 
             let local_decimals = warp_route
                 .methods()
@@ -588,23 +722,36 @@ mod warp_route {
                 .value
                 .decimals as u32;
 
+            let asset = warp_route
+                .methods()
+                .get_token_info()
+                .call()
+                .await
+                .unwrap()
+                .value
+                .asset_id;
+
+            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let recipient_address = Address::from_str(TEST_RECIPIENT).unwrap();
+            let amount = 2 * 10u64.pow(remote_decimals);
+            let body = build_message_body(recipient, amount);
+
             let (_, _) = wallet
                 .force_transfer_to_contract(
                     warp_route.contract_id(),
-                    amount,
-                    get_collateral_asset(),
+                    2 * 10u64.pow(remote_decimals - local_decimals),
+                    asset,
                     TxPolicies::default(),
                 )
                 .await
                 .unwrap();
 
             let provider = wallet.provider().unwrap();
-            let recipient_balance_before =
-                get_balance(provider, &recipient_address.into(), get_collateral_asset())
-                    .await
-                    .unwrap();
+            let recipient_balance_before = get_balance(provider, &recipient_address.into(), asset)
+                .await
+                .unwrap();
             let contract_balance_before =
-                get_contract_balance(provider, warp_route.contract_id(), get_collateral_asset())
+                get_contract_balance(provider, warp_route.contract_id(), asset)
                     .await
                     .unwrap();
 
@@ -616,14 +763,12 @@ mod warp_route {
                 .await
                 .unwrap();
 
-            let recipient_balance =
-                get_balance(provider, &recipient_address.into(), get_collateral_asset())
-                    .await
-                    .unwrap();
-            let contract_balance =
-                get_contract_balance(provider, warp_route.contract_id(), get_collateral_asset())
-                    .await
-                    .unwrap();
+            let recipient_balance = get_balance(provider, &recipient_address.into(), asset)
+                .await
+                .unwrap();
+            let contract_balance = get_contract_balance(provider, warp_route.contract_id(), asset)
+                .await
+                .unwrap();
 
             let divider = remote_decimals - local_decimals;
             assert_eq!(
@@ -656,19 +801,32 @@ mod warp_route {
 
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
-            let asset = config.asset_id.unwrap();
+            let asset = warp_route
+                .methods()
+                .get_token_info()
+                .call()
+                .await
+                .unwrap()
+                .value
+                .asset_id;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
             let amount = 190;
 
-            let call_params = CallParameters::new(amount, asset, 5_000_000);
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    amount,
+                    asset,
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
 
             // Transfer remote
             warp_route
                 .methods()
                 .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
-                .call_params(call_params)
-                .unwrap()
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox.into(),
@@ -700,51 +858,28 @@ mod warp_route {
             assert_eq!(contract_balance_before - amount, contract_balance_after);
         }
 
-        /// ============ transfer_remote_with_wrong_asset ============
-        #[tokio::test]
-        async fn test_transfer_remote_with_wrong_asset() {
-            let (_, warp_route, _, mailbox, post_dispatch_id) =
-                get_collateral_contract_instance().await;
-
-            let asset = get_native_asset();
-            let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
-            let amount = 1;
-
-            let call_params = CallParameters::new(amount, asset, 1_000_000_000);
-
-            // Transfer remote
-            let call = warp_route
-                .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
-                .call_params(call_params)
-                .unwrap()
-                .with_contract_ids(&[mailbox.into(), post_dispatch_id.into()])
-                .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-                .call()
-                .await;
-
-            assert!(call.is_err());
-            assert_eq!(get_revert_reason(call.unwrap_err()), "InvalidAssetSend");
-        }
-
         /// ============ transfer_remote_with_zero_amount ============
         #[tokio::test]
         async fn test_zero_and_negative_amount_transfer_remote() {
-            let (config, warp_route, _, mailbox, post_dispatch_id) =
+            let (_, warp_route, _, mailbox, post_dispatch_id) =
                 get_collateral_contract_instance().await;
 
             let recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
+            let _asset = warp_route
+                .methods()
+                .get_token_info()
+                .call()
+                .await
+                .unwrap()
+                .value
+                .asset_id;
 
             // Test with a zero transfer
             let amount_zero = 0u64;
-            let call_params_zero =
-                CallParameters::new(amount_zero, config.asset_id.unwrap(), 1_000_000_000);
 
             let call_zero = warp_route
                 .methods()
                 .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount_zero)
-                .call_params(call_params_zero)
-                .unwrap()
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .with_contract_ids(&[mailbox.into(), post_dispatch_id.into()])
                 .call()
@@ -760,8 +895,18 @@ mod warp_route {
         /// ============ pause_and_unpause ============
         #[tokio::test]
         async fn test_pause_and_unpause() {
-            let (config, warp_route, warp_route_id, mailbox, post_dispatch_id) =
+            let (_, warp_route, warp_route_id, mailbox, post_dispatch_id) =
                 get_collateral_contract_instance().await;
+
+            let wallet = warp_route.account();
+            let asset = warp_route
+                .methods()
+                .get_token_info()
+                .call()
+                .await
+                .unwrap()
+                .value
+                .asset_id;
 
             // Pause the contract
             warp_route.methods().pause().call().await.unwrap();
@@ -783,13 +928,19 @@ mod warp_route {
             // Unpause the contract
             warp_route.methods().unpause().call().await.unwrap();
 
-            let call_params = CallParameters::new(amount, config.asset_id.unwrap(), 1_000_000_000);
+            let (_, _) = wallet
+                .force_transfer_to_contract(
+                    warp_route.contract_id(),
+                    amount,
+                    asset,
+                    TxPolicies::default(),
+                )
+                .await
+                .unwrap();
 
             let call = warp_route
                 .methods()
                 .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
-                .call_params(call_params)
-                .unwrap()
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox.into(),
@@ -809,10 +960,10 @@ mod warp_route {
         static BRIDGED_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
             Mutex::new(WarpRouteConfig {
                 token_mode: WarpRouteTokenMode::BRIDGED,
-                token_name: TOKEN_NAME.to_string(),
-                token_symbol: TOKEN_SYMBOL.to_string(),
-                decimals: DECIMALS,
-                total_supply: TOTAL_SUPPLY,
+                token_name: Some(TOKEN_NAME.to_string()),
+                token_symbol: Some(TOKEN_SYMBOL.to_string()),
+                decimals: Some(DECIMALS),
+                total_supply: Some(TOTAL_SUPPLY),
                 asset_id: Some(get_native_asset()),
             })
         });
@@ -825,7 +976,7 @@ mod warp_route {
             ContractId,
             ContractId,
         ) {
-            let (warp_route, contract_id, mailbox_id, post_dispatch_id, recipient_id) =
+            let (warp_route, contract_id, mailbox_id, post_dispatch_id, recipient_id, _) =
                 get_contract_instance(&BRIDGED_CONFIG).await;
 
             let token_info = warp_route
@@ -864,10 +1015,10 @@ mod warp_route {
 
             config.asset_id = Some(token_info.asset_id);
 
-            assert_eq!(token_info.name, config.token_name);
-            assert_eq!(token_info.symbol, config.token_symbol);
-            assert_eq!(token_info.decimals, config.decimals);
-            assert_eq!(token_info.total_supply, config.total_supply);
+            assert_eq!(token_info.name, config.token_name.unwrap());
+            assert_eq!(token_info.symbol, config.token_symbol.unwrap());
+            assert_eq!(token_info.decimals, config.decimals.unwrap());
+            assert_eq!(token_info.total_supply, config.total_supply.unwrap());
         }
 
         /// ============ get_token_mode ============
@@ -894,7 +1045,7 @@ mod warp_route {
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
             let asset = config.asset_id.unwrap();
-            let local_decimals = config.decimals as u32;
+            let local_decimals = config.decimals.unwrap() as u32;
 
             let remote_decimals = warp_route
                 .methods()
@@ -926,7 +1077,6 @@ mod warp_route {
                 .unwrap();
 
             assert_eq!(wallet_balance_before_mint + amount * 2, wallet_balance);
-            println!("wallet balance {:?}", wallet_balance);
 
             let (_, _) = wallet
                 .force_transfer_to_contract(
@@ -984,7 +1134,7 @@ mod warp_route {
                 .unwrap()
                 .value as u32;
 
-            let local_decimals = config.decimals as u32;
+            let local_decimals = config.decimals.unwrap() as u32;
 
             let provider = wallet.provider().unwrap();
             let recipient_balance_before = get_balance(
@@ -1035,7 +1185,7 @@ mod warp_route {
         async fn test_get_cumulative_supply_before_and_after_mint() {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
             let wallet = warp_route.account();
-            let local_decimals = config.decimals as u32;
+            let local_decimals = config.decimals.unwrap() as u32;
             let remote_decimals = warp_route
                 .methods()
                 .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
@@ -1091,7 +1241,7 @@ mod warp_route {
 
             let wallet = warp_route.account();
             let mint_amount = 1_000;
-            let local_decimals = config.decimals as u32;
+            let local_decimals = config.decimals.unwrap() as u32;
             let remote_decimals = warp_route
                 .methods()
                 .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
@@ -1130,7 +1280,7 @@ mod warp_route {
         async fn test_max_supply_enforcement_handle_message() {
             let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
             let wallet = warp_route.account();
-            let local_decimals = config.decimals as u32;
+            let local_decimals = config.decimals.unwrap() as u32;
 
             warp_route
                 .methods()
@@ -1193,11 +1343,11 @@ mod warp_route {
 
         static NATIVE_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
             Mutex::new(WarpRouteConfig {
-                token_mode: WarpRouteTokenMode::COLLATERAL,
-                token_name: "ETH".to_string(),
-                token_symbol: "ETH".to_string(),
-                decimals: 9,
-                total_supply: MAX_SUPPLY,
+                token_mode: WarpRouteTokenMode::NATIVE,
+                token_name: Some("ETH".to_string()),
+                token_symbol: Some("ETH".to_string()),
+                decimals: Some(9),
+                total_supply: Some(MAX_SUPPLY),
                 asset_id: Some(get_native_asset()),
             })
         });
@@ -1209,7 +1359,7 @@ mod warp_route {
             ContractId,
             ContractId,
         ) {
-            let (warp_route, contract_id, mailbox_id, post_dispatch_id, _) =
+            let (warp_route, contract_id, mailbox_id, post_dispatch_id, _, _) =
                 get_contract_instance(&NATIVE_CONFIG).await;
             let config = NATIVE_CONFIG.lock().await.clone();
 
