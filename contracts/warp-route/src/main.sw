@@ -56,7 +56,7 @@ use message::{EncodedMessage, Message};
 
 storage {
     /// The mode of the WarpRoute contract
-    token_mode: WarpRouteTokenMode = WarpRouteTokenMode::BRIDGED, // Default mode is Bridged
+    token_mode: WarpRouteTokenMode = WarpRouteTokenMode::SYNTHETIC, // Default mode is SYNTHETIC
     /// The address of the mailbox contract to use for message dispatch
     mailbox: ContractId = ContractId::from(ZERO_B256),
     /// The address of the default hook contract to use for message dispatch
@@ -109,7 +109,8 @@ impl WarpRoute for Contract {
     /// * `token_symbol`: [string] - The symbol of the token
     /// * `decimals`: [u8] - The number of decimals of the token
     /// * `total_supply`: [u64] - The total supply of the token
-    /// * `asset_id`: [Option<AssetId>] - The asset ID of the token
+    /// * `asset_id`: [Option<AssetId>] - The asset ID of the token - only required in collateral/native mode
+    /// * `asset_contract_id`: [Option<b256>] - The asset contract ID of the token - only required in collateral mode
     ///
     /// ### Reverts
     ///
@@ -145,7 +146,7 @@ impl WarpRoute for Contract {
         let sub_id = SubId::zero();
         storage.sub_id.write(sub_id);
 
-        let asset_id = match mode {
+        match mode {
             WarpRouteTokenMode::NATIVE => {
                 save_token_details_to_state(
                     asset_id
@@ -160,8 +161,8 @@ impl WarpRoute for Contract {
                         .unwrap(),
                 );
             }
-            WarpRouteTokenMode::BRIDGED => {
-                // Derive asset_id based on contract_id and sub_id for bridged mode
+            WarpRouteTokenMode::SYNTHETIC => {
+                // Derive asset_id based on contract_id and sub_id for synthetic mode
                 let asset_id = AssetId::new(ContractId::this(), sub_id);
 
                 save_token_details_to_state(
@@ -237,6 +238,8 @@ impl WarpRoute for Contract {
         let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
+        let token_mode = storage.token_mode.read();
+
         let quote = _get_quote_for_gas_payment(
             destination_domain,
             remote_domain_router,
@@ -244,10 +247,8 @@ impl WarpRoute for Contract {
             hook_contract,
         );
 
-        let token_mode = storage.token_mode.read();
-
         let required_payment = match token_mode {
-            WarpRouteTokenMode::BRIDGED => quote,
+            WarpRouteTokenMode::SYNTHETIC => quote,
             WarpRouteTokenMode::COLLATERAL => quote,
             WarpRouteTokenMode::NATIVE => amount + quote,
         };
@@ -263,7 +264,7 @@ impl WarpRoute for Contract {
         );
 
         match token_mode {
-            WarpRouteTokenMode::BRIDGED => {
+            WarpRouteTokenMode::SYNTHETIC => {
                 //Burn has checks inside along with decreasing total supply
                 _burn(storage.total_supply, storage.sub_id.read(), amount);
             },
@@ -460,17 +461,19 @@ impl TokenRouter for Contract {
     /// * `domain`: [u32] - The domain to remove the router for
     #[storage(write)]
     fn unenroll_remote_router(domain: u32) -> bool {
-        storage.routers.remove(domain);
-        let count = storage.domains.len();
-        let mut i = 0;
-        while i < count {
-            if let Some(domain_key) = storage.domains.get(i) {
-                if domain_key.read() == domain {
-                    storage.domains.remove(i);
-                    return true;
+        let removed = storage.routers.remove(domain);
+        if removed {
+            let count = storage.domains.len();
+            let mut i = 0;
+            while i < count {
+                if let Some(domain_key) = storage.domains.get(i) {
+                    if domain_key.read() == domain {
+                        storage.domains.remove(i);
+                        return true;
+                    }
                 }
+                i += 1;
             }
-            i += 1;
         }
         false
     }
@@ -554,11 +557,17 @@ impl MessageRecipient for Contract {
     ///
     /// * If the contract is paused
     /// * If the message has already been delivered
+    /// * If the sender is not the mailbox
     /// * If the cumulative supply exceeds the maximum supply
     #[storage(read, write)]
     fn handle(origin: u32, sender: b256, message_body: Bytes) {
         reentrancy_guard();
         require_not_paused();
+
+        require(
+            b256::from(msg_sender().unwrap().as_address().unwrap()) == b256::from(storage.mailbox.read()),
+            WarpRouteError::SenderNotMailbox,
+        );
 
         let asset = storage.asset_id.read();
         let (recipient, amount) = _extract_asset_data_from_body(message_body);
@@ -572,7 +581,7 @@ impl MessageRecipient for Contract {
         let asset = storage.asset_id.read();
 
         match storage.token_mode.read() {
-            WarpRouteTokenMode::BRIDGED => {
+            WarpRouteTokenMode::SYNTHETIC => {
                 let cumulative_supply = storage.cumulative_supply.get(asset).read();
 
                 require(

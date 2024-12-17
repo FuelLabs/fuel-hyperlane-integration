@@ -20,7 +20,7 @@ pub enum WarpRouteError {
 
 /// The mode of the WarpRoute contract
 pub enum WarpRouteTokenMode {
-    BRIDGED: (),
+    SYNTHETIC: (),
     COLLATERAL: (),
     NATIVE: (),
 }

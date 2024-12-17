@@ -107,9 +107,31 @@ mod warp_route {
         }
     }
 
-    // For testing the bridged asset, we actually need to have the tokens
+    // For testing the synthetic asset, we actually need to have the tokens
     // Since the asset is managed by the warp route - we can mock the asset minting with handle call
     // So in order to have a test wallet with 100 tokens with 6 decimals, we will mock someone sending 100*10^(remote_decimals - 6) tokens
+    // We will also need to mock the mailbox to be the wallet address since only mailbox can send authorized token recieve messages
+    async fn mock_mailbox_setup(wallet: WalletUnlocked, warp_route: WarpRoute<WalletUnlocked>) {
+        let address_b256 = Bits256(Address::from(wallet.address()).into());
+        let address_contract_id = ContractId::from(address_b256.0);
+
+        let update_mailbox = warp_route
+            .methods()
+            .set_mailbox(address_contract_id)
+            .call()
+            .await;
+        assert!(update_mailbox.is_ok(), "Failed to update mailbox.");
+
+        let query_mailbox = warp_route
+            .methods()
+            .get_mailbox()
+            .call()
+            .await
+            .unwrap()
+            .value;
+        assert_eq!(query_mailbox, address_contract_id);
+    }
+
     async fn mock_recieve_for_mint(
         wallet: WalletUnlocked,
         warp_route: WarpRoute<WalletUnlocked>,
@@ -117,6 +139,8 @@ mod warp_route {
         remote_decimals: u32,
         local_decimals: u32,
     ) {
+        mock_mailbox_setup(wallet.clone(), warp_route.clone()).await;
+
         let remote_adjusted_amount = amount * 10u64.pow(remote_decimals - local_decimals);
 
         let body = build_message_body(
@@ -755,6 +779,9 @@ mod warp_route {
                     .await
                     .unwrap();
 
+            //only mailbox can send authorized token recieve messages which triggers handle_message
+            mock_mailbox_setup(wallet.clone(), warp_route.clone()).await;
+
             let call = warp_route
                 .methods()
                 .handle(TEST_LOCAL_DOMAIN, sender, body)
@@ -952,14 +979,14 @@ mod warp_route {
             assert!(call.is_ok());
         }
     }
-    /// Bridged Token Mode Test Cases
+    /// SYNTHETIC Token Mode Test Cases
     #[cfg(test)]
-    mod bridged {
+    mod synthetic {
         use super::*;
 
-        static BRIDGED_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
+        static SYNTHETIC_CONFIG: Lazy<Mutex<WarpRouteConfig>> = Lazy::new(|| {
             Mutex::new(WarpRouteConfig {
-                token_mode: WarpRouteTokenMode::BRIDGED,
+                token_mode: WarpRouteTokenMode::SYNTHETIC,
                 token_name: Some(TOKEN_NAME.to_string()),
                 token_symbol: Some(TOKEN_SYMBOL.to_string()),
                 decimals: Some(DECIMALS),
@@ -968,7 +995,7 @@ mod warp_route {
             })
         });
 
-        async fn get_bridged_contract_instance() -> (
+        async fn get_synthetic_contract_instance() -> (
             WarpRouteConfig,
             WarpRoute<WalletUnlocked>,
             ContractId,
@@ -977,7 +1004,7 @@ mod warp_route {
             ContractId,
         ) {
             let (warp_route, contract_id, mailbox_id, post_dispatch_id, recipient_id, _) =
-                get_contract_instance(&BRIDGED_CONFIG).await;
+                get_contract_instance(&SYNTHETIC_CONFIG).await;
 
             let token_info = warp_route
                 .methods()
@@ -987,7 +1014,7 @@ mod warp_route {
                 .unwrap()
                 .value;
 
-            let mut config = BRIDGED_CONFIG.lock().await.clone();
+            let mut config = SYNTHETIC_CONFIG.lock().await.clone();
             config.asset_id = Some(token_info.asset_id);
 
             (
@@ -1003,7 +1030,7 @@ mod warp_route {
         /// ============ get_token_info ============
         #[tokio::test]
         async fn test_get_token_info() {
-            let (mut config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (mut config, warp_route, _, _, _, _) = get_synthetic_contract_instance().await;
 
             let token_info = warp_route
                 .methods()
@@ -1024,7 +1051,7 @@ mod warp_route {
         /// ============ get_token_mode ============
         #[tokio::test]
         async fn test_get_token_mode() {
-            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_synthetic_contract_instance().await;
 
             let token_mode = warp_route
                 .methods()
@@ -1040,7 +1067,7 @@ mod warp_route {
         #[tokio::test]
         async fn test_transfer_remote() {
             let (config, warp_route, _, mailbox, post_dispatch_id, _) =
-                get_bridged_contract_instance().await;
+                get_synthetic_contract_instance().await;
 
             let wallet = warp_route.account();
             let provider = wallet.provider().unwrap();
@@ -1062,6 +1089,13 @@ mod warp_route {
                 .unwrap();
 
             assert_eq!(wallet_balance_before_mint, 0);
+            let actual_mailbox = warp_route
+                .methods()
+                .get_mailbox()
+                .call()
+                .await
+                .unwrap()
+                .value;
 
             mock_recieve_for_mint(
                 wallet.clone(),
@@ -1071,6 +1105,14 @@ mod warp_route {
                 local_decimals,
             )
             .await;
+
+            // Reset mailbox to original value
+            warp_route
+                .methods()
+                .set_mailbox(actual_mailbox)
+                .call()
+                .await
+                .unwrap();
 
             let wallet_balance = get_balance(provider, wallet.address(), asset)
                 .await
@@ -1116,7 +1158,7 @@ mod warp_route {
         #[tokio::test]
         async fn test_handle_message() {
             // Get the contract instance and the config
-            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_synthetic_contract_instance().await;
 
             let wallet = warp_route.account();
             let sender = Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap();
@@ -1144,6 +1186,9 @@ mod warp_route {
             )
             .await
             .unwrap();
+
+            //only mailbox can send authorized token recieve messages which triggers handle_message
+            mock_mailbox_setup(wallet.clone(), warp_route.clone()).await;
 
             let call = warp_route
                 .methods()
@@ -1183,7 +1228,7 @@ mod warp_route {
         /// ============ get_cumulative_supply_before_and_after_mint ============
         #[tokio::test]
         async fn test_get_cumulative_supply_before_and_after_mint() {
-            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_synthetic_contract_instance().await;
             let wallet = warp_route.account();
             let local_decimals = config.decimals.unwrap() as u32;
             let remote_decimals = warp_route
@@ -1237,7 +1282,7 @@ mod warp_route {
         #[tokio::test]
         async fn test_sending_more_than_minted() {
             let (config, warp_route, _, mailbox, post_dispatch_id, _) =
-                get_bridged_contract_instance().await;
+                get_synthetic_contract_instance().await;
 
             let wallet = warp_route.account();
             let mint_amount = 1_000;
@@ -1245,6 +1290,14 @@ mod warp_route {
             let remote_decimals = warp_route
                 .methods()
                 .remote_router_decimals(Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap())
+                .call()
+                .await
+                .unwrap()
+                .value;
+
+            let actual_mailbox = warp_route
+                .methods()
+                .get_mailbox()
                 .call()
                 .await
                 .unwrap()
@@ -1258,6 +1311,14 @@ mod warp_route {
                 local_decimals,
             )
             .await;
+
+            // Reset mailbox to original value
+            warp_route
+                .methods()
+                .set_mailbox(actual_mailbox)
+                .call()
+                .await
+                .unwrap();
 
             let call = warp_route
                 .methods()
@@ -1278,7 +1339,7 @@ mod warp_route {
         /// ============ max_supply_enforcement_handle_message ============
         #[tokio::test]
         async fn test_max_supply_enforcement_handle_message() {
-            let (config, warp_route, _, _, _, _) = get_bridged_contract_instance().await;
+            let (config, warp_route, _, _, _, _) = get_synthetic_contract_instance().await;
             let wallet = warp_route.account();
             let local_decimals = config.decimals.unwrap() as u32;
 
@@ -1467,6 +1528,9 @@ mod warp_route {
                 get_balance(provider, &recipient_address.into(), get_native_asset())
                     .await
                     .unwrap();
+
+            //only mailbox can send authorized token recieve messages which triggers handle_message
+            mock_mailbox_setup(wallet.clone(), warp_route.clone()).await;
 
             let call = warp_route
                 .methods()

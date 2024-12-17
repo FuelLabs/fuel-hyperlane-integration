@@ -82,6 +82,10 @@ abigen!(
         name = "WarpRoute",
         abi = "contracts/warp-route/out/debug/warp-route-abi.json",
     ),
+    Contract(
+        name = "SRC20Test",
+        abi = "contracts/test/src20-test/out/debug/src20-test-abi.json",
+    ),
 );
 
 struct DeploymentEnv {
@@ -121,10 +125,12 @@ struct ContractAddresses {
     message_id_multisig_ism: String,
     #[serde(rename = "merkleRootMultisigISM")]
     merkle_root_multisig_ism: String,
-    #[serde(rename = "warpRoute")]
-    warp_route: String,
-    #[serde(rename = "warpRouteBridged")]
-    warp_route_bridged: String,
+    #[serde(rename = "warpRouteNative")]
+    warp_route_native: String,
+    #[serde(rename = "warpRouteSynthetic")]
+    warp_route_synthetic: String,
+    #[serde(rename = "warpRouteCollateral")]
+    warp_route_collateral: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -144,8 +150,9 @@ impl ContractAddresses {
         fallback_domain_routing_ism: ContractId,
         message_id_multisig_ism: ContractId,
         merkle_root_multisig_ism: ContractId,
-        warp_route: ContractId,
-        warp_route_bridged: ContractId,
+        warp_route_native: ContractId,
+        warp_route_synthetic: ContractId,
+        warp_route_collateral: ContractId,
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -162,8 +169,9 @@ impl ContractAddresses {
             fallback_domain_routing_ism: format!("0x{}", fallback_domain_routing_ism),
             message_id_multisig_ism: format!("0x{}", message_id_multisig_ism),
             merkle_root_multisig_ism: format!("0x{}", merkle_root_multisig_ism),
-            warp_route: format!("0x{}", warp_route),
-            warp_route_bridged: format!("0x{}", warp_route_bridged),
+            warp_route_native: format!("0x{}", warp_route_native),
+            warp_route_synthetic: format!("0x{}", warp_route_synthetic),
+            warp_route_collateral: format!("0x{}", warp_route_collateral),
         }
     }
 }
@@ -436,9 +444,52 @@ async fn main() {
     // Warp Route Deployment //
     ///////////////////////////
 
-    // Native
+    //Collateral Token
+    let collateral_token_contract_id = Contract::load_from(
+        "../contracts/test/src20-test/out/debug/src20-test.bin",
+        LoadConfiguration::default(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    let collateral_token_contract =
+        SRC20Test::new(collateral_token_contract_id.clone(), fuel_wallet.clone());
+
+    let _ = collateral_token_contract
+        .methods()
+        .mint(
+            Identity::Address(fuel_wallet.address().into()),
+            Some(Bits256::zeroed()),
+            2 * 10_u64.pow(18),
+        )
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+        .call()
+        .await
+        .unwrap();
+
+    let collateral_token_asset_id = collateral_token_contract_id.asset_id(&Bits256::zeroed());
+
+    //Collateral WR
+    let collateral_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let warp_route_collateral_id = Contract::load_from(
+        "../contracts/warp-route/out/debug/warp-route.bin",
+        config.clone().with_salt(collateral_salt),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "warpRouteCollateral: 0x{}",
+        ContractId::from(warp_route_collateral_id.clone())
+    );
+
+    // Native WR
     let native_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
-    let warp_route_id = Contract::load_from(
+    let warp_route_native_id = Contract::load_from(
         "../contracts/warp-route/out/debug/warp-route.bin",
         config.clone().with_salt(native_salt),
     )
@@ -449,14 +500,14 @@ async fn main() {
 
     println!(
         "warpRouteNative: 0x{}",
-        ContractId::from(warp_route_id.clone())
+        ContractId::from(warp_route_native_id.clone())
     );
 
-    // Bridged
-    let bridged_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
-    let warp_route_bridged_id = Contract::load_from(
+    // Synthetic WR
+    let synthetic_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let warp_route_synthetic_id = Contract::load_from(
         "../contracts/warp-route/out/debug/warp-route.bin",
-        config.clone().with_salt(bridged_salt),
+        config.clone().with_salt(synthetic_salt),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -464,8 +515,8 @@ async fn main() {
     .unwrap();
 
     println!(
-        "warpRouteBridged: 0x{}",
-        ContractId::from(warp_route_bridged_id.clone())
+        "warpRouteSynthetic: 0x{}",
+        ContractId::from(warp_route_synthetic_id.clone())
     );
 
     ///////////////////////////
@@ -488,8 +539,10 @@ async fn main() {
         MessageIdMultisigISM::new(message_id_multisig_ism_id.clone(), fuel_wallet.clone());
     let merkle_root_multisig_ism =
         MerkleRootMultisigISM::new(merkle_root_multisig_ism_id.clone(), fuel_wallet.clone());
-    let warp_route = WarpRoute::new(warp_route_id.clone(), fuel_wallet.clone());
-    let warp_route_bridged = WarpRoute::new(warp_route_bridged_id.clone(), fuel_wallet.clone());
+    let warp_route_native = WarpRoute::new(warp_route_native_id.clone(), fuel_wallet.clone());
+    let warp_route_synthetic = WarpRoute::new(warp_route_synthetic_id.clone(), fuel_wallet.clone());
+    let warp_route_collateral =
+        WarpRoute::new(warp_route_collateral_id.clone(), fuel_wallet.clone());
 
     let wallet_address = Bits256(Address::from(fuel_wallet.address()).into());
     let test_ism_address = Bits256(ContractId::from(test_ism_id.clone()).into());
@@ -745,62 +798,79 @@ async fn main() {
     /////////////////////////////
 
     // Initalize Warp Routes
-    let init_res = warp_route
+    let native_init_res = warp_route_native
         .methods()
         .initialize(
             wallet_address,
             Bits256(mailbox_contract_id.hash().into()),
-            WarpRouteTokenMode::COLLATERAL,
+            WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
-            "Ether".to_string(),
-            "ETH".to_string(),
-            9,
-            10_000_000_000_000,
+            Some("Ether".to_string()),
+            Some("ETH".to_string()),
+            Some(9),
+            Some(10_000_000_000_000),
             Some(
                 AssetId::from_str(
                     "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
                 )
                 .unwrap(),
             ),
-        )
-        .call()
-        .await;
-
-    assert!(init_res.is_ok(), "Failed to initialize Warp Route Native.");
-
-    let bridged_init_res = warp_route_bridged
-        .methods()
-        .initialize(
-            wallet_address,
-            Bits256(mailbox_contract_id.hash().into()),
-            WarpRouteTokenMode::BRIDGED,
-            post_dispatch_mock_address,
-            "FuelSepoliaUSDC".to_string(),
-            "FST".to_string(),
-            6,
-            10_000_000,
             None,
         )
         .call()
         .await;
 
     assert!(
-        bridged_init_res.is_ok(),
-        "Failed to initialize Warp Route Bridged."
+        native_init_res.is_ok(),
+        "Failed to initialize Warp Route Native."
     );
 
-    let set_ism_res = warp_route_bridged
+    let synthetic_init_res = warp_route_synthetic
         .methods()
-        .set_ism(test_ism_id.clone())
+        .initialize(
+            wallet_address,
+            Bits256(mailbox_contract_id.hash().into()),
+            WarpRouteTokenMode::SYNTHETIC,
+            post_dispatch_mock_address,
+            Some("FuelSepoliaUSDC".to_string()),
+            Some("FST".to_string()),
+            Some(6),
+            Some(10_000_000),
+            None,
+            None,
+        )
         .call()
         .await;
 
     assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Bridged."
+        synthetic_init_res.is_ok(),
+        "Failed to initialize Warp Route Synthetic."
     );
 
-    let set_ism_res = warp_route
+    let collateral_init_res = warp_route_collateral
+        .methods()
+        .initialize(
+            wallet_address,
+            Bits256(mailbox_contract_id.hash().into()),
+            WarpRouteTokenMode::COLLATERAL,
+            post_dispatch_mock_address,
+            None,
+            None,
+            None,
+            None,
+            Some(collateral_token_asset_id),
+            Some(Bits256(collateral_token_contract_id.hash().into())),
+        )
+        .with_contract_ids(&[collateral_token_contract_id])
+        .call()
+        .await;
+
+    assert!(
+        collateral_init_res.is_ok(),
+        "Failed to initialize Warp Route Collateral."
+    );
+
+    let set_ism_res = warp_route_collateral
         .methods()
         .set_ism(test_ism_id.clone())
         .call()
@@ -809,6 +879,27 @@ async fn main() {
         set_ism_res.is_ok(),
         "Failed to set ISM in Warp Route Collateral"
     );
+
+    let set_ism_res = warp_route_synthetic
+        .methods()
+        .set_ism(test_ism_id.clone())
+        .call()
+        .await;
+    assert!(
+        set_ism_res.is_ok(),
+        "Failed to set ISM in Warp Route Synthetic"
+    );
+
+    let set_ism_res = warp_route_native
+        .methods()
+        .set_ism(test_ism_id.clone())
+        .call()
+        .await;
+    assert!(
+        set_ism_res.is_ok(),
+        "Failed to set ISM in Warp Route Native"
+    );
+
     /////////////////////////////
     // Save contract addresses //
     /////////////////////////////
@@ -828,8 +919,9 @@ async fn main() {
         fallback_domain_routing_ism_id.into(),
         message_id_multisig_ism_id.into(),
         merkle_root_multisig_ism_id.into(),
-        warp_route_id.into(),
-        warp_route_bridged_id.into(),
+        warp_route_native_id.into(),
+        warp_route_synthetic_id.into(),
+        warp_route_collateral_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

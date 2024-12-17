@@ -259,7 +259,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     contracts.monitor_sepolio_for_asset_delivery(false).await;
 
     ////////////////////////////////////////////////////
-    // Case 6: Bridged Sepolia (FST) to Fuel (FST) //
+    // Case 6: Synthetic Sepolia (FST) to Fuel (FST) //
     ////////////////////////////////////////////////////
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
@@ -280,7 +280,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Balance after: {}", balance_after);
 
     ////////////////////////////////////////////////////
-    // Case 7: Bridged Fuel (FST) to Sepolia (FST) //
+    // Case 7: Synthetic Fuel (FST) to Sepolia (FST) //
     ////////////////////////////////////////////////////
 
     let amount = 10;

@@ -24,7 +24,7 @@ use fuels::{
 };
 use futures_util::StreamExt;
 use rand::{thread_rng, Rng};
-use sepolia_warp_route_bridged::SepoliaWarpRouteBridged::SepoliaWarpRouteBridgedInstance;
+use sepolia_warp_route_bridged::SepoliaWarpRouteSynthetic::SepoliaWarpRouteSyntheticInstance;
 use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
 use std::env;
 use SepoliaMailbox::SepoliaMailboxInstance;
@@ -97,7 +97,7 @@ mod sepolia_warp_route_bridged {
     sol!(
         #[allow(missing_docs)]
         #[sol(rpc)]
-        SepoliaWarpRouteBridged,
+        SepoliaWarpRouteSynthetic,
         "evm-abis/HypERC20.json",
     );
 }
@@ -168,7 +168,7 @@ pub struct SepoliaContracts {
             Ethereum,
         >,
     >,
-    pub warp_route_bridged: SepoliaWarpRouteBridgedInstance<
+    pub warp_route_bridged: SepoliaWarpRouteSyntheticInstance<
         BoxTransport,
         FillProvider<
             JoinFill<
@@ -1057,7 +1057,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
     let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
     let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
-    let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteBridged"]);
+    let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteSynthetic"]);
     let recipient = get_contract_id_from_json("fueltestnet", &["recipient"]);
     let yaml_config = read_deployments_yaml();
     // Fuel instances
@@ -1088,7 +1088,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
         evm_provider.clone(),
     );
 
-    let warp_route_bridged_instance_sepolia = SepoliaWarpRouteBridgedInstance::new(
+    let warp_route_bridged_instance_sepolia = SepoliaWarpRouteSyntheticInstance::new(
         address!("c10f47030fEB9E4111e6b591354dd0EB01C02919"),
         evm_provider.clone(),
     );
