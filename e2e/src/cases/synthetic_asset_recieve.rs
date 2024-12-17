@@ -15,11 +15,11 @@ use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256,
 use test_utils::get_revert_reason;
 use tokio::time::Instant;
 
-async fn bridged_asset_recieve() -> Result<f64, String> {
+async fn synthetic_asset_recieve() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
+    let warp_route_id = get_contract_address_from_yaml("warpRouteSynthetic");
     let mailbox_id = get_contract_address_from_yaml("mailbox");
     let msg_recipient = get_contract_address_from_yaml("testRecipient");
 
@@ -63,7 +63,7 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 
     let remote_wallet = get_evm_wallet().await;
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
-    let remote_wr = contracts.warp_route_bridged;
+    let remote_wr = contracts.warp_route_synthetic;
 
     let fuel_domain = get_local_domain();
     let recipient = get_fuel_test_recipient();
@@ -180,5 +180,5 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("bridged_asset_recieve", bridged_asset_recieve)
+    TestCase::new("synthetic_asset_recieve", synthetic_asset_recieve)
 }

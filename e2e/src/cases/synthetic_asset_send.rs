@@ -8,14 +8,14 @@ use crate::{
         TEST_RECIPIENT,
     },
 };
-use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256};
+use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256, ContractId};
 use tokio::time::Instant;
 
-async fn bridged_asset_send() -> Result<f64, String> {
+async fn synthetic_asset_send() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
+    let warp_route_id = get_contract_address_from_yaml("warpRouteSynthetic");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
@@ -49,8 +49,38 @@ async fn bridged_asset_send() -> Result<f64, String> {
             .await
             .unwrap();
 
+    // ------------------------------------------------------------------------------------------------
+    //MOCK TOKEN MINTING
     //minting is same as recieving remote adjusted amount
     //if 1*10^18 is sent, the minted amount is 1*10^(18-local_decimals)
+
+    let actual_mailbox = warp_route_instance
+        .methods()
+        .get_mailbox()
+        .call()
+        .await
+        .unwrap()
+        .value;
+
+    let address_b256 = Bits256(Address::from(wallet.address()).into());
+    let address_contract_id = ContractId::from(address_b256.0);
+
+    let update_mailbox = warp_route_instance
+        .methods()
+        .set_mailbox(address_contract_id)
+        .call()
+        .await;
+    assert!(update_mailbox.is_ok(), "Failed to update mailbox.");
+
+    let query_mailbox = warp_route_instance
+        .methods()
+        .get_mailbox()
+        .call()
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(query_mailbox, address_contract_id);
+
     let local_decimals = token_info.value.decimals;
     let remote_adjusted_amount = amount * 10u64.pow(18 - local_decimals as u32);
 
@@ -84,6 +114,15 @@ async fn bridged_asset_send() -> Result<f64, String> {
             wallet_balance - wallet_balance_before_mint
         ));
     }
+
+    let _ = warp_route_instance
+        .methods()
+        .set_mailbox(actual_mailbox)
+        .call()
+        .await
+        .unwrap();
+
+    // ------------------------------------------------------------------------------------------------
 
     //get updated token info
     let token_info_updated = warp_route_instance
@@ -156,5 +195,5 @@ async fn bridged_asset_send() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("bridged_asset_send", bridged_asset_send)
+    TestCase::new("synthetic_asset_send", synthetic_asset_send)
 }

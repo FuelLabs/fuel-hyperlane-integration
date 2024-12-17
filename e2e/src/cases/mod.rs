@@ -1,13 +1,15 @@
 mod asset_send_with_gas;
-mod bridged_asset_recieve;
-mod bridged_asset_send;
 mod collateral_asset_recieve;
 mod collateral_asset_send;
 mod gas_overpayment_and_claim;
 mod message_recieve;
 mod message_send_with_gas;
+mod native_asset_recieve;
+mod native_asset_send;
 mod remote_mailbox;
 mod set_gas_configs;
+mod synthetic_asset_recieve;
+mod synthetic_asset_send;
 
 use std::{future::Future, pin::Pin};
 
@@ -60,11 +62,13 @@ pub fn pull_test_cases() -> Vec<TestCase> {
         message_send_with_gas::test(),
         remote_mailbox::test(),
         collateral_asset_send::test(),
-        bridged_asset_send::test(),
+        native_asset_send::test(),
+        synthetic_asset_send::test(),
         gas_overpayment_and_claim::test(),
         asset_send_with_gas::test(),
         message_recieve::test(),
-        bridged_asset_recieve::test(),
+        synthetic_asset_recieve::test(),
         collateral_asset_recieve::test(),
+        native_asset_recieve::test(),
     ]
 }

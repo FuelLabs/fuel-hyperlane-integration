@@ -67,7 +67,7 @@ pub fn get_remote_domain() -> u32 {
         .unwrap()
         .as_u64()
         .map(|v| v as u32)
-        .unwrap_or(31337)
+        .unwrap_or(9913371)
 }
 
 pub fn get_local_domain() -> u32 {
