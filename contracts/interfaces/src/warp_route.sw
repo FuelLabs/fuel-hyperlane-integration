@@ -15,12 +15,14 @@ pub enum WarpRouteError {
     NoRouter: u32,
     RemoteDecimalsNotSet: (),
     AmountNotConvertible: (),
+    SenderNotMailbox: (),
 }
 
 /// The mode of the WarpRoute contract
 pub enum WarpRouteTokenMode {
     BRIDGED: (),
     COLLATERAL: (),
+    NATIVE: (),
 }
 
 /// The metadata of the token managed by the WarpRoute contract
@@ -54,11 +56,12 @@ abi WarpRoute {
         mode: WarpRouteTokenMode,
         hook: b256,
         //Token Details
-        token_name: String,
-        token_symbol: String,
-        decimals: u8,
-        total_supply: u64,
+        token_name: Option<String>,
+        token_symbol: Option<String>,
+        decimals: Option<u8>,
+        total_supply: Option<u64>,
         asset_id: Option<AssetId>,
+        asset_contract_id: Option<b256>,
     );
 
     /// Transfers tokens to a remote domain
