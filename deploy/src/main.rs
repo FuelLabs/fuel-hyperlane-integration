@@ -131,6 +131,10 @@ struct ContractAddresses {
     warp_route_synthetic: String,
     #[serde(rename = "warpRouteCollateral")]
     warp_route_collateral: String,
+    #[serde(rename = "collateralTokenContract")]
+    collateral_asset_contract_id: String,
+    #[serde(rename = "testCollateralAsset")]
+    collateral_asset_id: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -153,6 +157,8 @@ impl ContractAddresses {
         warp_route_native: ContractId,
         warp_route_synthetic: ContractId,
         warp_route_collateral: ContractId,
+        collateral_asset_contract_id: ContractId,
+        collateral_asset_id: AssetId,
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -172,6 +178,8 @@ impl ContractAddresses {
             warp_route_native: format!("0x{}", warp_route_native),
             warp_route_synthetic: format!("0x{}", warp_route_synthetic),
             warp_route_collateral: format!("0x{}", warp_route_collateral),
+            collateral_asset_id: format!("0x{}", collateral_asset_id),
+            collateral_asset_contract_id: format!("0x{}", collateral_asset_contract_id),
         }
     }
 }
@@ -445,9 +453,10 @@ async fn main() {
     ///////////////////////////
 
     //Collateral Token
-    let collateral_token_contract_id = Contract::load_from(
+    let collateral_token_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let collateral_asset_contract_id = Contract::load_from(
         "../contracts/test/src20-test/out/debug/src20-test.bin",
-        LoadConfiguration::default(),
+        config.clone().with_salt(collateral_token_salt),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -455,7 +464,7 @@ async fn main() {
     .unwrap();
 
     let collateral_token_contract =
-        SRC20Test::new(collateral_token_contract_id.clone(), fuel_wallet.clone());
+        SRC20Test::new(collateral_asset_contract_id.clone(), fuel_wallet.clone());
 
     let _ = collateral_token_contract
         .methods()
@@ -469,7 +478,13 @@ async fn main() {
         .await
         .unwrap();
 
-    let collateral_token_asset_id = collateral_token_contract_id.asset_id(&Bits256::zeroed());
+    println!(
+        "collateralTokenContractId: 0x{}",
+        collateral_token_contract.contract_id()
+    );
+
+    let collateral_asset_id = collateral_asset_contract_id.asset_id(&Bits256::zeroed());
+    println!("collateralAssetId: 0x{}", collateral_asset_id.clone());
 
     //Collateral WR
     let collateral_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
@@ -858,10 +873,10 @@ async fn main() {
             None,
             None,
             None,
-            Some(collateral_token_asset_id),
-            Some(Bits256(collateral_token_contract_id.hash().into())),
+            Some(collateral_asset_id),
+            Some(Bits256(collateral_asset_contract_id.hash().into())),
         )
-        .with_contract_ids(&[collateral_token_contract_id])
+        .with_contract_ids(&[collateral_asset_contract_id.clone()])
         .call()
         .await;
 
@@ -922,6 +937,8 @@ async fn main() {
         warp_route_native_id.into(),
         warp_route_synthetic_id.into(),
         warp_route_collateral_id.into(),
+        collateral_asset_contract_id.into(),
+        collateral_asset_id,
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

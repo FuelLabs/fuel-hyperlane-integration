@@ -2,13 +2,9 @@ pub mod local_contracts;
 pub mod token;
 
 use crate::cases::FailedTestCase;
-use crate::setup::abis::Mailbox;
 
 use alloy::primitives::{Bytes as AlloyBytes, FixedBytes};
-use fuels::{
-    accounts::wallet::WalletUnlocked,
-    types::{bech32::Bech32ContractId, Bits256, Bytes, U256},
-};
+use fuels::types::{bech32::Bech32ContractId, Bits256, Bytes, U256};
 use hyperlane_core::{HyperlaneMessage, H256};
 use local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json};
 use rand::{thread_rng, Rng};
@@ -28,22 +24,19 @@ pub fn summary(test_amount: usize, failed: Vec<FailedTestCase>, start: Instant) 
 }
 
 pub fn _test_message(
-    mailbox: &Mailbox<WalletUnlocked>,
     recipient: &Bech32ContractId,
     amount: u64,
+    recipient_user: Bits256,
+    sender: Bits256,
 ) -> HyperlaneMessage {
-    let hash = mailbox.account().address().hash();
-    let sender = hash.as_slice();
-
-    let recipient_user = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
     let message_body = build_message_body(recipient_user, amount);
 
     HyperlaneMessage {
         version: 3u8,
-        nonce: 0u32,
-        origin: get_local_domain(),
-        sender: H256::from_slice(sender),
-        destination: get_remote_domain(),
+        nonce: thread_rng().gen_range(0..1000000) as u32,
+        origin: get_remote_domain(),
+        sender: H256::from(sender.0),
+        destination: get_local_domain(),
         recipient: H256::from_slice(recipient.hash().as_slice()),
         body: message_body.into(),
     }

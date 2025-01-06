@@ -468,7 +468,7 @@ impl TokenRouter for Contract {
             while i < count {
                 if let Some(domain_key) = storage.domains.get(i) {
                     if domain_key.read() == domain {
-                        storage.domains.remove(i);
+                        let _ = storage.domains.remove(i);
                         return true;
                     }
                 }
@@ -565,7 +565,8 @@ impl MessageRecipient for Contract {
         require_not_paused();
 
         require(
-            b256::from(msg_sender().unwrap().as_address().unwrap()) == b256::from(storage.mailbox.read()),
+            msg_sender()
+                .unwrap() == Identity::ContractId(storage.mailbox.read()),
             WarpRouteError::SenderNotMailbox,
         );
 

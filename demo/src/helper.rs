@@ -148,7 +148,7 @@ pub async fn get_native_balance(provider: &Provider, recipient: ContractId) -> u
         .unwrap()
 }
 
-pub async fn get_bridged_balance(
+pub async fn get_synthetic_balance(
     provider: &Provider,
     asset_id: AssetId,
     recipient: ContractId,
