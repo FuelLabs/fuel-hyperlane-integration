@@ -26,5 +26,4 @@ members = [
   "contracts/libs/checkpoint",
   "contracts/igp/gas-paymaster",
   "contracts/igp/gas-oracle",
-  "contracts/hooks/igp",
 ]

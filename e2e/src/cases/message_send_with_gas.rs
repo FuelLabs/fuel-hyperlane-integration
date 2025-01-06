@@ -8,7 +8,7 @@ use fuels::{
 use crate::{
     cases::TestCase,
     setup::{
-        abis::{GasOracle, IGPHook, InterchainGasPaymaster, Mailbox},
+        abis::{GasOracle, InterchainGasPaymaster, Mailbox},
         get_loaded_wallet,
     },
     utils::{
@@ -28,13 +28,11 @@ async fn send_message_with_gas() -> Result<f64, String> {
     let msg_body = get_msg_body();
 
     let fuel_mailbox_id = get_contract_address_from_json("fueltest1", "mailbox");
-    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
 
     let fuel_mailbox_instance = Mailbox::new(fuel_mailbox_id, wallet.clone());
-    let fuel_igp_hook_instance = IGPHook::new(fuel_igp_hook_id, wallet.clone());
     let fuel_igp_instance = InterchainGasPaymaster::new(igp_id, wallet.clone());
     let fuel_gas_oracle_instance = GasOracle::new(gas_oracle_id, wallet.clone());
 
@@ -75,15 +73,11 @@ async fn send_message_with_gas() -> Result<f64, String> {
             remote_recipient,
             Bytes(msg_body.clone()),
             Bytes(msg_body.clone()),
-            fuel_igp_hook_instance.contract_id(),
+            fuel_igp_instance.contract_id(),
         )
         .call_params(CallParameters::new(10_000_000, base_asset, 10_000_000))
         .unwrap()
-        .with_contracts(&[
-            &fuel_igp_instance,
-            &fuel_gas_oracle_instance,
-            &fuel_igp_hook_instance,
-        ])
+        .with_contracts(&[&fuel_igp_instance, &fuel_gas_oracle_instance])
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .determine_missing_contracts(Some(5))
         .await

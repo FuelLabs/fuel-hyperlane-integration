@@ -66,18 +66,10 @@ name = "gas-paymaster"
 source = "member"
 dependencies = [
     "interfaces",
+    "message",
     "standards git+https://github.com/FuelLabs/sway-standards?branch=master#3f6543f7beac1b063d09e5c2990a6c3b90f9fd74",
     "std",
     "sway_libs",
-]
-
-[[package]]
-name = "igp-hook"
-source = "member"
-dependencies = [
-    "interfaces",
-    "message",
-    "std",
 ]
 
 [[package]]

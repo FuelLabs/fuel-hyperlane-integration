@@ -179,10 +179,3 @@ pub struct GasPaymentEvent {
     pub gas_amount: u64,
     pub payment: u64,
 }
-
-/// ERROR FOR HOOK
-pub enum IGPHookError {
-    ContractNotInitialized: (),
-    ContractAlreadyInitialized: (),
-    NoValueExpected: (),
-}

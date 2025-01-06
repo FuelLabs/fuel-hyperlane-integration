@@ -61,13 +61,3 @@ abi PostDispatchHook {
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64;
 }
-
-abi PostDispatchHookHelper {
-    /// Initializes the PostDispatchHook contract.
-    ///
-    /// ### Arguments
-    ///
-    /// * `contract_id`: [ContractId] - The contract ID of the PostDispatchHook contract.
-    #[storage(write)]
-    fn initialize(contract_id: ContractId);
-}

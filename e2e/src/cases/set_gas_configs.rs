@@ -1,7 +1,7 @@
 use crate::{
     cases::TestCase,
     setup::{
-        abis::{GasOracle, IGPHook, InterchainGasPaymaster, RemoteGasData, RemoteGasDataConfig},
+        abis::{GasOracle, InterchainGasPaymaster, RemoteGasData, RemoteGasDataConfig},
         get_loaded_wallet,
     },
     utils::{
@@ -19,10 +19,8 @@ async fn set_gas_configs() -> Result<f64, String> {
 
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
-    let igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
 
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
-    let _igp_hook = IGPHook::new(igp_hook_id, wallet.clone());
     let gas_oracle = GasOracle::new(gas_oracle_id, wallet.clone());
 
     let owner = Bits256(Address::from(wallet.address()).into());

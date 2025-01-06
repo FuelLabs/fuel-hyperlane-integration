@@ -27,7 +27,6 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
-    let igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
 
     let mailbox_instance = Mailbox::new(fuel_mailbox_id, wallet.clone());
@@ -44,7 +43,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
-        .set_hook(igp_hook_id)
+        .set_hook(igp_id)
         .call()
         .await
         .map_err(|e| format!("Failed to set igp hook to wr: {:?}", e))?;
@@ -90,13 +89,13 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
             Bits256(remote_wr_array),
             Bytes(vec![]),
             Bytes(vec![]),
-            igp_hook_id,
+            igp_id,
         )
         .with_contract_ids(&[
             igp_id.into(),
             gas_oracle_id.into(),
             post_dispatch_hook_id.into(),
-            igp_hook_id.into(),
+            igp_id.into(),
         ])
         .call()
         .await
@@ -162,7 +161,6 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),
-            igp_hook_id.into(),
             igp_id.into(),
             gas_oracle_id.into(),
             post_dispatch_hook_id.into(),
@@ -188,7 +186,6 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),
-            igp_hook_id.into(),
             igp_id.into(),
             gas_oracle_id.into(),
             post_dispatch_hook_id.into(),

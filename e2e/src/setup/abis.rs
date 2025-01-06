@@ -14,10 +14,6 @@ abigen!(
         abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
     ),
     Contract(
-        name = "IGPHook",
-        abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
-    ),
-    Contract(
         name = "WarpRoute",
         abi = "contracts/warp-route/out/debug/warp-route-abi.json",
     ),

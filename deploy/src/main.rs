@@ -31,10 +31,6 @@ abigen!(
         abi = "contracts/hooks/merkle-tree-hook/out/debug/merkle-tree-hook-abi.json",
     ),
     Contract(
-        name = "IGPHook",
-        abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
-    ),
-    Contract(
         name = "ValidatorAnnounce",
         abi = "contracts/validator-announce/out/debug/validator-announce-abi.json",
     ),
@@ -109,8 +105,6 @@ struct ContractAddresses {
     merkle_tree_hook: String,
     #[serde(rename = "interchainGasPaymaster")]
     igp: String,
-    #[serde(rename = "interchainGasPaymasterHook")]
-    igp_hook: String,
     #[serde(rename = "validatorAnnounce")]
     va: String,
     #[serde(rename = "gasOracle")]
@@ -146,7 +140,6 @@ impl ContractAddresses {
         ism: ContractId,
         merkle_tree_hook: ContractId,
         igp: ContractId,
-        igp_hook: ContractId,
         va: ContractId,
         gas_oracle: ContractId,
         aggregation_ism: ContractId,
@@ -167,7 +160,6 @@ impl ContractAddresses {
             ism: format!("0x{}", ism),
             merkle_tree_hook: format!("0x{}", merkle_tree_hook),
             igp: format!("0x{}", igp),
-            igp_hook: format!("0x{}", igp_hook),
             va: format!("0x{}", va),
             gas_oracle: format!("0x{}", gas_oracle),
             aggregation_ism: format!("0x{}", aggregation_ism),
@@ -433,21 +425,6 @@ async fn main() {
         ContractId::from(igp_id.clone())
     );
 
-    // IGP Hook deployment
-    let igp_hook_id = Contract::load_from(
-        "../contracts/hooks/igp/out/debug/igp-hook.bin",
-        config.clone(),
-    )
-    .unwrap()
-    .deploy(&fuel_wallet, TxPolicies::default())
-    .await
-    .unwrap();
-
-    println!(
-        "interchainGasPaymasterHook: 0x{}",
-        ContractId::from(igp_hook_id.clone())
-    );
-
     ///////////////////////////
     // Warp Route Deployment //
     ///////////////////////////
@@ -541,7 +518,6 @@ async fn main() {
     let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), fuel_wallet.clone());
     let mailbox = Mailbox::new(mailbox_contract_id.clone(), fuel_wallet.clone());
     let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), fuel_wallet.clone());
-    let igp_hook = IGPHook::new(igp_hook_id.clone(), fuel_wallet.clone());
     let gas_oracle = GasOracle::new(gas_oracle_id.clone(), fuel_wallet.clone());
     let igp = GasPaymaster::new(igp_id.clone(), fuel_wallet.clone());
     let test_recipient = TestRecipient::new(recipient_id.clone(), fuel_wallet.clone());
@@ -721,14 +697,6 @@ async fn main() {
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
 
-    let init_res = igp_hook
-        .methods()
-        .initialize(igp.contract_id())
-        .call()
-        .await;
-    assert!(init_res.is_ok(), "Failed to initialize IGP Hook.");
-
-    // Set contract values //
     // Gas Oracle
     let set_gas_data_res = gas_oracle
         .methods()
@@ -758,17 +726,6 @@ async fn main() {
     assert!(set_gas_data_res.is_ok(), "Failed to set gas data.");
     assert!(set_beneficiary_res.is_ok(), "Failed to set beneficiary.");
     assert!(set_gas_oracle_res.is_ok(), "Failed to set gas oracle.");
-
-    // let mailbox_set_hook = mailbox
-    //     .methods()
-    //     .set_required_hook(igp_hook.id())
-    //     .call()
-    //     .await;
-
-    // assert!(
-    //     mailbox_set_hook.is_ok(),
-    //     "Failed to set required hook in Mailbox."
-    // );
 
     ////////////////////////
     // Validator Announce //
@@ -926,7 +883,6 @@ async fn main() {
         test_ism_id.into(),
         merkle_tree_id.into(),
         igp_id.into(),
-        igp_hook_id.into(),
         validator_id.into(),
         gas_oracle_id.into(),
         aggregation_ism_id.into(),

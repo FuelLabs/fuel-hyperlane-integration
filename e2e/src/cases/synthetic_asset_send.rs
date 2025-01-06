@@ -22,7 +22,6 @@ async fn synthetic_asset_send() -> Result<f64, String> {
     let wallet = get_loaded_wallet().await;
     let warp_route_id = get_contract_address_from_yaml("warpRouteSynthetic");
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
-    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
@@ -183,7 +182,6 @@ async fn synthetic_asset_send() -> Result<f64, String> {
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),
-            fuel_igp_hook_id.into(),
             igp_id.into(),
             gas_oracle_id.into(),
             post_dispatch_hook_id.into(),

@@ -26,7 +26,6 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let warp_route_id = get_contract_address_from_yaml("warpRouteNative");
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
-    let fuel_igp_hook_id = get_contract_address_from_yaml("interchainGasPaymasterHook");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let gas_oracle_id = get_contract_address_from_yaml("gasOracle");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
@@ -71,8 +70,6 @@ async fn native_asset_send() -> Result<f64, String> {
     .await
     .unwrap();
 
-    // let _ = send_gas_to_contract(wallet.clone(), warp_route_instance.contract_id(), amount).await;
-
     let _ = warp_route_instance
         .methods()
         .transfer_remote(remote_domain, test_recipient, amount)
@@ -85,7 +82,6 @@ async fn native_asset_send() -> Result<f64, String> {
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),
-            fuel_igp_hook_id.into(),
             igp_id.into(),
             gas_oracle_id.into(),
             post_dispatch_hook_id.into(),
