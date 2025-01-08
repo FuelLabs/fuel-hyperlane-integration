@@ -70,6 +70,24 @@ mod warp_route {
         AssetId::BASE
     }
 
+    async fn get_balance(
+        provider: &Provider,
+        address: &Bech32Address,
+        asset: AssetId,
+    ) -> std::result::Result<u64, Error> {
+        provider.get_asset_balance(address, asset).await
+    }
+
+    async fn get_contract_balance(
+        provider: &Provider,
+        contract_id: &Bech32ContractId,
+        asset: AssetId,
+    ) -> std::result::Result<u64, Error> {
+        provider
+            .get_contract_asset_balance(contract_id, asset)
+            .await
+    }
+
     /// Asset recieve messages are only allowed when they are sent from mailbox
     pub fn _mock_asset_recieve_message(
         recipient: &Bech32ContractId,
@@ -133,24 +151,6 @@ mod warp_route {
             .call()
             .await
             .map_err(|e| format!("Failed send message from mailbox: {:?}", e));
-    }
-
-    async fn get_balance(
-        provider: &Provider,
-        address: &Bech32Address,
-        asset: AssetId,
-    ) -> std::result::Result<u64, Error> {
-        provider.get_asset_balance(address, asset).await
-    }
-
-    async fn get_contract_balance(
-        provider: &Provider,
-        contract_id: &Bech32ContractId,
-        asset: AssetId,
-    ) -> std::result::Result<u64, Error> {
-        provider
-            .get_contract_asset_balance(contract_id, asset)
-            .await
     }
 
     // Storing Test Configuration
@@ -804,14 +804,6 @@ mod warp_route {
             )
             .await;
 
-            // let call = warp_route
-            //     .methods()
-            //     .handle(TEST_LOCAL_DOMAIN, sender, body)
-            //     .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-            //     .call()
-            //     .await
-            //     .unwrap();
-
             let recipient_balance = get_balance(provider, &recipient_address.into(), asset)
                 .await
                 .unwrap();
@@ -828,18 +820,6 @@ mod warp_route {
                 contract_balance_before,
                 contract_balance + amount / 10u64.pow(divider)
             );
-
-            // let logs = call
-            //     .decode_logs_with_type::<ReceivedTransferRemoteEvent>()
-            //     .unwrap();
-            // assert_eq!(
-            //     logs,
-            //     vec![ReceivedTransferRemoteEvent {
-            //         origin: TEST_LOCAL_DOMAIN,
-            //         recipient,
-            //         amount: amount / 10u64.pow(divider),
-            //     }]
-            // );
         }
 
         /// ============ claim_as_owner ============
@@ -1001,6 +981,7 @@ mod warp_route {
             assert!(call.is_ok());
         }
     }
+
     /// SYNTHETIC Token Mode Test Cases
     #[cfg(test)]
     mod synthetic {
@@ -1130,7 +1111,7 @@ mod warp_route {
 
             // For testing the synthetic asset, we actually need to have the tokens
             // Since the asset is managed by the warp route - we can mock the asset minting with handle call
-            // So in order to have a test wallet with 100 tokens with 6 decimals, we will mock someone sending 100*10^(remote_decimals - 6) tokens
+            // in order to have `amount` we need to send `remote_decimal_amount` message to local warp route
 
             trigger_handle_by_sending_message_from_mailbox(
                 &mailbox,
@@ -1231,7 +1212,6 @@ mod warp_route {
             )
             .await;
 
-            // Validate balances after the transaction
             let recipient_balance = get_balance(
                 provider,
                 &recipient_address.into(),
@@ -1557,18 +1537,6 @@ mod warp_route {
                 None,
             )
             .await;
-
-            // let logs = call
-            //     .decode_logs_with_type::<ReceivedTransferRemoteEvent>()
-            //     .unwrap();
-            // assert_eq!(
-            //     logs,
-            //     vec![ReceivedTransferRemoteEvent {
-            //         origin: TEST_REMOTE_DOMAIN,
-            //         recipient,
-            //         amount: amount / 10u64.pow(remote_decimals as u32 - 9),
-            //     }]
-            // );
 
             let recipient_balance_after =
                 get_balance(provider, &recipient_address.into(), get_native_asset())
