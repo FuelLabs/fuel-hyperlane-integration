@@ -8,21 +8,22 @@ use crate::{
     utils::{
         get_fuel_test_recipient, get_local_domain, get_remote_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_contract_balance, send_gas_to_contract_2},
+        token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
 use fuels::types::Bits256;
 use tokio::time::Instant;
 
-async fn collateral_asset_recieve() -> Result<f64, String> {
+async fn native_asset_recieve() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
+    let base_asset = get_local_fuel_base_asset();
     let remote_domain = get_remote_domain();
     let amount = 10_000_000_000_000;
 
-    let warp_route_id = get_contract_address_from_yaml("warpRouteCollateral");
+    let warp_route_id = get_contract_address_from_yaml("warpRouteNative");
     let mailbox_id = get_contract_address_from_yaml("mailbox");
     let msg_recipient = get_contract_address_from_yaml("testRecipient");
 
@@ -30,27 +31,18 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
     let _msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
 
-    let asset = warp_route_instance
-        .methods()
-        .get_token_info()
-        .call()
-        .await
-        .unwrap()
-        .value
-        .asset_id;
-
     let _ = send_gas_to_contract_2(
         wallet.clone(),
         warp_route_instance.contract_id(),
         amount,
-        asset,
+        base_asset,
     )
     .await;
 
     let contract_balance = get_contract_balance(
         wallet.provider().unwrap(),
         warp_route_instance.contract_id(),
-        asset,
+        base_asset,
     )
     .await
     .unwrap();
@@ -126,7 +118,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     let contract_final_balance = get_contract_balance(
         wallet.provider().unwrap(),
         warp_route_instance.contract_id(),
-        asset,
+        base_asset,
     )
     .await
     .unwrap();
@@ -143,5 +135,5 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("collateral_asset_recieve", collateral_asset_recieve)
+    TestCase::new("native_asset_recieve", native_asset_recieve)
 }

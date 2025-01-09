@@ -23,7 +23,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let warp_route_id = get_contract_address_from_yaml("warpRoute");
+    let warp_route_id = get_contract_address_from_yaml("warpRouteNative");
     let fuel_mailbox_id = get_contract_address_from_yaml("mailbox");
     let igp_id = get_contract_address_from_yaml("interchainGasPaymaster");
     let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");

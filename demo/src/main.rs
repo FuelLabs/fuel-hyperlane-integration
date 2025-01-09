@@ -259,28 +259,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     contracts.monitor_sepolio_for_asset_delivery(false).await;
 
     ////////////////////////////////////////////////////
-    // Case 6: Bridged Sepolia (FST) to Fuel (FST) //
+    // Case 6: Synthetic Sepolia (FST) to Fuel (FST) //
     ////////////////////////////////////////////////////
 
     println!("Case: Transferring Sepolia (FST) to Fuel (FST)");
 
-    let amount = 40_000_000_000;
+    let amount = 40_000;
     println!("transfer amount is {}", amount);
     let asset_id = contracts.fuel_get_minted_asset_id().await;
     let recipient_contract_id = contracts.fuel.test_recipient.contract_id().into();
 
     let balance_before: u64 =
-        get_bridged_balance(&fuel_provider, asset_id, recipient_contract_id).await;
+        get_synthetic_balance(&fuel_provider, asset_id, recipient_contract_id).await;
     println!("Balance before: {}", balance_before);
 
-    let message_id = contracts.sepolia_transfer_remote_bridged(amount).await;
+    let message_id = contracts.sepolia_transfer_remote_synthetic(amount).await;
     contracts.monitor_fuel_for_delivery(message_id).await;
 
-    let balance_after = get_bridged_balance(&fuel_provider, asset_id, recipient_contract_id).await;
+    let balance_after =
+        get_synthetic_balance(&fuel_provider, asset_id, recipient_contract_id).await;
     println!("Balance after: {}", balance_after);
 
     ////////////////////////////////////////////////////
-    // Case 7: Bridged Fuel (FST) to Sepolia (FST) //
+    // Case 7: Synthetic Fuel (FST) to Sepolia (FST) //
     ////////////////////////////////////////////////////
 
     let amount = 10;
@@ -289,7 +290,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("transfer amount is {}", amount);
 
     contracts
-        .fuel_transfer_remote_bridged(fuel_wallet.clone(), amount)
+        .fuel_transfer_remote_synthetic(fuel_wallet.clone(), amount)
         .await;
 
     contracts.monitor_sepolio_for_asset_delivery(true).await;
@@ -301,7 +302,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Case: Exchange Collateral USDC from Sepolia with Fuel ETH");
 
-    let amount = 1_000;
+    let amount = 10;
     println!("transfer amount is {}", amount);
 
     send_token_to_contract(

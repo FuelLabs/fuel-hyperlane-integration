@@ -31,6 +31,22 @@ abi TokenRouter {
     #[storage(read)]
     fn router(domain: u32) -> b256;
 
+    /// Gets all routers enrolled in the contract
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<b256>] - The routers enrolled in the contract
+    #[storage(read)]
+    fn all_routers() -> Vec<b256>;
+
+    /// Gets all domains enrolled in the contract
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<u32>] - The domains enrolled in the contract
+    #[storage(read)]
+    fn all_domains() -> Vec<u32>;
+
     /// Enrolls a new router for a specific domain
     ///
     /// ### Arguments

@@ -20,19 +20,19 @@
             "warpRoute": "WarpRouteNative"
         }
     },
-    "bridged": {
+    "synthetic": {
         "fuel": {
-            "type": "bridged",
+            "type": "synthetic",
             "name": "FuelSepoliaUSDC",
             "symbol": "FST",
             "totalSupply": 10000000,
             "decimals": 6,
             "token": "DeterminedDuringDeployment",
-            "warpRoute": "WarpRouteBridged",
+            "warpRoute": "WarpRouteSynthetic",
             "standard": "EvmHypSynthetic"
         },
         "basesepolia": {
-            "type": "bridged",
+            "type": "synthetic",
             "name": "BasesepoliaFuelUSDC",
             "symbol": "BFU",
             "totalSupply": 10000000,

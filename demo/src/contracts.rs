@@ -24,8 +24,8 @@ use fuels::{
 };
 use futures_util::StreamExt;
 use rand::{thread_rng, Rng};
-use sepolia_warp_route_bridged::SepoliaWarpRouteBridged::SepoliaWarpRouteBridgedInstance;
 use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
+use sepolia_warp_route_synthetic::SepoliaWarpRouteSynthetic::SepoliaWarpRouteSyntheticInstance;
 use std::env;
 use SepoliaMailbox::SepoliaMailboxInstance;
 use SepoliaRecipient::SepoliaRecipientInstance;
@@ -91,13 +91,13 @@ sol!(
     "evm-abis/Mailbox.json"
 );
 
-mod sepolia_warp_route_bridged {
+mod sepolia_warp_route_synthetic {
     use alloy::sol;
 
     sol!(
         #[allow(missing_docs)]
         #[sol(rpc)]
-        SepoliaWarpRouteBridged,
+        SepoliaWarpRouteSynthetic,
         "evm-abis/HypERC20.json",
     );
 }
@@ -168,7 +168,7 @@ pub struct SepoliaContracts {
             Ethereum,
         >,
     >,
-    pub warp_route_bridged: SepoliaWarpRouteBridgedInstance<
+    pub warp_route_synthetic: SepoliaWarpRouteSyntheticInstance<
         BoxTransport,
         FillProvider<
             JoinFill<
@@ -209,7 +209,7 @@ pub struct FuelContracts {
     pub merkle_root_multisig_ism: MerkleRootMultisigISM<WalletUnlocked>,
     pub test_ism: ContractId,
     pub warp_route_collateral: WarpRoute<WalletUnlocked>,
-    pub warp_route_bridged: WarpRoute<WalletUnlocked>,
+    pub warp_route_synthetic: WarpRoute<WalletUnlocked>,
     pub recipient: ContractId,
 }
 
@@ -621,7 +621,7 @@ impl Contracts {
 
     pub async fn fuel_get_minted_asset_id(&self) -> AssetId {
         self.fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .get_token_info()
             .call()
@@ -726,18 +726,18 @@ impl Contracts {
     }
 
     /// Fuel (FST) -> Sepolia (FST)
-    pub async fn fuel_transfer_remote_bridged(&self, wallet: WalletUnlocked, amount: u64) {
+    pub async fn fuel_transfer_remote_synthetic(&self, wallet: WalletUnlocked, amount: u64) {
         let recipient_address = self.sepolia.recipient.address().to_vec();
         let mut address_array = [0u8; 32];
         address_array[12..].copy_from_slice(&recipient_address);
 
-        let remote_wr_address = self.sepolia.warp_route_bridged.address().to_vec();
+        let remote_wr_address = self.sepolia.warp_route_synthetic.address().to_vec();
         let mut remote_wr_address_array = [0u8; 32];
         remote_wr_address_array[12..].copy_from_slice(&remote_wr_address);
 
         let _add_router_res = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .enroll_remote_router(get_basesepolia_chain_id(), Bits256(remote_wr_address_array))
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
@@ -747,7 +747,7 @@ impl Contracts {
 
         let _adjust_decimals_res = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .set_remote_router_decimals(Bits256(remote_wr_address_array), 9)
             .call()
@@ -756,7 +756,7 @@ impl Contracts {
 
         let _set_ism = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .set_ism(self.fuel.test_ism)
             .call()
@@ -765,7 +765,7 @@ impl Contracts {
 
         let _set_hook_res = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .set_hook(self.fuel.igp_hook.contract_id())
             .call()
@@ -774,7 +774,7 @@ impl Contracts {
 
         let _res = self
             .sepolia
-            .warp_route_bridged
+            .warp_route_synthetic
             .setInterchainSecurityModule(self.sepolia.test_ism)
             .send()
             .await
@@ -782,13 +782,13 @@ impl Contracts {
             .watch()
             .await;
 
-        let router_address = self.fuel.warp_route_bridged.contract_id().hash();
+        let router_address = self.fuel.warp_route_synthetic.contract_id().hash();
         let parsed_router_address: FixedBytes<32> =
             FixedBytes::from_slice(router_address.as_slice());
 
         let _res = self
             .sepolia
-            .warp_route_bridged
+            .warp_route_synthetic
             .enrollRemoteRouter(get_fuel_chain_id(), parsed_router_address)
             .send()
             .await
@@ -799,11 +799,11 @@ impl Contracts {
         let asset_id = self.fuel_get_minted_asset_id().await;
         let quote = self.fuel_quote_dispatch().await;
 
-        send_token_to_contract(wallet, self.fuel.warp_route_bridged.contract_id(), amount).await;
+        send_token_to_contract(wallet, self.fuel.warp_route_synthetic.contract_id(), amount).await;
 
         let res = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .transfer_remote(get_basesepolia_chain_id(), Bits256(address_array), amount)
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
@@ -823,23 +823,23 @@ impl Contracts {
                 );
             }
             Err(e) => {
-                println!("Transfer remote bridged from fuel error: {:?}", e);
+                println!("Transfer remote synthetic from fuel error: {:?}", e);
             }
         }
     }
 
     /// Sepolia (FST) -> Fuel (FST)
-    pub async fn sepolia_transfer_remote_bridged(&self, amount: u64) -> FixedBytes<32> {
+    pub async fn sepolia_transfer_remote_synthetic(&self, amount: u64) -> FixedBytes<32> {
         let recipient_address = ContractId::from(self.fuel.test_recipient.contract_id()).to_vec();
         let parsed_address: FixedBytes<32> = FixedBytes::from_slice(recipient_address.as_slice());
 
-        let router_address = self.fuel.warp_route_bridged.contract_id().hash();
+        let router_address = self.fuel.warp_route_synthetic.contract_id().hash();
         let parsed_router_address: FixedBytes<32> =
             FixedBytes::from_slice(router_address.as_slice());
 
         let _ = self
             .sepolia
-            .warp_route_bridged
+            .warp_route_synthetic
             .enrollRemoteRouter(get_fuel_chain_id(), parsed_router_address)
             .send()
             .await
@@ -847,13 +847,13 @@ impl Contracts {
             .watch()
             .await;
 
-        let remote_wr_address = self.sepolia.warp_route_bridged.address().to_vec();
+        let remote_wr_address = self.sepolia.warp_route_synthetic.address().to_vec();
         let mut remote_wr_address_array = [0u8; 32];
         remote_wr_address_array[12..].copy_from_slice(&remote_wr_address);
 
         let _set_router = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .enroll_remote_router(get_basesepolia_chain_id(), Bits256(remote_wr_address_array))
             .call()
@@ -862,7 +862,7 @@ impl Contracts {
 
         let _adjust_decimals_res = self
             .fuel
-            .warp_route_bridged
+            .warp_route_synthetic
             .methods()
             .set_remote_router_decimals(Bits256(remote_wr_address_array), 6)
             .call()
@@ -871,7 +871,7 @@ impl Contracts {
 
         let res = self
             .sepolia
-            .warp_route_bridged
+            .warp_route_synthetic
             .transferRemote_1(get_fuel_chain_id(), parsed_address, U256::from(amount))
             .value(U256::from(1)) // qoute dispatch result
             .send()
@@ -882,7 +882,10 @@ impl Contracts {
 
         match res {
             Ok(res) => {
-                println!("Transfer remote bridged from sepolia successful: {:?}", res);
+                println!(
+                    "Transfer remote synthetic from sepolia successful: {:?}",
+                    res
+                );
 
                 self.sepolia
                     .mailbox
@@ -918,7 +921,7 @@ impl Contracts {
             .watch()
             .await;
 
-        let remote_wr_address = self.sepolia.warp_route_bridged.address().to_vec();
+        let remote_wr_address = self.sepolia.warp_route_synthetic.address().to_vec();
         let mut remote_wr_address_array = [0u8; 32];
         remote_wr_address_array[12..].copy_from_slice(&remote_wr_address);
 
@@ -1009,15 +1012,15 @@ impl Contracts {
         tx_id
     }
 
-    pub async fn monitor_sepolio_for_asset_delivery(&self, is_bridged: bool) {
+    pub async fn monitor_sepolio_for_asset_delivery(&self, is_synthetic: bool) {
         let ws_rpc_url = env::var("SEPOLIA_WS_RPC_URL").expect("SEPOLIA_WS_RPC_URL must be set");
         let provider = ProviderBuilder::new()
             .on_builtin(ws_rpc_url.as_str())
             .await
             .unwrap();
 
-        let wr_address = if is_bridged {
-            self.sepolia.warp_route_bridged.address().to_owned()
+        let wr_address = if is_synthetic {
+            self.sepolia.warp_route_synthetic.address().to_owned()
         } else {
             self.sepolia.warp_route_collateral.address().to_owned()
         };
@@ -1057,7 +1060,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
     let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
     let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
-    let warp_route_bridged = get_contract_id_from_json("fueltestnet", &["warpRouteBridged"]);
+    let warp_route_synthetic = get_contract_id_from_json("fueltestnet", &["warpRouteSynthetic"]);
     let recipient = get_contract_id_from_json("fueltestnet", &["recipient"]);
     let yaml_config = read_deployments_yaml();
     // Fuel instances
@@ -1067,7 +1070,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let msg_recipient_instance =
         TestRecipient::new(yaml_config.test_recipient, fuel_wallet.clone());
     let warp_route_collateral_instance = WarpRoute::new(warp_route_collateral, fuel_wallet.clone());
-    let warp_route_bridged_instance = WarpRoute::new(warp_route_bridged, fuel_wallet.clone());
+    let warp_route_synthetic_instance = WarpRoute::new(warp_route_synthetic, fuel_wallet.clone());
     let message_id_multisig_ism_instance =
         MessageIdMultisigISM::new(yaml_config.message_id_multisig_ism, fuel_wallet.clone());
     let merkle_root_multisig_ism_instance =
@@ -1088,7 +1091,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
         evm_provider.clone(),
     );
 
-    let warp_route_bridged_instance_sepolia = SepoliaWarpRouteBridgedInstance::new(
+    let warp_route_synthetic_instance_sepolia = SepoliaWarpRouteSyntheticInstance::new(
         address!("c10f47030fEB9E4111e6b591354dd0EB01C02919"),
         evm_provider.clone(),
     );
@@ -1110,7 +1113,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
             test_recipient: msg_recipient_instance,
             test_ism: yaml_config.test_ism,
             warp_route_collateral: warp_route_collateral_instance,
-            warp_route_bridged: warp_route_bridged_instance,
+            warp_route_synthetic: warp_route_synthetic_instance,
             recipient,
         },
         sepolia: SepoliaContracts {
@@ -1121,7 +1124,7 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
             merkle_root_multisig_ism: address!("8C94BA5A741a842eAa6eADd9CcA9d8B658D50024"),
             test_ism: address!("c56caE617c490C24a8fd82FDdf9B42DC4069813e"),
             warp_route_collateral: warp_route_collateral_instance_sepolia,
-            warp_route_bridged: warp_route_bridged_instance_sepolia,
+            warp_route_synthetic: warp_route_synthetic_instance_sepolia,
         },
     }
 }

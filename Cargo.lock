@@ -9520,6 +9520,7 @@ dependencies = [
  "fuels",
  "hyperlane-core",
  "once_cell",
+ "rand",
  "test-utils",
  "tokio",
 ]

@@ -19,8 +19,8 @@ use serde::Deserialize;
 use std::fs;
 use std::{collections::HashMap, env};
 
-use sepolia_warp_route_bridged::SepoliaWarpRouteBridged::SepoliaWarpRouteBridgedInstance;
 use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
+use sepolia_warp_route_synthetic::SepoliaWarpRouteSynthetic::SepoliaWarpRouteSyntheticInstance;
 use SepoliaMailbox::SepoliaMailboxInstance;
 use SepoliaRecipient::SepoliaRecipientInstance;
 
@@ -44,13 +44,13 @@ sol!(
     "src/evm/abis/Mailbox.json"
 );
 
-mod sepolia_warp_route_bridged {
+mod sepolia_warp_route_synthetic {
     use alloy::sol;
 
     sol!(
         #[allow(missing_docs)]
         #[sol(rpc)]
-        SepoliaWarpRouteBridged,
+        SepoliaWarpRouteSynthetic,
         "src/evm/abis/HypERC20.json",
     );
 }
@@ -121,7 +121,7 @@ pub struct SepoliaContracts {
             Ethereum,
         >,
     >,
-    pub warp_route_bridged: SepoliaWarpRouteBridgedInstance<
+    pub warp_route_synthetic: SepoliaWarpRouteSyntheticInstance<
         BoxTransport,
         FillProvider<
             JoinFill<
@@ -247,22 +247,22 @@ impl SepoliaContracts {
         );
 
         let collateral_wr = load_remote_wr_addresses("NTR").unwrap();
-        let bridged_wr = load_remote_wr_addresses("NTR").unwrap();
+        let synthetic_wr = load_remote_wr_addresses("NTR").unwrap();
 
         let warp_route_collateral = SepoliaWarpRouteCollateralInstance::new(
             collateral_wr.parse().expect("Invalid address format"),
             evm_provider.clone(),
         );
 
-        let warp_route_bridged = SepoliaWarpRouteBridgedInstance::new(
-            bridged_wr.parse().expect("Invalid address format"),
+        let warp_route_synthetic = SepoliaWarpRouteSyntheticInstance::new(
+            synthetic_wr.parse().expect("Invalid address format"),
             evm_provider.clone(),
         );
 
         SepoliaContracts {
             mailbox,
             recipient,
-            warp_route_bridged,
+            warp_route_synthetic,
             warp_route_collateral,
         }
     }

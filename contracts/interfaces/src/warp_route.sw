@@ -7,20 +7,20 @@ use message::Message;
 pub enum WarpRouteError {
     InvalidAssetSend: (),
     PaymentNotEqualToRequired: (),
-    Unauthorized: (),
     AlreadyInitialized: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),
-    NoRouter: u32,
     RemoteDecimalsNotSet: (),
     AmountNotConvertible: (),
+    SenderNotMailbox: (),
 }
 
 /// The mode of the WarpRoute contract
 pub enum WarpRouteTokenMode {
-    BRIDGED: (),
+    SYNTHETIC: (),
     COLLATERAL: (),
+    NATIVE: (),
 }
 
 /// The metadata of the token managed by the WarpRoute contract
@@ -42,11 +42,12 @@ abi WarpRoute {
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
-    /// * `token_name`: [string] - The name of the token
-    /// * `token_symbol`: [string] - The symbol of the token
-    /// * `decimals`: [u8] - The number of decimals of the token
-    /// * `total_supply`: [u64] - The total supply of the token
+    /// * `token_name`: [Option<String>] - The name of the token
+    /// * `token_symbol`: [Option<String>] - The symbol of the token
+    /// * `decimals`: [Option<u8>] - The number of decimals of the token
+    /// * `total_supply`: [Option<u64>] - The total supply of the token
     /// * `asset_id`: [Option<AssetId>] - The asset ID of the token
+    /// * `asset_contract_id`: [Option<b256>] - The asset contract ID of the token
     #[storage(read, write)]
     fn initialize(
         owner: b256,
@@ -54,11 +55,12 @@ abi WarpRoute {
         mode: WarpRouteTokenMode,
         hook: b256,
         //Token Details
-        token_name: String,
-        token_symbol: String,
-        decimals: u8,
-        total_supply: u64,
+        token_name: Option<String>,
+        token_symbol: Option<String>,
+        decimals: Option<u8>,
+        total_supply: Option<u64>,
         asset_id: Option<AssetId>,
+        asset_contract_id: Option<b256>,
     );
 
     /// Transfers tokens to a remote domain

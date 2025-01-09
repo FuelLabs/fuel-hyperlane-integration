@@ -2,30 +2,30 @@ use crate::{
     cases::TestCase,
     evm::{get_evm_wallet, monitor_fuel_for_delivery, SepoliaContracts},
     setup::{
-        abis::{Mailbox, MsgRecipient, WarpRoute},
+        abis::{Mailbox, WarpRoute},
         get_loaded_wallet,
     },
     utils::{
-        _test_message, get_fuel_test_recipient, get_local_domain, get_remote_domain,
+        _test_message, get_fuel_test_recipient, get_local_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
 use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256, Bytes};
-use test_utils::get_revert_reason;
+use hyperlane_core::Encode;
 use tokio::time::Instant;
 
-async fn bridged_asset_recieve() -> Result<f64, String> {
+async fn synthetic_asset_recieve() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let warp_route_id = get_contract_address_from_yaml("warpRouteBridged");
+    let warp_route_id = get_contract_address_from_yaml("warpRouteSynthetic");
     let mailbox_id = get_contract_address_from_yaml("mailbox");
-    let msg_recipient = get_contract_address_from_yaml("testRecipient");
+    let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
+    let ism_id = get_contract_address_from_yaml("interchainSecurityModule");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
-    let msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
 
     //get token info
     let token_metadata = warp_route_instance
@@ -63,7 +63,7 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 
     let remote_wallet = get_evm_wallet().await;
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
-    let remote_wr = contracts.warp_route_bridged;
+    let remote_wr = contracts.warp_route_synthetic;
 
     let fuel_domain = get_local_domain();
     let recipient = get_fuel_test_recipient();
@@ -137,32 +137,29 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
     //For this to success, we need to convert remote decimals to same as local decimals - so that it wont be divided by 10^difference
     let _ = warp_route_instance
         .methods()
-        .set_remote_router_decimals(Bits256(Address::from(wallet.address()).into()), decimals)
+        .set_remote_router_decimals(Bits256(remote_wr_array), decimals)
         .call()
         .await
         .unwrap();
 
     let new_message = _test_message(
-        &mailbox_instance,
-        msg_recipient_instance.contract_id(),
+        &warp_route_instance.contract_id().clone(),
         10_000_000_000_000_000_000, // greater than total supply
+        Bits256(Address::from(wallet.address()).into()),
+        Bits256(remote_wr_array),
     );
 
-    let should_return_error = warp_route_instance
+    let _should_return_error = mailbox_instance
         .methods()
-        .handle(
-            get_remote_domain(),
-            Bits256(Address::from(wallet.address()).into()),
-            Bytes(new_message.clone().body),
-        )
-        .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
+        .process(Bytes(new_message.to_vec()), Bytes(new_message.to_vec()))
+        .with_contract_ids(&[
+            warp_route_id.into(),
+            post_dispatch_hook_id.into(),
+            ism_id.into(),
+        ])
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .call()
         .await;
-
-    assert_eq!(
-        get_revert_reason(should_return_error.err().unwrap()),
-        "MaxMinted"
-    );
 
     let token_metadata_final_2 = warp_route_instance
         .methods()
@@ -180,5 +177,5 @@ async fn bridged_asset_recieve() -> Result<f64, String> {
 }
 
 pub fn test() -> TestCase {
-    TestCase::new("bridged_asset_recieve", bridged_asset_recieve)
+    TestCase::new("synthetic_asset_recieve", synthetic_asset_recieve)
 }

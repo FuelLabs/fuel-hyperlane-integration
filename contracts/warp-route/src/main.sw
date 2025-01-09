@@ -38,6 +38,7 @@ use std::{
     revert::revert,
     storage::storage_map::*,
     storage::storage_string::*,
+    storage::storage_vec::*,
     string::String,
     u128::U128,
 };
@@ -50,12 +51,12 @@ use interfaces::{
     token_router::*,
     warp_route::*,
 };
-use standards::src5::State;
+use standards::{src20::SRC20, src5::State};
 use message::{EncodedMessage, Message};
 
 storage {
     /// The mode of the WarpRoute contract
-    token_mode: WarpRouteTokenMode = WarpRouteTokenMode::BRIDGED, // Default mode is Bridged
+    token_mode: WarpRouteTokenMode = WarpRouteTokenMode::SYNTHETIC, // Default mode is SYNTHETIC
     /// The address of the mailbox contract to use for message dispatch
     mailbox: ContractId = ContractId::from(ZERO_B256),
     /// The address of the default hook contract to use for message dispatch
@@ -67,6 +68,8 @@ storage {
     /// Mapping of domain identifiers to their corresponding router addresses
     /// Each domain has a unique router that handles token transfers
     routers: StorageMap<u32, b256> = StorageMap {},
+    ///List of unique domains
+    domains: StorageVec<u32> = StorageVec {},
     /// Mapping of remote router decimals
     remote_router_decimals: StorageMap<b256, u8> = StorageMap {},
     /// Asset
@@ -91,6 +94,8 @@ storage {
 configurable {
     /// The maximum supply allowed for any single asset.
     MAX_SUPPLY: u64 = 100_000_000_000_000,
+    /// The default number of decimals for the base asset
+    DEFAULT_DECIMALS: u8 = 9,
 }
 
 impl WarpRoute for Contract {
@@ -102,11 +107,12 @@ impl WarpRoute for Contract {
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
-    /// * `token_name`: [string] - The name of the token
-    /// * `token_symbol`: [string] - The symbol of the token
-    /// * `decimals`: [u8] - The number of decimals of the token
-    /// * `total_supply`: [u64] - The total supply of the token
-    /// * `asset_id`: [Option<AssetId>] - The asset ID of the token
+    /// * `token_name`: [Option<String>] - The name of the token
+    /// * `token_symbol`: [Option<String>] - The symbol of the token
+    /// * `decimals`: [Option<u8>] - The number of decimals of the token
+    /// * `total_supply`: [Option<u64>] - The total supply of the token
+    /// * `asset_id`: [Option<AssetId>] - The asset ID of the token - only required in collateral/native mode
+    /// * `asset_contract_id`: [Option<b256>] - The asset contract ID of the token - only required in collateral mode
     ///
     /// ### Reverts
     ///
@@ -119,11 +125,12 @@ impl WarpRoute for Contract {
         mode: WarpRouteTokenMode,
         hook: b256,
         //Token
-        token_name: String,
-        token_symbol: String,
-        decimals: u8,
-        total_supply: u64,
+        token_name: Option<String>,
+        token_symbol: Option<String>,
+        decimals: Option<u8>,
+        total_supply: Option<u64>,
         asset_id: Option<AssetId>,
+        asset_contract_id: Option<b256>,
     ) {
         require(
             _owner() == State::Uninitialized,
@@ -137,32 +144,54 @@ impl WarpRoute for Contract {
         storage.default_hook.write(ContractId::from(hook));
         storage.token_mode.write(mode);
 
-        //When creating a single new asset on Fuel, we recommend using the SubId::zero()
         let sub_id = SubId::zero();
+        storage.sub_id.write(sub_id);
 
-        let asset_id = match mode {
-            WarpRouteTokenMode::BRIDGED => {
-                // Derive asset_id based on contract_id and sub_id for bridged mode
-                AssetId::new(ContractId::this(), sub_id)
+        match mode {
+            WarpRouteTokenMode::NATIVE => {
+                let asset = asset_id.unwrap_or(AssetId::base());
+                storage.asset_id.write(asset);
+
+                let decimals = decimals.unwrap_or(DEFAULT_DECIMALS);
+                _set_decimals(storage.decimals, asset, decimals);
+            }
+            WarpRouteTokenMode::SYNTHETIC => {
+                // Derive asset_id based on contract_id and sub_id for synthetic mode
+                let asset_id = AssetId::new(ContractId::this(), sub_id);
+
+                save_token_details_to_state(
+                    asset_id,
+                    token_name
+                        .unwrap(),
+                    token_symbol
+                        .unwrap(),
+                    decimals
+                        .unwrap(),
+                    total_supply
+                        .unwrap(),
+                );
+                storage.cumulative_supply.insert(asset_id, 0);
             }
             WarpRouteTokenMode::COLLATERAL => {
-                // Require asset_id as input in collateral mode
+                // Require asset_id and asset_contract_id as input in collateral mode
                 require(
                     asset_id
+                        .is_some() && asset_contract_id
                         .is_some(),
                     WarpRouteError::AssetIdRequiredForCollateral,
                 );
-                asset_id.unwrap()
+                let asset_id = asset_id.unwrap();
+                let asset_contract_id = asset_contract_id.unwrap();
+                let collateral_asset_contract = abi(SRC20, asset_contract_id);
+
+                let name = collateral_asset_contract.name(asset_id).unwrap();
+                let symbol = collateral_asset_contract.symbol(asset_id).unwrap();
+                let decimals = collateral_asset_contract.decimals(asset_id).unwrap();
+                let total_supply = collateral_asset_contract.total_supply(asset_id).unwrap();
+
+                save_token_details_to_state(asset_id, name, symbol, decimals, total_supply);
             }
         };
-        storage.sub_id.write(sub_id);
-        storage.asset_id.write(asset_id);
-
-        _set_name(storage.name, asset_id, token_name);
-        _set_symbol(storage.symbol, asset_id, token_symbol);
-        _set_decimals(storage.decimals, asset_id, decimals);
-        storage.total_supply.insert(asset_id, total_supply);
-        storage.cumulative_supply.insert(asset_id, 0);
     }
 
     /// Transfers tokens to a remote domain
@@ -203,6 +232,8 @@ impl WarpRoute for Contract {
         let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
+        let token_mode = storage.token_mode.read();
+
         let quote = _get_quote_for_gas_payment(
             destination_domain,
             remote_domain_router,
@@ -210,11 +241,10 @@ impl WarpRoute for Contract {
             hook_contract,
         );
 
-        let token_mode = storage.token_mode.read();
-
         let required_payment = match token_mode {
-            WarpRouteTokenMode::BRIDGED => quote,
-            WarpRouteTokenMode::COLLATERAL => amount + quote,
+            WarpRouteTokenMode::SYNTHETIC => quote,
+            WarpRouteTokenMode::COLLATERAL => quote,
+            WarpRouteTokenMode::NATIVE => amount + quote,
         };
 
         require(
@@ -222,20 +252,20 @@ impl WarpRoute for Contract {
             WarpRouteError::PaymentNotEqualToRequired,
         );
 
+        require(
+            msg_asset_id() == AssetId::base(),
+            WarpRouteError::InvalidAssetSend,
+        );
+
         match token_mode {
-            WarpRouteTokenMode::BRIDGED => {
-                require(
-                    msg_asset_id() == AssetId::base(),
-                    WarpRouteError::InvalidAssetSend,
-                );
+            WarpRouteTokenMode::SYNTHETIC => {
                 //Burn has checks inside along with decreasing total supply
                 _burn(storage.total_supply, storage.sub_id.read(), amount);
-            }
-            WarpRouteTokenMode::COLLATERAL => {
-                require(msg_asset_id() == asset, WarpRouteError::InvalidAssetSend);
+            },
+            WarpRouteTokenMode::NATIVE | WarpRouteTokenMode::COLLATERAL => {
                 //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
-            }
+            },
         }
 
         //Dispatch the message to the destination domain
@@ -363,7 +393,14 @@ impl WarpRoute for Contract {
     /// * `destination_domain`: [u32] - The destination domain
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32) -> u64 {
-        _get_quote_for_gas_payment(destination_domain, b256::zero(), Bytes::new(), storage.default_hook.read())
+        _get_quote_for_gas_payment(
+            destination_domain,
+            b256::zero(),
+            Bytes::new(),
+            storage
+                .default_hook
+                .read(),
+        )
     }
 }
 
@@ -382,6 +419,35 @@ impl TokenRouter for Contract {
         _get_router(domain)
     }
 
+    /// Gets all routers enrolled in the contract
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<b256>] - The routers enrolled in the contract
+    #[storage(read)]
+    fn all_routers() -> Vec<b256> {
+        let count = storage.domains.len();
+        let mut i = 0;
+        let mut routers = Vec::new();
+        while i < count {
+            let domain = storage.domains.get(i).unwrap().read();
+            let router = storage.routers.get(domain).try_read().unwrap();
+            routers.push(router);
+            i += 1;
+        }
+        routers
+    }
+
+    /// Gets all domains enrolled in the contract
+    ///
+    /// ### Returns
+    ///
+    /// * [Vec<u32>] - The domains enrolled in the contract
+    #[storage(read)]
+    fn all_domains() -> Vec<u32> {
+        storage.domains.load_vec()
+    }
+
     /// Removes a router for a specific domain
     ///
     /// ### Arguments
@@ -389,7 +455,21 @@ impl TokenRouter for Contract {
     /// * `domain`: [u32] - The domain to remove the router for
     #[storage(write)]
     fn unenroll_remote_router(domain: u32) -> bool {
-        storage.routers.remove(domain)
+        let removed = storage.routers.remove(domain);
+        if removed {
+            let count = storage.domains.len();
+            let mut i = 0;
+            while i < count {
+                if let Some(domain_key) = storage.domains.get(i) {
+                    if domain_key.read() == domain {
+                        let _ = storage.domains.remove(i);
+                        return true;
+                    }
+                }
+                i += 1;
+            }
+        }
+        false
     }
 
     /// Enrolls a new router for a specific domain
@@ -471,11 +551,18 @@ impl MessageRecipient for Contract {
     ///
     /// * If the contract is paused
     /// * If the message has already been delivered
+    /// * If the sender is not the mailbox
     /// * If the cumulative supply exceeds the maximum supply
     #[storage(read, write)]
     fn handle(origin: u32, sender: b256, message_body: Bytes) {
         reentrancy_guard();
         require_not_paused();
+
+        require(
+            msg_sender()
+                .unwrap() == Identity::ContractId(storage.mailbox.read()),
+            WarpRouteError::SenderNotMailbox,
+        );
 
         let asset = storage.asset_id.read();
         let (recipient, amount) = _extract_asset_data_from_body(message_body);
@@ -489,7 +576,7 @@ impl MessageRecipient for Contract {
         let asset = storage.asset_id.read();
 
         match storage.token_mode.read() {
-            WarpRouteTokenMode::BRIDGED => {
+            WarpRouteTokenMode::SYNTHETIC => {
                 let cumulative_supply = storage.cumulative_supply.get(asset).read();
 
                 require(
@@ -511,7 +598,7 @@ impl MessageRecipient for Contract {
                     adjusted_amount,
                 );
             }
-            WarpRouteTokenMode::COLLATERAL => {
+            WarpRouteTokenMode::NATIVE | WarpRouteTokenMode::COLLATERAL => {
                 transfer(recipient_identity, asset, adjusted_amount);
             }
         }
@@ -616,7 +703,7 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
         name: _name(storage.name, asset).unwrap_or(String::new()),
         symbol: _symbol(storage.symbol, asset).unwrap_or(String::new()),
         decimals: _decimals(storage.decimals, asset).unwrap_or(0),
-        total_supply: storage.total_supply.get(asset).read(),
+        total_supply: storage.total_supply.get(asset).try_read().unwrap_or(0),
         asset_id: storage.asset_id.read(),
         sub_id: storage.sub_id.read(),
     }
@@ -650,6 +737,7 @@ fn _get_router(domain: u32) -> b256 {
 #[storage(read, write)]
 fn _insert_route_to_state(domain: u32, router: b256) {
     storage.routers.insert(domain, router);
+    storage.domains.push(domain);
 }
 
 #[storage(read)]
@@ -686,5 +774,26 @@ fn _get_quote_for_gas_payment(
     hook: ContractId,
 ) -> u64 {
     let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
-    mailbox.quote_dispatch(destination_domain, recipient, message_body, Bytes::new(), hook)
+    mailbox.quote_dispatch(
+        destination_domain,
+        recipient,
+        message_body,
+        Bytes::new(),
+        hook,
+    )
+}
+
+#[storage(read, write)]
+fn save_token_details_to_state(
+    asset_id: AssetId,
+    name: String,
+    symbol: String,
+    decimals: u8,
+    total_supply: u64,
+) {
+    storage.asset_id.write(asset_id);
+    _set_name(storage.name, asset_id, name);
+    _set_symbol(storage.symbol, asset_id, symbol);
+    _set_decimals(storage.decimals, asset_id, decimals);
+    storage.total_supply.insert(asset_id, total_supply);
 }
