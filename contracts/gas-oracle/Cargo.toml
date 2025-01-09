@@ -1,5 +1,5 @@
 [package]
-name = "igp-hook-test"
+name = "gas-oracle"
 description = "A cargo-generate template for Rust + Sway integration testing."
 version = "0.1.0"
 edition = "2021"
@@ -11,7 +11,7 @@ fuels = { workspace = true, features = ["fuel-core-lib"] }
 tokio = { workspace = true }
 hyperlane-core = { workspace = true }
 ethers = { workspace = true }
-test-utils = { path = "../../../test-utils" }
+test-utils = { path = "../../test-utils" }
 
 [[test]]
 harness = true

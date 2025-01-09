@@ -84,6 +84,18 @@ abi IGP {
     /// * [u64] - The gas amount for the current domain.
     #[storage(read)]
     fn get_current_domain_gas() -> u64;
+
+    /// Gets the gas config for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas config for.
+    ///
+    /// ### Returns
+    ///
+    /// * [DomainGasConfig] - The gas config for the domain (gas overhead and oracle address).
+    #[storage(read)]
+    fn get_domain_gas_config(domain: u32) -> DomainGasConfig;
 }
 
 /// Functions required for calculation of overheads
@@ -107,6 +119,12 @@ pub struct RemoteGasData {
 pub struct ExchangeRateAndGasData {
     pub token_exchange_rate: U128,
     pub gas_price: U128,
+}
+
+/// Gas config for a domain.
+pub struct DomainGasConfig {
+    pub gas_oracle: b256,
+    pub gas_overhead: u64,
 }
 
 impl RemoteGasData {
@@ -178,11 +196,4 @@ pub struct GasPaymentEvent {
     pub destination_domain: u32,
     pub gas_amount: u64,
     pub payment: u64,
-}
-
-/// ERROR FOR HOOK
-pub enum IGPHookError {
-    ContractNotInitialized: (),
-    ContractAlreadyInitialized: (),
-    NoValueExpected: (),
 }

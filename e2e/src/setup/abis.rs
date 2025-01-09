@@ -7,15 +7,11 @@ abigen!(
     ),
     Contract(
         name = "InterchainGasPaymaster",
-        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
+        abi = "contracts/hooks/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
     Contract(
         name = "GasOracle",
-        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
-    ),
-    Contract(
-        name = "IGPHook",
-        abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
+        abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json",
     ),
     Contract(
         name = "WarpRoute",

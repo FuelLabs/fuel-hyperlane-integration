@@ -5461,17 +5461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "igp-hook-test"
-version = "0.1.0"
-dependencies = [
- "ethers",
- "fuels",
- "hyperlane-core",
- "test-utils",
- "tokio",
-]
-
-[[package]]
 name = "impl-codec"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

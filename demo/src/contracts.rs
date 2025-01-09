@@ -44,20 +44,16 @@ abigen!(
         abi = "contracts/hooks/merkle-tree-hook/out/debug/merkle-tree-hook-abi.json",
     ),
     Contract(
-        name = "IGPHook",
-        abi = "contracts/hooks/igp/out/debug/igp-hook-abi.json",
-    ),
-    Contract(
         name = "ValidatorAnnounce",
         abi = "contracts/validator-announce/out/debug/validator-announce-abi.json",
     ),
     Contract(
         name = "GasOracle",
-        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
+        abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json",
     ),
     Contract(
         name = "GasPaymaster",
-        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
+        abi = "contracts/hooks/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
     Contract(
         name = "TestRecipient",
@@ -200,7 +196,6 @@ pub struct FuelContracts {
     pub validator_announce: ContractId,
     pub igp: GasPaymaster<WalletUnlocked>,
     pub gas_oracle: ContractId,
-    pub igp_hook: IGPHook<WalletUnlocked>,
     pub test_recipient: TestRecipient<WalletUnlocked>,
     pub aggregation_ism: ContractId,
     pub domain_routing_ism: ContractId,
@@ -249,7 +244,7 @@ impl Contracts {
         let body_text = format!("Hello from Fuel! {}", rnd_number);
 
         let hook = match dispatch_type {
-            DispatchType::WithIGPHook => self.fuel.igp_hook.contract_id(),
+            DispatchType::WithIGPHook => self.fuel.igp.contract_id(),
             DispatchType::WithMerkleTreeHook => &Bech32ContractId::from(self.fuel.merkle_tree_hook),
             DispatchType::WithNoHook => &Bech32ContractId::default(),
             DispatchType::TokenSend => &Bech32ContractId::default(),
@@ -270,7 +265,7 @@ impl Contracts {
                     )
                     .call_params(CallParameters::new(223526, get_native_asset(), 223526))
                     .unwrap()
-                    .with_contracts(&[&self.fuel.igp, &self.fuel.igp_hook])
+                    .with_contracts(&[&self.fuel.igp])
                     .determine_missing_contracts(Some(10))
                     .await
                     .unwrap()
@@ -288,7 +283,7 @@ impl Contracts {
                         Bytes(vec![0]),
                         hook,
                     )
-                    .with_contracts(&[&self.fuel.igp, &self.fuel.igp_hook])
+                    .with_contracts(&[&self.fuel.igp])
                     .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                     .determine_missing_contracts(Some(10))
                     .await
@@ -663,7 +658,7 @@ impl Contracts {
             .fuel
             .warp_route_collateral
             .methods()
-            .set_hook(self.fuel.igp_hook.contract_id())
+            .set_hook(self.fuel.igp.contract_id())
             .call()
             .await
             .unwrap();
@@ -767,7 +762,7 @@ impl Contracts {
             .fuel
             .warp_route_synthetic
             .methods()
-            .set_hook(self.fuel.igp_hook.contract_id())
+            .set_hook(self.fuel.igp.contract_id())
             .call()
             .await
             .unwrap();
@@ -1057,7 +1052,6 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let ism = get_contract_id_from_json("fueltestnet", &["interchainSecurityModule"]);
     let merkle_tree_hook = get_contract_id_from_json("fueltestnet", &["merkleTreeHook"]);
     let validator_announce = get_contract_id_from_json("fueltestnet", &["validatorAnnounce"]);
-    let igp_hook_id = get_contract_id_from_json("fueltestnet", &["interchainGasPaymasterHook"]);
     let gas_oracle = get_contract_id_from_json("fueltestnet", &["storageGasOracle"]);
     let warp_route_collateral = get_contract_id_from_json("fueltestnet", &["warpRouteNative"]);
     let warp_route_synthetic = get_contract_id_from_json("fueltestnet", &["warpRouteSynthetic"]);
@@ -1065,7 +1059,6 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
     let yaml_config = read_deployments_yaml();
     // Fuel instances
     let mailbox_instance_fuel = Mailbox::new(mailbox_id, fuel_wallet.clone());
-    let igp_hook_instance = IGPHook::new(igp_hook_id, fuel_wallet.clone());
     let igp_instance = GasPaymaster::new(igp, fuel_wallet.clone());
     let msg_recipient_instance =
         TestRecipient::new(yaml_config.test_recipient, fuel_wallet.clone());
@@ -1104,7 +1097,6 @@ pub async fn load_contracts(fuel_wallet: WalletUnlocked, evm_provider: EvmProvid
             merkle_tree_hook,
             validator_announce,
             gas_oracle,
-            igp_hook: igp_hook_instance,
             aggregation_ism: yaml_config.aggregation_ism,
             domain_routing_ism: yaml_config.domain_routing_ism,
             fallback_domain_routing_ism: yaml_config.fallback_domain_routing_ism,

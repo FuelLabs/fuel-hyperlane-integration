@@ -13,6 +13,7 @@ members = [
   "contracts/test/ism-test",
   "contracts/test/src20-test",
   "contracts/hooks/merkle-tree-hook",
+  "contracts/hooks/gas-paymaster",
   "contracts/test/merkle-test",
   "contracts/test/mailbox-test",
   "contracts/validator-announce",
@@ -25,7 +26,5 @@ members = [
   "contracts/ism/libs/message-id-multisig-ism-metadata",
   "contracts/ism/libs/aggregation-ism-metadata",
   "contracts/libs/checkpoint",
-  "contracts/igp/gas-paymaster",
-  "contracts/igp/gas-oracle",
-  "contracts/hooks/igp",
+  "contracts/gas-oracle",
 ]

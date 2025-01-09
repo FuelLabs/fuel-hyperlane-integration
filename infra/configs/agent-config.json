@@ -46,7 +46,6 @@
             "merkleTreeHook": "0x70b882e3dc189edaa08b83a695cdbbcc890ec46093080f5b8410bbfc2adb8ae9",
             "storageGasOracle": "0xba4534c06f9526dfc21707373eaf692a37e3f87e1feeeb2036df21df48aa7e9d",
             "interchainGasPaymaster": "0x59cee917cc79c45d73ea0765acc67d5fd4fef6c1582132dae2b6afe5700b69f9",
-            "interchainGasPaymasterHook": "0xe55403c2437dda3ba66bb66b4ac16755ed7ca1164555b41216f09c03e70159cc",
             "collateralTokenContractId": "0x1p9uhqq5n2xhuppvnj72vf3klwz7kxs7t3xnr4vs7prddk9wktjmsh0h2pm",
             "collateralAssetId": "0x2f02bf48eae3b693e5015b7d778fcd518257043bd8ba394e827b7c3d5316ed4a",
             "warpRouteCollateral": "0xab592868e2ed1b594e9a288f5981d179a18aa1ff2afc3af94d371532f480cae1",
