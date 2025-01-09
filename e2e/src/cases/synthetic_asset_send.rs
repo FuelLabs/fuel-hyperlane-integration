@@ -72,15 +72,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to set remote router decimals: {:?}", e))?;
 
-    // warp_route_instance
-    //     .methods()
-    //     .set_remote_router_decimals(test_recipient, 9)
-    //     .call()
-    //     .await
-    //     .unwrap();
-
     let local_decimals = token_info.value.decimals;
-    // let remote_adjusted_amount = amount * 10u64.pow(18 - local_decimals as u32);
 
     let amount = 100_000_000_000_000;
 

@@ -94,6 +94,8 @@ storage {
 configurable {
     /// The maximum supply allowed for any single asset.
     MAX_SUPPLY: u64 = 100_000_000_000_000,
+    /// The default number of decimals for the base asset
+    DEFAULT_DECIMALS: u8 = 9,
 }
 
 impl WarpRoute for Contract {
@@ -105,10 +107,10 @@ impl WarpRoute for Contract {
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
-    /// * `token_name`: [string] - The name of the token
-    /// * `token_symbol`: [string] - The symbol of the token
-    /// * `decimals`: [u8] - The number of decimals of the token
-    /// * `total_supply`: [u64] - The total supply of the token
+    /// * `token_name`: [Option<String>] - The name of the token
+    /// * `token_symbol`: [Option<String>] - The symbol of the token
+    /// * `decimals`: [Option<u8>] - The number of decimals of the token
+    /// * `total_supply`: [Option<u64>] - The total supply of the token
     /// * `asset_id`: [Option<AssetId>] - The asset ID of the token - only required in collateral/native mode
     /// * `asset_contract_id`: [Option<b256>] - The asset contract ID of the token - only required in collateral mode
     ///
@@ -142,24 +144,16 @@ impl WarpRoute for Contract {
         storage.default_hook.write(ContractId::from(hook));
         storage.token_mode.write(mode);
 
-        //When creating a single new asset on Fuel, we recommend using the SubId::zero()
         let sub_id = SubId::zero();
         storage.sub_id.write(sub_id);
 
         match mode {
             WarpRouteTokenMode::NATIVE => {
-                save_token_details_to_state(
-                    asset_id
-                        .unwrap(),
-                    token_name
-                        .unwrap(),
-                    token_symbol
-                        .unwrap(),
-                    decimals
-                        .unwrap(),
-                    total_supply
-                        .unwrap(),
-                );
+                let asset = asset_id.unwrap_or(AssetId::base());
+                storage.asset_id.write(asset);
+
+                let decimals = decimals.unwrap_or(DEFAULT_DECIMALS);
+                _set_decimals(storage.decimals, asset, decimals);
             }
             WarpRouteTokenMode::SYNTHETIC => {
                 // Derive asset_id based on contract_id and sub_id for synthetic mode
@@ -709,7 +703,7 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
         name: _name(storage.name, asset).unwrap_or(String::new()),
         symbol: _symbol(storage.symbol, asset).unwrap_or(String::new()),
         decimals: _decimals(storage.decimals, asset).unwrap_or(0),
-        total_supply: storage.total_supply.get(asset).read(),
+        total_supply: storage.total_supply.get(asset).try_read().unwrap_or(0),
         asset_id: storage.asset_id.read(),
         sub_id: storage.sub_id.read(),
     }

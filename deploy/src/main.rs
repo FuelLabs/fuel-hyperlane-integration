@@ -456,7 +456,7 @@ async fn main() {
         .unwrap();
 
     println!(
-        "collateralTokenContractId: 0x{}",
+        "collateralTokenContractId: {}",
         collateral_token_contract.contract_id()
     );
 
@@ -777,10 +777,10 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
-            Some("Ether".to_string()),
-            Some("ETH".to_string()),
-            Some(9),
-            Some(10_000_000_000_000),
+            None,
+            None,
+            None,
+            None,
             Some(
                 AssetId::from_str(
                     "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
