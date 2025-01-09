@@ -479,7 +479,7 @@ async fn main() {
         .unwrap();
 
     println!(
-        "collateralTokenContractId: 0x{}",
+        "collateralTokenContractId: {}",
         collateral_token_contract.contract_id()
     );
 
@@ -759,17 +759,6 @@ async fn main() {
     assert!(set_beneficiary_res.is_ok(), "Failed to set beneficiary.");
     assert!(set_gas_oracle_res.is_ok(), "Failed to set gas oracle.");
 
-    // let mailbox_set_hook = mailbox
-    //     .methods()
-    //     .set_required_hook(igp_hook.id())
-    //     .call()
-    //     .await;
-
-    // assert!(
-    //     mailbox_set_hook.is_ok(),
-    //     "Failed to set required hook in Mailbox."
-    // );
-
     ////////////////////////
     // Validator Announce //
     ////////////////////////
@@ -820,10 +809,10 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
-            Some("Ether".to_string()),
-            Some("ETH".to_string()),
-            Some(9),
-            Some(10_000_000_000_000),
+            None,
+            None,
+            None,
+            None,
             Some(
                 AssetId::from_str(
                     "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",

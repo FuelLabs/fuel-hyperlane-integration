@@ -11,6 +11,7 @@ members = [
   "contracts/mocks/mock-msg-recipient",
   "contracts/test/msg-recipient-test",
   "contracts/test/ism-test",
+  "contracts/test/src20-test",
   "contracts/hooks/merkle-tree-hook",
   "contracts/test/merkle-test",
   "contracts/test/mailbox-test",

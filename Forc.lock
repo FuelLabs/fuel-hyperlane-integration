@@ -218,6 +218,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "src20-test"
+source = "member"
+dependencies = [
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#3f6543f7beac1b063d09e5c2990a6c3b90f9fd74",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
 name = "standards"
 source = "git+https://github.com/FuelLabs/sway-standards?branch=master#3f6543f7beac1b063d09e5c2990a6c3b90f9fd74"
 dependencies = ["std"]
@@ -244,7 +253,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?branch=master#44066b12344979514426c14ae8088c1690fc34d6"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#d5577010cacb82db13101107f20914b240c146eb"
 dependencies = [
     "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
     "std",
