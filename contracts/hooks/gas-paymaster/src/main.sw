@@ -186,6 +186,23 @@ impl IGP for Contract {
     fn get_current_domain_gas() -> u64 {
         storage.default_gas_amount.read()
     }
+
+    /// Gets the gas config for a domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas config for.
+    ///
+    /// ### Returns
+    ///
+    /// * [DomainGasConfig] - The gas config for the domain (gas overhead and oracle address).
+    #[storage(read)]
+    fn get_domain_gas_config(domain: u32) -> DomainGasConfig {
+        DomainGasConfig {
+            gas_overhead: storage.gas_overheads.get(domain).try_read().unwrap_or(0),
+            gas_oracle: storage.gas_oracles.get(domain).try_read().unwrap_or(b256::zero()),
+        }
+    }
 }
 
 impl Claimable for Contract {

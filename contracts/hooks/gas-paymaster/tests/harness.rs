@@ -10,11 +10,11 @@ use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 abigen!(
     Contract(
         name = "GasPaymaster",
-        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json"
+        abi = "contracts/hooks/gas-paymaster/out/debug/gas-paymaster-abi.json"
     ),
     Contract(
         name = "GasOracle",
-        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json"
+        abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json"
     )
 );
 
@@ -103,7 +103,7 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
         .unwrap();
 
     let storage_gas_oracle_id = Contract::load_from(
-        "../gas-oracle/out/debug/gas-oracle.bin",
+        "../../gas-oracle/out/debug/gas-oracle.bin",
         LoadConfiguration::default(),
     )
     .unwrap()

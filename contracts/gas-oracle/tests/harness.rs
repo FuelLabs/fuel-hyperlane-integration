@@ -4,7 +4,7 @@ use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
 abigen!(Contract(
     name = "GasOracle",
-    abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json"
+    abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json"
 ));
 
 const NON_OWNER_PRIVATE_KEY: &str =

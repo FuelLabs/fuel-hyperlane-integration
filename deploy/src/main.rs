@@ -36,11 +36,11 @@ abigen!(
     ),
     Contract(
         name = "GasOracle",
-        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
+        abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json",
     ),
     Contract(
         name = "GasPaymaster",
-        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
+        abi = "contracts/hooks/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
     Contract(
         name = "TestRecipient",
@@ -397,7 +397,7 @@ async fn main() {
 
     // Gas Oracle deployment
     let gas_oracle_id = Contract::load_from(
-        "../contracts/igp/gas-oracle/out/debug/gas-oracle.bin",
+        "../contracts/gas-oracle/out/debug/gas-oracle.bin",
         config.clone(),
     )
     .unwrap()
@@ -412,7 +412,7 @@ async fn main() {
 
     // IGP deployment
     let igp_id = Contract::load_from(
-        "../contracts/igp/gas-paymaster/out/debug/gas-paymaster.bin",
+        "../contracts/hooks/gas-paymaster/out/debug/gas-paymaster.bin",
         config.clone(),
     )
     .unwrap()

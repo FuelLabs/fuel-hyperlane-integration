@@ -49,11 +49,11 @@ abigen!(
     ),
     Contract(
         name = "GasOracle",
-        abi = "contracts/igp/gas-oracle/out/debug/gas-oracle-abi.json",
+        abi = "contracts/gas-oracle/out/debug/gas-oracle-abi.json",
     ),
     Contract(
         name = "GasPaymaster",
-        abi = "contracts/igp/gas-paymaster/out/debug/gas-paymaster-abi.json",
+        abi = "contracts/hooks/gas-paymaster/out/debug/gas-paymaster-abi.json",
     ),
     Contract(
         name = "TestRecipient",
