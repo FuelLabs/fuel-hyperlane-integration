@@ -237,6 +237,41 @@ async fn main() {
 
     let binary_filepath = "../contracts/mailbox/out/debug/mailbox.bin";
     let config = get_deployment_config();
+
+    //Collateral Token
+    let collateral_token_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
+    let collateral_asset_contract_id = Contract::load_from(
+        "../contracts/test/src20-test/out/debug/src20-test.bin",
+        config.clone().with_salt(collateral_token_salt),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    let collateral_token_contract =
+        SRC20Test::new(collateral_asset_contract_id.clone(), fuel_wallet.clone());
+
+    let _ = collateral_token_contract
+        .methods()
+        .mint(
+            Identity::Address(fuel_wallet.address().into()),
+            Some(Bits256::zeroed()),
+            2 * 10_u64.pow(18),
+        )
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+        .call()
+        .await
+        .unwrap();
+
+    println!(
+        "collateralTokenContractId: {}",
+        collateral_token_contract.contract_id().hash()
+    );
+
+    let collateral_asset_id = collateral_asset_contract_id.asset_id(&Bits256::zeroed());
+    println!("collateralAssetId: 0x{}", collateral_asset_id.clone());
+
     let configurables = MailboxConfigurables::default()
         .with_LOCAL_DOMAIN(env.domain)
         .unwrap();
@@ -777,16 +812,12 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
+            test_ism_address,
             None,
             None,
             None,
             None,
-            Some(
-                AssetId::from_str(
-                    "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
-                )
-                .unwrap(),
-            ),
+            None,
             None,
         )
         .call()
@@ -804,6 +835,7 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::SYNTHETIC,
             post_dispatch_mock_address,
+            test_ism_address,
             Some("FuelSepoliaUSDC".to_string()),
             Some("FST".to_string()),
             Some(6),
@@ -826,6 +858,7 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::COLLATERAL,
             post_dispatch_mock_address,
+            test_ism_address,
             None,
             None,
             None,
@@ -840,36 +873,6 @@ async fn main() {
     assert!(
         collateral_init_res.is_ok(),
         "Failed to initialize Warp Route Collateral."
-    );
-
-    let set_ism_res = warp_route_collateral
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Collateral"
-    );
-
-    let set_ism_res = warp_route_synthetic
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Synthetic"
-    );
-
-    let set_ism_res = warp_route_native
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Native"
     );
 
     /////////////////////////////

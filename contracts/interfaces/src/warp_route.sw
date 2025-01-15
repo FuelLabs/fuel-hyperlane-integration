@@ -42,6 +42,7 @@ abi WarpRoute {
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
+    /// * `ism`: [b256] - The address of the ISM contract to use
     /// * `token_name`: [Option<String>] - The name of the token
     /// * `token_symbol`: [Option<String>] - The symbol of the token
     /// * `decimals`: [Option<u8>] - The number of decimals of the token
@@ -54,6 +55,7 @@ abi WarpRoute {
         mailbox_address: b256,
         mode: WarpRouteTokenMode,
         hook: b256,
+        ism: b256,
         //Token Details
         token_name: Option<String>,
         token_symbol: Option<String>,
