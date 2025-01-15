@@ -58,9 +58,9 @@ storage {
     /// The mode of the WarpRoute contract
     token_mode: WarpRouteTokenMode = WarpRouteTokenMode::SYNTHETIC, // Default mode is SYNTHETIC
     /// The address of the mailbox contract to use for message dispatch
-    mailbox: ContractId = ContractId::from(ZERO_B256),
+    mailbox: ContractId = ContractId::zero(),
     /// The address of the default hook contract to use for message dispatch
-    default_hook: ContractId = ContractId::from(ZERO_B256),
+    default_hook: ContractId = ContractId::zero(),
     /// The address of the beneficiary
     beneficiary: Identity = Identity::ContractId(ContractId::zero()),
     /// The address of the default ISM contract to use for message dispatch
@@ -107,6 +107,7 @@ impl WarpRoute for Contract {
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
+    /// * `ism`: [b256] - The address of the ISM contract to use
     /// * `token_name`: [Option<String>] - The name of the token
     /// * `token_symbol`: [Option<String>] - The symbol of the token
     /// * `decimals`: [Option<u8>] - The number of decimals of the token
@@ -124,6 +125,7 @@ impl WarpRoute for Contract {
         mailbox_address: b256,
         mode: WarpRouteTokenMode,
         hook: b256,
+        ism: b256,
         //Token
         token_name: Option<String>,
         token_symbol: Option<String>,
@@ -142,6 +144,7 @@ impl WarpRoute for Contract {
         storage.beneficiary.write(owner_id);
         storage.mailbox.write(ContractId::from(mailbox_address));
         storage.default_hook.write(ContractId::from(hook));
+        storage.default_ism.write(ContractId::from(ism));
         storage.token_mode.write(mode);
 
         let sub_id = SubId::zero();

@@ -777,16 +777,12 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
+            test_ism_address,
             None,
             None,
             None,
             None,
-            Some(
-                AssetId::from_str(
-                    "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
-                )
-                .unwrap(),
-            ),
+            None,
             None,
         )
         .call()
@@ -804,6 +800,7 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::SYNTHETIC,
             post_dispatch_mock_address,
+            test_ism_address,
             Some("FuelSepoliaUSDC".to_string()),
             Some("FST".to_string()),
             Some(6),
@@ -826,6 +823,7 @@ async fn main() {
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::COLLATERAL,
             post_dispatch_mock_address,
+            test_ism_address,
             None,
             None,
             None,
@@ -840,36 +838,6 @@ async fn main() {
     assert!(
         collateral_init_res.is_ok(),
         "Failed to initialize Warp Route Collateral."
-    );
-
-    let set_ism_res = warp_route_collateral
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Collateral"
-    );
-
-    let set_ism_res = warp_route_synthetic
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Synthetic"
-    );
-
-    let set_ism_res = warp_route_native
-        .methods()
-        .set_ism(test_ism_id.clone())
-        .call()
-        .await;
-    assert!(
-        set_ism_res.is_ok(),
-        "Failed to set ISM in Warp Route Native"
     );
 
     /////////////////////////////

@@ -305,6 +305,7 @@ mod warp_route {
             mailbox_address,
             config.token_mode.clone(),
             hook_address,
+            default_ism_address,
             Some(config.token_name.clone().unwrap()),
             Some(config.token_symbol.clone().unwrap()),
             Some(config.decimals.unwrap()),
