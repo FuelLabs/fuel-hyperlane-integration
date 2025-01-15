@@ -237,41 +237,6 @@ async fn main() {
 
     let binary_filepath = "../contracts/mailbox/out/debug/mailbox.bin";
     let config = get_deployment_config();
-
-    //Collateral Token
-    let collateral_token_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
-    let collateral_asset_contract_id = Contract::load_from(
-        "../contracts/test/src20-test/out/debug/src20-test.bin",
-        config.clone().with_salt(collateral_token_salt),
-    )
-    .unwrap()
-    .deploy(&fuel_wallet, TxPolicies::default())
-    .await
-    .unwrap();
-
-    let collateral_token_contract =
-        SRC20Test::new(collateral_asset_contract_id.clone(), fuel_wallet.clone());
-
-    let _ = collateral_token_contract
-        .methods()
-        .mint(
-            Identity::Address(fuel_wallet.address().into()),
-            Some(Bits256::zeroed()),
-            2 * 10_u64.pow(18),
-        )
-        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        .call()
-        .await
-        .unwrap();
-
-    println!(
-        "collateralTokenContractId: {}",
-        collateral_token_contract.contract_id().hash()
-    );
-
-    let collateral_asset_id = collateral_asset_contract_id.asset_id(&Bits256::zeroed());
-    println!("collateralAssetId: 0x{}", collateral_asset_id.clone());
-
     let configurables = MailboxConfigurables::default()
         .with_LOCAL_DOMAIN(env.domain)
         .unwrap();
