@@ -62,4 +62,12 @@ abi DefaultFallbackDomainRoutingIsm {
     /// * [b256] - The ISM to be used for the specified domain.
     #[storage(read)]
     fn module(domain: u32) -> b256;
+
+    /// Returns the fallback mailbox for the ISM
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The address of the mailbox.
+    #[storage(read)]
+    fn mailbox() -> b256;
 }
