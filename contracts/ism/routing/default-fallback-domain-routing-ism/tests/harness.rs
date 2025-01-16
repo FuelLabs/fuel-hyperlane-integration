@@ -143,6 +143,16 @@ async fn initialize_with_mailbox() {
         .unwrap()
         .value;
 
+    let mailbox = fallback_routing_ism
+        .methods()
+        .mailbox()
+        .simulate(Execution::StateReadOnly)
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(mailbox_address, mailbox);
+
     assert_eq!(
         owner_res,
         State::Initialized(Identity::Address(Address::from(wallet_address.0)))

@@ -201,6 +201,17 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     fn module(domain: u32) -> b256 {
         storage.domain_modules.get(domain).try_read().unwrap_or(b256::zero())
     }
+
+    /// Returns the fallback mailbox for the ISM
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The address of the mailbox.
+    #[storage(read)]
+    fn mailbox() -> b256 {
+        storage.mailbox.read()
+    }
+
 }
 
 // --- Ownable implementation ---
