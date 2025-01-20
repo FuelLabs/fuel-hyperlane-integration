@@ -19,8 +19,12 @@ abi Claimable {
     fn set_beneficiary(beneficiary: Identity);
 
     /// Claims the contract's balance and sends it to the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `asset`: Option<[AssetId]> - The asset to claim. If None, the base asset is used.
     #[storage(read)]
-    fn claim(asset: AssetId);
+    fn claim(asset: Option<AssetId>);
 }
 
 //  ----------------- Events -----------------

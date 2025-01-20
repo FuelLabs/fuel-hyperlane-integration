@@ -597,7 +597,7 @@ impl Contracts {
             .fuel
             .igp
             .methods()
-            .claim(get_native_asset())
+            .claim(None)
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
             .call()
             .await;

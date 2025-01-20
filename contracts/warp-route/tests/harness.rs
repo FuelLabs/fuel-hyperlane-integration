@@ -874,7 +874,7 @@ mod warp_route {
             // Claim the balance as the owner
             warp_route
                 .methods()
-                .claim(config.asset_id.unwrap())
+                .claim(Some(config.asset_id.unwrap()))
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await
@@ -1589,7 +1589,7 @@ mod warp_route {
             // Claim the balance
             warp_route
                 .methods()
-                .claim(config.asset_id.unwrap())
+                .claim(Some(config.asset_id.unwrap()))
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .call()
                 .await

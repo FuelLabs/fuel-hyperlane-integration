@@ -12,9 +12,6 @@ abi IGP {
     ///
     /// * `owner`: [b256] - The address of the owner of the contract.
     /// * `beneficiary`: [b256] - The address of the beneficiary to receive gas payments.
-    /// * `token_exchange_rate`: [u64] - The exchange rate of the token.
-    /// * `base_asset_decimal`: [u8] - The number of decimals for the base asset.
-    /// * `default_gas_amount`: [u64] - The default gas amount for the current domain.
     ///
     /// ### Reverts
     ///
@@ -23,10 +20,9 @@ abi IGP {
     fn initialize(
         owner: b256,
         beneficiary: b256,
-        token_exchange_rate: u64,
-        default_gas_amount: u64,
     );
-    /// Qupote payment total payment for a given gas amount.
+
+    /// Quotes the total payment for a given gas amount.
     ///
     /// ### Arguments
     ///
@@ -85,6 +81,15 @@ abi IGP {
     #[storage(read)]
     fn get_current_domain_gas() -> u64;
 
+
+    /// Sets the default gas amount for the current domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `gas_amount`: [u64] - The gas amount to set.
+    #[storage(read, write)]
+    fn set_current_domain_gas(gas_amount: u64);
+
     /// Gets the gas config for a domain.
     ///
     /// ### Arguments
@@ -96,6 +101,15 @@ abi IGP {
     /// * [DomainGasConfig] - The gas config for the domain (gas overhead and oracle address).
     #[storage(read)]
     fn get_domain_gas_config(domain: u32) -> DomainGasConfig;
+
+    /// Sets the gas configs for a destination domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to set the gas config for.
+    /// * `config`: [DomainGasConfig] - The gas config to set.
+    #[storage(read, write)]
+    fn set_destination_gas_config(domain: u32, config: DomainGasConfig);
 }
 
 /// Functions required for calculation of overheads
@@ -110,6 +124,7 @@ abi IGPWithOverhead {
 
 /// Gas data for a remote domain.
 pub struct RemoteGasData {
+    pub domain: u32,
     pub token_exchange_rate: U128,
     pub gas_price: U128,
     pub token_decimals: u8,
@@ -130,6 +145,7 @@ pub struct DomainGasConfig {
 impl RemoteGasData {
     pub fn default() -> Self {
         Self {
+            domain: 0,
             token_exchange_rate: U128::new(),
             gas_price: U128::new(),
             token_decimals: DEFAULT_TOKEN_DECIMALS,
@@ -196,4 +212,11 @@ pub struct GasPaymentEvent {
     pub destination_domain: u32,
     pub gas_amount: u64,
     pub payment: u64,
+}
+
+/// Logged when a destination gas config is set.
+pub struct DestinationGasConfigSetEvent {
+    pub domain: u32,
+    pub oracle: b256,
+    pub overhead: u64,
 }

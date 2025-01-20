@@ -13,7 +13,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_msg_body, get_remote_domain, get_remote_test_recipient,
+        create_mock_metadata, get_msg_body, get_remote_domain, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
         token::{get_balance, get_contract_balance, get_local_fuel_base_asset},
     },
@@ -68,17 +68,19 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
         .await
         .unwrap();
 
+    let metadata = create_mock_metadata(&wallet);
+
     let send_message_response = fuel_mailbox_instance
         .methods()
         .dispatch(
             remote_domain,
             remote_recipient,
             Bytes(msg_body.clone()),
-            Bytes(vec![]),
+            metadata,
             fuel_igp_instance.contract_id(),
         )
         .call_params(CallParameters::new(
-            quote.value + 100, // Overpayment
+            quote.value + 1000, // Overpayment
             base_asset,
             10_000_000,
         ))
@@ -138,7 +140,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
 
     let _ = fuel_igp_instance
         .methods()
-        .claim(base_asset)
+        .claim(None)
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .call()
         .await

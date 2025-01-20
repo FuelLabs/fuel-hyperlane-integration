@@ -12,7 +12,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_msg_body, get_remote_domain, get_remote_test_recipient,
+        create_mock_metadata, get_msg_body, get_remote_domain, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
         token::{get_balance, get_contract_balance, get_local_fuel_base_asset},
     },
@@ -39,6 +39,8 @@ async fn send_message_with_gas() -> Result<f64, String> {
     let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), base_asset)
         .await
         .unwrap();
+
+    let metadata = create_mock_metadata(&wallet);
 
     let quote = fuel_igp_instance
         .methods()
@@ -72,7 +74,7 @@ async fn send_message_with_gas() -> Result<f64, String> {
             remote_domain,
             remote_recipient,
             Bytes(msg_body.clone()),
-            Bytes(msg_body.clone()),
+            metadata,
             fuel_igp_instance.contract_id(),
         )
         .call_params(CallParameters::new(10_000_000, base_asset, 10_000_000))

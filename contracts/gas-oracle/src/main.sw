@@ -2,7 +2,7 @@ contract;
 
 use sway_libs::ownership::*;
 use standards::src5::State;
-use interfaces::{igp::*, ownable::Ownable, post_dispatch_hook::*,};
+use interfaces::{igp::*, ownable::Ownable};
 use std::hash::*;
 
 storage {

@@ -157,6 +157,8 @@ impl WarpRoute for Contract {
 
                 let decimals = decimals.unwrap_or(DEFAULT_DECIMALS);
                 _set_decimals(storage.decimals, asset, decimals);
+                _set_name(storage.name, asset, String::from_ascii_str("Ethereum"));
+                _set_symbol(storage.symbol, asset, String::from_ascii_str("ETH"));
             }
             WarpRouteTokenMode::SYNTHETIC => {
                 // Derive asset_id based on contract_id and sub_id for synthetic mode
@@ -279,7 +281,7 @@ impl WarpRoute for Contract {
             destination_domain,
             remote_domain_router,
             message_body,
-            Bytes::new(),
+            Bytes::new(), // no metadata
             hook_contract,
         );
 
@@ -637,8 +639,9 @@ impl Claimable for Contract {
     }
 
     #[storage(read)]
-    fn claim(asset: AssetId) {
+    fn claim(asset: Option<AssetId>) {
         let beneficiary = storage.beneficiary.read();
+        let asset = asset.unwrap_or(storage.asset_id.read());
         let balance = this_balance(asset);
 
         transfer(beneficiary, asset, balance);

@@ -28,6 +28,7 @@ const TEST_DESTINATION_DOMAIN: u32 = 11111;
 const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 const BASE_ASSET_DECIMALS: u8 = 9;
 const TEST_GAS_AMOUNT: u64 = 300000;
+const MIN_METADATA_LENGTH: u64 = 98;
 
 fn get_base_asset() -> AssetId {
     AssetId::BASE
@@ -47,6 +48,27 @@ fn create_mock_message() -> HyperlaneMessage {
         recipient: hyperlane_core::H256([0u8; 32]),
         body: vec![1, 2, 3, 4],
     }
+}
+
+// variant:        [0:2]     // Set to 1
+// msg_value:      [2:34]    // Left as 0
+// gas_limit:      [34:66]   // Left as 0
+// refund_address: [66:98]   // Set to wallet address
+fn create_mock_metadata(wallet: &WalletUnlocked) -> Bytes {
+    let mut metadata = vec![0u8; MIN_METADATA_LENGTH as usize];
+
+    metadata[0] = 0;
+    metadata[1] = 1;
+
+    let mut gas_limit_bytes = [0u8; 32];
+
+    gas_limit_bytes[24..32].copy_from_slice(&TEST_GAS_AMOUNT.to_be_bytes());
+    metadata[34..66].copy_from_slice(&gas_limit_bytes);
+
+    let wallet_bytes: [u8; 32] = wallet.address().hash().into();
+    metadata[66..98].copy_from_slice(&wallet_bytes);
+
+    Bytes(metadata)
 }
 
 async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<WalletUnlocked>) {
@@ -95,8 +117,6 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
         .initialize(
             Bits256(Address::from(wallet.address()).into()),
             Bits256(Address::from(wallet.address()).into()),
-            TOKEN_EXCHANGE_RATE_SCALE as u64,
-            TEST_GAS_AMOUNT,
         )
         .call()
         .await
@@ -164,7 +184,7 @@ async fn test_claim() {
     // Claim the tokens
     let call = igp
         .methods()
-        .claim(get_base_asset())
+        .claim(Some(get_base_asset()))
         .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
         .call()
         .await
@@ -249,6 +269,7 @@ async fn test_pay_for_gas() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE, // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                         // 1 wei gas price
                 token_decimals: BASE_ASSET_DECIMALS,            // same decimals as local
@@ -338,6 +359,7 @@ async fn test_pay_for_gas_reverts_if_insufficient_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE, // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                         // 1 wei gas price
                 token_decimals: BASE_ASSET_DECIMALS,            // same decimals as local
@@ -394,6 +416,7 @@ async fn test_pay_for_gas_reverts_if_not_base_asset() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE, // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                         // 1 wei gas price
                 token_decimals: BASE_ASSET_DECIMALS,            // same decimals as local
@@ -456,6 +479,7 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // 0.2 exchange rate (remote token less valuable)
                 token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5),
                 gas_price: 150u64.into(),            // 150 gas price
@@ -489,6 +513,7 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // remote token 5000x more valuable
                 token_exchange_rate: (5000 * TOKEN_EXCHANGE_RATE_SCALE),
                 gas_price: 1500000000000u64.into(), // 150 gwei gas price
@@ -522,6 +547,7 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // remote token 0.04x the price
                 token_exchange_rate: (4 * TOKEN_EXCHANGE_RATE_SCALE / 100),
                 gas_price: 100000000u64.into(), // 0.1 gwei gas price
@@ -555,6 +581,7 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // remote token 10x the price
                 token_exchange_rate: (10 * TOKEN_EXCHANGE_RATE_SCALE),
                 gas_price: 10u64.into(), // 10 gas price
@@ -719,6 +746,7 @@ async fn test_get_remote_gas_data() {
     let remote_gas_data_config = RemoteGasDataConfig {
         domain: TEST_DESTINATION_DOMAIN,
         remote_gas_data: RemoteGasData {
+            domain: TEST_DESTINATION_DOMAIN,
             token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE, // 1.0 exchange rate (remote token has exact same value as local)
             gas_price: 1u64.into(),                         // 1 wei gas price
             token_decimals: BASE_ASSET_DECIMALS,            // same decimals as local
@@ -730,6 +758,7 @@ async fn test_get_remote_gas_data() {
         .unwrap();
 
     let RemoteGasData {
+        domain: _,
         token_exchange_rate,
         gas_price,
         token_decimals,
@@ -804,6 +833,7 @@ async fn test_quote_dispatch() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // 0.2 exchange rate (remote token less valuable)
                 token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5),
                 gas_price: 150u64.into(),            // 150 gas price
@@ -814,9 +844,11 @@ async fn test_quote_dispatch() {
     .await
     .unwrap();
 
+    let metadata = create_mock_metadata(&igp.account());
+
     let quote = igp
         .methods()
-        .quote_dispatch(Bytes(vec![0]), Bytes(message_bytes))
+        .quote_dispatch(metadata, Bytes(message_bytes))
         .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
         .simulate(Execution::StateReadOnly)
         .await
@@ -842,6 +874,7 @@ async fn test_post_dispatch() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
                 // 0.2 exchange rate (remote token less valuable)
                 token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5),
                 gas_price: 150u64.into(),            // 150 gas price
@@ -852,9 +885,11 @@ async fn test_post_dispatch() {
     .await
     .unwrap();
 
+    let metadata = create_mock_metadata(&igp.account());
+
     let quote = igp
         .methods()
-        .quote_dispatch(Bytes(vec![0]), Bytes(message_bytes.clone()))
+        .quote_dispatch(metadata.clone(), Bytes(message_bytes.clone()))
         .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
         .simulate(Execution::StateReadOnly)
         .await
@@ -864,7 +899,7 @@ async fn test_post_dispatch() {
     let call_params = CallParameters::new(quote, get_base_asset(), 1_000_000);
 
     igp.methods()
-        .post_dispatch(Bytes(vec![0]), Bytes(message_bytes.clone()))
+        .post_dispatch(metadata, Bytes(message_bytes.clone()))
         .call_params(call_params)
         .unwrap()
         .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
@@ -879,4 +914,151 @@ async fn test_post_dispatch() {
         wallet_address_balance_before - wallet_address_balance_after,
         quote + 2 // 1 gas for quote + 1 gas for post dispatch
     );
+}
+
+#[tokio::test]
+async fn test_supports_metadata_validation() {
+    let (igp, _) = get_contract_instances().await;
+
+    // Metadata too short
+    let short_metadata = Bytes(vec![1; MIN_METADATA_LENGTH as usize - 1]);
+    let supports = igp
+        .methods()
+        .supports_metadata(short_metadata)
+        .call()
+        .await
+        .unwrap()
+        .value;
+    assert!(!supports, "Should reject metadata that's too short");
+
+    // Wrong variant
+    let mut wrong_variant_metadata = vec![0; MIN_METADATA_LENGTH as usize];
+    wrong_variant_metadata[0] = 2; // Set variant to 2 instead of 1
+    let supports = igp
+        .methods()
+        .supports_metadata(Bytes(wrong_variant_metadata))
+        .call()
+        .await
+        .unwrap()
+        .value;
+    assert!(!supports, "Should reject metadata with wrong variant");
+}
+
+#[tokio::test]
+async fn test_post_dispatch_with_invalid_metadata() {
+    let (igp, oracle) = get_contract_instances().await;
+    let mock_message = create_mock_message();
+    let message_bytes = hyperlane_core::Encode::to_vec(&mock_message);
+
+    set_remote_gas_data(
+        &oracle,
+        RemoteGasDataConfig {
+            domain: TEST_DESTINATION_DOMAIN,
+            remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
+                token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5),
+                gas_price: 150u64.into(),
+                token_decimals: BASE_ASSET_DECIMALS,
+            },
+        },
+    )
+    .await
+    .unwrap();
+
+    // Test with invalid metadata
+    let mut invalid_metadata = vec![0; MIN_METADATA_LENGTH as usize];
+    invalid_metadata[0] = 2; // Wrong variant
+
+    let quote = igp
+        .methods()
+        .quote_dispatch(
+            Bytes(invalid_metadata.clone()),
+            Bytes(message_bytes.clone()),
+        )
+        .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
+        .simulate(Execution::StateReadOnly)
+        .await;
+
+    assert!(quote.is_err(), "Quote should fail with invalid metadata");
+
+    let call_params = CallParameters::new(1000000, get_base_asset(), 1_000_000);
+    let result = igp
+        .methods()
+        .post_dispatch(Bytes(invalid_metadata), Bytes(message_bytes))
+        .call_params(call_params)
+        .unwrap()
+        .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
+        .call()
+        .await;
+
+    assert!(
+        result.is_err(),
+        "Post dispatch should fail with invalid metadata"
+    );
+    assert_eq!(
+        get_revert_reason(result.err().unwrap()),
+        "UnsupportedMetadataFormat"
+    );
+}
+
+#[tokio::test]
+async fn test_post_dispatch_with_empty_metadata() {
+    let (igp, oracle) = get_contract_instances().await;
+    let mock_message = create_mock_message();
+    let message_bytes = hyperlane_core::Encode::to_vec(&mock_message);
+
+    set_remote_gas_data(
+        &oracle,
+        RemoteGasDataConfig {
+            domain: TEST_DESTINATION_DOMAIN,
+            remote_gas_data: RemoteGasData {
+                domain: TEST_DESTINATION_DOMAIN,
+                token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5),
+                gas_price: 150u64.into(),
+                token_decimals: BASE_ASSET_DECIMALS,
+            },
+        },
+    )
+    .await
+    .unwrap();
+
+    let wallet = igp.account();
+    let provider = wallet.provider().unwrap();
+    let wallet_address_balance_before = get_balance(provider, wallet.address()).await.unwrap();
+
+    let quote = igp
+        .methods()
+        .quote_dispatch(Bytes(vec![]), Bytes(message_bytes.clone()))
+        .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
+        .simulate(Execution::StateReadOnly)
+        .await
+        .unwrap()
+        .value;
+
+    let overpayment_amount = 10000;
+    let total_payment = quote + overpayment_amount;
+
+    let call_params = CallParameters::new(total_payment, get_base_asset(), 1_000_000);
+
+    igp.methods()
+        .post_dispatch(Bytes(vec![]), Bytes(message_bytes))
+        .call_params(call_params)
+        .unwrap()
+        .with_contract_ids(&[igp.contract_id().clone(), oracle.contract_id().clone()])
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
+        .call()
+        .await
+        .unwrap();
+
+    let wallet_address_balance_after = get_balance(provider, wallet.address()).await.unwrap();
+    let total_spent = wallet_address_balance_before - wallet_address_balance_after;
+
+    assert_eq!(
+        total_spent,
+        quote + 1 // 1 gas for post dispatch
+    );
+
+    // Verify the overpayment was refunded
+    assert!(total_spent < total_payment);
+    assert_eq!(total_payment - total_spent, overpayment_amount - 1);
 }
