@@ -51,6 +51,7 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
         RemoteGasDataConfig {
             domain: 11111,
             remote_gas_data: RemoteGasData {
+                domain: 11111,
                 token_exchange_rate: 22222_u64.into(),
                 gas_price: 33333_u64.into(),
                 token_decimals: 18u8,
@@ -59,6 +60,7 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
         RemoteGasDataConfig {
             domain: 44444,
             remote_gas_data: RemoteGasData {
+                domain: 44444,
                 token_exchange_rate: 55555_u64.into(),
                 gas_price: 66666_u64.into(),
                 token_decimals: 9u8,
@@ -99,6 +101,7 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
     let (oracle, _) = get_contract_instance().await;
 
     let RemoteGasData {
+        domain: _,
         token_exchange_rate,
         gas_price,
         token_decimals,

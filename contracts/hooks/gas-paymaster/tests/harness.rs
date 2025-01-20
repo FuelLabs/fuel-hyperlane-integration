@@ -43,7 +43,7 @@ fn create_mock_message() -> HyperlaneMessage {
         version: 1,
         nonce: 1,
         origin: 1,
-        sender: hyperlane_core::H256([0u8; 32]),
+        sender: hyperlane_core::H256::from_str(TEST_REFUND_ADDRESS).unwrap(),
         destination: TEST_DESTINATION_DOMAIN,
         recipient: hyperlane_core::H256([0u8; 32]),
         body: vec![1, 2, 3, 4],
@@ -241,6 +241,7 @@ async fn get_contract_balance(
         .await
 }
 
+// ============ Initial Beneficiary ============
 #[tokio::test]
 async fn test_initial_beneficiary() {
     let (igp, _) = get_contract_instances().await;
@@ -259,7 +260,6 @@ async fn test_initial_beneficiary() {
 }
 
 // ============ pay_for_gas ============
-
 #[tokio::test]
 async fn test_pay_for_gas() {
     let (igp, oracle) = get_contract_instances().await;
@@ -350,6 +350,7 @@ async fn test_pay_for_gas() {
     );
 }
 
+// ============ Pay For Gas Reverts If Insufficient Payment ============
 #[tokio::test]
 async fn test_pay_for_gas_reverts_if_insufficient_payment() {
     let (igp, oracle) = get_contract_instances().await;
@@ -407,6 +408,7 @@ async fn test_pay_for_gas_reverts_if_insufficient_payment() {
     );
 }
 
+// ============ Pay For Gas Reverts If Not Base Asset ============
 #[tokio::test]
 async fn test_pay_for_gas_reverts_if_not_base_asset() {
     let (igp, oracle) = get_contract_instances().await;
@@ -782,6 +784,8 @@ async fn test_get_remote_gas_data() {
     );
 }
 
+// ============ get_remote_gas_data_reverts_if_no_gas_oracle_set ============
+
 #[tokio::test]
 async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {
     let (igp, _) = get_contract_instances().await;
@@ -797,7 +801,7 @@ async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {
     assert_eq!(res, None);
 }
 
-// ============ Post Dispatch Hook ============
+// ============ Post Dispatch Hook - Module Type ============
 
 #[tokio::test]
 async fn test_module_type() {
@@ -806,6 +810,9 @@ async fn test_module_type() {
     let hook_type = igp.methods().hook_type().call().await.unwrap().value;
     assert_eq!(hook_type, PostDispatchHookType::INTERCHAIN_GAS_PAYMASTER);
 }
+
+// ============ Supports Metadata ============
+
 #[tokio::test]
 async fn test_supports_metadata() {
     let (igp, _) = get_contract_instances().await;
@@ -821,6 +828,7 @@ async fn test_supports_metadata() {
     assert!(!supports);
 }
 
+// ============ Quote Dispatch ============
 #[tokio::test]
 async fn test_quote_dispatch() {
     let (igp, oracle) = get_contract_instances().await;
@@ -858,6 +866,7 @@ async fn test_quote_dispatch() {
     assert_eq!(quote, 9000000u64);
 }
 
+// ============ Post Dispatch ============
 #[tokio::test]
 async fn test_post_dispatch() {
     let (igp, oracle) = get_contract_instances().await;
@@ -916,6 +925,7 @@ async fn test_post_dispatch() {
     );
 }
 
+// ============ Post Dispatch With Metadata Validation ============
 #[tokio::test]
 async fn test_supports_metadata_validation() {
     let (igp, _) = get_contract_instances().await;
@@ -944,6 +954,7 @@ async fn test_supports_metadata_validation() {
     assert!(!supports, "Should reject metadata with wrong variant");
 }
 
+// ============ Post Dispatch With Invalid Metadata ============
 #[tokio::test]
 async fn test_post_dispatch_with_invalid_metadata() {
     let (igp, oracle) = get_contract_instances().await;
@@ -1001,6 +1012,7 @@ async fn test_post_dispatch_with_invalid_metadata() {
     );
 }
 
+// ============ Post Dispatch With Empty Metadata ============
 #[tokio::test]
 async fn test_post_dispatch_with_empty_metadata() {
     let (igp, oracle) = get_contract_instances().await;
@@ -1025,6 +1037,11 @@ async fn test_post_dispatch_with_empty_metadata() {
     let wallet = igp.account();
     let provider = wallet.provider().unwrap();
     let wallet_address_balance_before = get_balance(provider, wallet.address()).await.unwrap();
+
+    let refund_identity = Address::from_str(TEST_REFUND_ADDRESS).unwrap();
+    let refunded_address_balance_before = get_balance(provider, &refund_identity.into())
+        .await
+        .unwrap();
 
     let quote = igp
         .methods()
@@ -1053,12 +1070,157 @@ async fn test_post_dispatch_with_empty_metadata() {
     let wallet_address_balance_after = get_balance(provider, wallet.address()).await.unwrap();
     let total_spent = wallet_address_balance_before - wallet_address_balance_after;
 
+    let refunded_address_balance_after = get_balance(provider, &refund_identity.into())
+        .await
+        .unwrap();
+
     assert_eq!(
         total_spent,
-        quote + 1 // 1 gas for post dispatch
+        total_payment + 1 // 1 gas for post dispatch
     );
 
-    // Verify the overpayment was refunded
-    assert!(total_spent < total_payment);
-    assert_eq!(total_payment - total_spent, overpayment_amount - 1);
+    assert_eq!(
+        refunded_address_balance_after - refunded_address_balance_before,
+        total_payment - quote
+    );
+}
+
+// ============ Get Domain Gas Config ============
+#[tokio::test]
+async fn test_get_domain_gas_config() {
+    let (igp, oracle) = get_contract_instances().await;
+
+    let oracle_address = Bits256(oracle.contract_id().hash().into());
+    let test_overhead = 50000u64;
+
+    let domains = vec![TEST_DESTINATION_DOMAIN];
+    let configs = vec![DomainGasConfig {
+        gas_overhead: test_overhead,
+        gas_oracle: oracle_address,
+    }];
+
+    igp.methods()
+        .set_destination_gas_config(domains, configs)
+        .call()
+        .await
+        .unwrap();
+
+    let updated_config = igp
+        .methods()
+        .get_domain_gas_config(TEST_DESTINATION_DOMAIN)
+        .call()
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(updated_config.gas_overhead, test_overhead);
+    assert_eq!(updated_config.gas_oracle, oracle_address);
+}
+
+// ============ Set Destination Gas Config ============
+#[tokio::test]
+async fn test_set_destination_gas_config() {
+    let (igp, oracle) = get_contract_instances().await;
+    let oracle_address = Bits256(oracle.contract_id().hash().into());
+
+    let domains = vec![TEST_DESTINATION_DOMAIN, TEST_DESTINATION_DOMAIN + 1];
+    let configs = vec![
+        DomainGasConfig {
+            gas_overhead: 50000u64,
+            gas_oracle: oracle_address,
+        },
+        DomainGasConfig {
+            gas_overhead: 75000u64,
+            gas_oracle: oracle_address,
+        },
+    ];
+
+    let call = igp
+        .methods()
+        .set_destination_gas_config(domains.clone(), configs.clone())
+        .call()
+        .await
+        .unwrap();
+
+    let events = call
+        .decode_logs_with_type::<DestinationGasConfigSetEvent>()
+        .unwrap();
+    assert_eq!(events.len(), 2);
+
+    assert_eq!(events[0].domain, domains[0]);
+    assert_eq!(events[0].oracle, configs[0].gas_oracle);
+    assert_eq!(events[0].overhead, configs[0].gas_overhead);
+
+    assert_eq!(events[1].domain, domains[1]);
+    assert_eq!(events[1].oracle, configs[1].gas_oracle);
+    assert_eq!(events[1].overhead, configs[1].gas_overhead);
+
+    for i in 0..domains.len() {
+        let config = igp
+            .methods()
+            .get_domain_gas_config(domains[i])
+            .call()
+            .await
+            .unwrap()
+            .value;
+
+        assert_eq!(config.gas_overhead, configs[i].gas_overhead);
+        assert_eq!(config.gas_oracle, configs[i].gas_oracle);
+    }
+}
+
+// ============ Set Destination Gas Config Reverts If Not Owner ============
+#[tokio::test]
+async fn test_set_destination_gas_config_reverts_if_not_owner() {
+    let (igp, oracle) = get_contract_instances().await;
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&igp.account(), NON_OWNER_PRIVATE_KEY).await;
+    let oracle_address = Bits256(oracle.contract_id().hash().into());
+
+    let domains = vec![TEST_DESTINATION_DOMAIN];
+    let configs = vec![DomainGasConfig {
+        gas_overhead: 50000u64,
+        gas_oracle: oracle_address,
+    }];
+
+    let call = igp
+        .with_account(non_owner_wallet)
+        .methods()
+        .set_destination_gas_config(domains, configs)
+        .call()
+        .await;
+
+    assert!(call.is_err());
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
+}
+
+// ============ Set Destination Gas Config Reverts If Lengths Mismatch ============
+#[tokio::test]
+async fn test_set_destination_gas_config_reverts_if_lengths_mismatch() {
+    let (igp, oracle) = get_contract_instances().await;
+    let oracle_address = Bits256(oracle.contract_id().hash().into());
+
+    let domains = vec![TEST_DESTINATION_DOMAIN];
+    let configs = vec![
+        DomainGasConfig {
+            gas_overhead: 50000u64,
+            gas_oracle: oracle_address,
+        },
+        DomainGasConfig {
+            gas_overhead: 75000u64,
+            gas_oracle: oracle_address,
+        },
+    ];
+
+    let call = igp
+        .methods()
+        .set_destination_gas_config(domains, configs)
+        .call()
+        .await;
+
+    assert!(call.is_err());
+    assert_eq!(
+        get_revert_reason(call.err().unwrap()),
+        "InvalidDomainConfigLength"
+    );
 }

@@ -17,10 +17,7 @@ abi IGP {
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(
-        owner: b256,
-        beneficiary: b256,
-    );
+    fn initialize(owner: b256, beneficiary: b256);
 
     /// Quotes the total payment for a given gas amount.
     ///
@@ -78,17 +75,7 @@ abi IGP {
     /// ### Returns
     ///
     /// * [u64] - The gas amount for the current domain.
-    #[storage(read)]
     fn get_current_domain_gas() -> u64;
-
-
-    /// Sets the default gas amount for the current domain.
-    ///
-    /// ### Arguments
-    ///
-    /// * `gas_amount`: [u64] - The gas amount to set.
-    #[storage(read, write)]
-    fn set_current_domain_gas(gas_amount: u64);
 
     /// Gets the gas config for a domain.
     ///
@@ -106,10 +93,10 @@ abi IGP {
     ///
     /// ### Arguments
     ///
-    /// * `domain`: [u32] - The domain to set the gas config for.
-    /// * `config`: [DomainGasConfig] - The gas config to set.
+    /// * `domain`: [Vec<u32>] - The domains to set the gas config for.
+    /// * `config`: [Vec<DomainGasConfig>] - The gas config to set.
     #[storage(read, write)]
-    fn set_destination_gas_config(domain: u32, config: DomainGasConfig);
+    fn set_destination_gas_config(domain: Vec<u32>, config: Vec<DomainGasConfig>);
 }
 
 /// Functions required for calculation of overheads
