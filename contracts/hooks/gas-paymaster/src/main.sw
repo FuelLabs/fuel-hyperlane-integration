@@ -5,6 +5,7 @@ use standards::src5::State;
 
 use interfaces::{claimable::*, igp::*, ownable::Ownable, post_dispatch_hook::*,};
 use message::{EncodedMessage, Message};
+use std_hook_metadata::*;
 
 use std::{
     asset::transfer,
@@ -26,14 +27,16 @@ use std::{
 /// Errors that can occur during IGP operations.
 enum IgpError {
     InsufficientGasPayment: (),
-    InvalidGasOracle: (),
-    QuoteGasPaymentOverflow: (),
     InterchainGasPaymentInBaseAsset: (),
     ContractAlreadyInitialized: (),
+    UnsupportedMetadataFormat: (),
+    InvalidDomainConfigLength: (),
 }
 
 configurable {
     BASE_ASSET_DECIMALS: u8 = 9,
+    TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000,
+    DEFAULT_GAS_AMOUNT: u64 = 500,
 }
 
 storage {
@@ -43,10 +46,6 @@ storage {
     gas_oracles: StorageMap<u32, b256> = StorageMap {},
     /// The intended use is for applications to not need to worry about ISM gas costs themselves.
     gas_overheads: StorageMap<u32, u64> = StorageMap {},
-    /// The scale of a token exchange rate. 1e19.
-    token_exchange_rate_scale: u64 = 10_000_000_000_000_000_000,
-    /// The local default gas amount
-    default_gas_amount: u64 = 5_000,
 }
 
 impl IGP for Contract {
@@ -56,19 +55,12 @@ impl IGP for Contract {
     ///
     /// * `owner`: [b256] - The owner of the contract.
     /// * `beneficiary`: [b256] - The beneficiary of the contract.
-    /// * `token_exchange_rate`: [u64] - The token exchange rate.
-    /// * `default_gas_amount`: [u64] - The default gas amount.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(
-        owner: b256,
-        beneficiary: b256,
-        token_exchange_rate: u64,
-        default_gas_amount: u64,
-    ) {
+    fn initialize(owner: b256, beneficiary: b256) {
         require(
             _owner() == State::Uninitialized,
             IgpError::ContractAlreadyInitialized,
@@ -78,9 +70,6 @@ impl IGP for Contract {
         storage
             .beneficiary
             .write(Identity::Address(Address::from(beneficiary)));
-
-        storage.token_exchange_rate_scale.write(token_exchange_rate);
-        storage.default_gas_amount.write(default_gas_amount);
     }
 
     /// Quotes the required interchain gas payment to be paid in the base asset.
@@ -111,6 +100,7 @@ impl IGP for Contract {
     ///
     /// * If asset sent is not the base asset.
     /// * If the payment is less than the required amount.
+    /// * If the metadata is invalid.
     #[payable]
     #[storage(read)]
     fn pay_for_gas(
@@ -182,9 +172,8 @@ impl IGP for Contract {
     /// ### Returns
     ///
     /// * [u64] - The gas amount for the current domain.
-    #[storage(read)]
     fn get_current_domain_gas() -> u64 {
-        storage.default_gas_amount.read()
+        DEFAULT_GAS_AMOUNT
     }
 
     /// Gets the gas config for a domain.
@@ -201,6 +190,44 @@ impl IGP for Contract {
         DomainGasConfig {
             gas_overhead: storage.gas_overheads.get(domain).try_read().unwrap_or(0),
             gas_oracle: storage.gas_oracles.get(domain).try_read().unwrap_or(b256::zero()),
+        }
+    }
+
+    /// Sets the gas configs for a destination domain.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [Vec<u32>] - The domains to set the gas config for.
+    /// * `config`: [Vec<DomainGasConfig>] - The gas config to set.
+    #[storage(read, write)]
+    fn set_destination_gas_config(domain: Vec<u32>, config: Vec<DomainGasConfig>) {
+        only_owner();
+        require(
+            domain
+                .len() == config
+                .len(),
+            IgpError::InvalidDomainConfigLength,
+        );
+
+        let mut i = 0;
+        while i < domain.len() {
+            let current_domain = domain.get(i).unwrap();
+            let current_config = config.get(i).unwrap();
+
+            storage
+                .gas_overheads
+                .insert(current_domain, current_config.gas_overhead);
+            storage
+                .gas_oracles
+                .insert(current_domain, current_config.gas_oracle);
+
+            log(DestinationGasConfigSetEvent {
+                domain: current_domain,
+                oracle: current_config.gas_oracle,
+                overhead: current_config.gas_overhead,
+            });
+
+            i += 1;
         }
     }
 }
@@ -236,11 +263,11 @@ impl Claimable for Contract {
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
     #[storage(read)]
-    fn claim(asset: AssetId) {
+    fn claim(asset: Option<AssetId>) {
         let beneficiary = storage.beneficiary.read();
-        let balance = this_balance(asset);
+        let balance = this_balance(asset.unwrap_or(AssetId::base()));
 
-        transfer(beneficiary, asset, balance);
+        transfer(beneficiary, asset.unwrap_or(AssetId::base()), balance);
 
         log(ClaimEvent {
             beneficiary: beneficiary.bits(),
@@ -328,8 +355,8 @@ impl PostDispatchHook for Contract {
     ///
     /// * [bool] - Whether the hook supports the metadata.
     #[storage(read)]
-    fn supports_metadata(_metadata: Bytes) -> bool {
-        false
+    fn supports_metadata(metadata: Bytes) -> bool {
+        check_metadata_length_and_variant(metadata) || metadata.len() == 0 //empty metadata is also allowed
     }
 
     /// Manages payments on a source chain to cover gas costs of relaying
@@ -349,14 +376,23 @@ impl PostDispatchHook for Contract {
     /// * If the contract is not initialized.
     /// * If the message is invalid
     /// * If IGP call fails
+    /// * If metadata is invalid
     #[payable]
     #[storage(read, write)]
-    fn post_dispatch(_metadata: Bytes, message: Bytes) {
+    fn post_dispatch(metadata: Bytes, message: Bytes) {
+        let metadata_valid = check_metadata_length_and_variant(metadata) || metadata.len() == 0; //empty metadata is also allowed 
+        require(metadata_valid, IgpError::UnsupportedMetadataFormat);
+
         let message = EncodedMessage::from_bytes(message);
+
         let message_id = message.id();
         let destination_domain = message.destination();
         let sender = message.sender();
-        let gas_amount = storage.default_gas_amount.read();
+
+        let gas_limit = u256_to_u64(StandardHookMetadata::get_gas_limit(metadata, DEFAULT_GAS_AMOUNT.as_u256())).unwrap();
+
+        let refund_address = StandardHookMetadata::get_refund_address(metadata, sender);
+        let refund_identity = Identity::Address(Address::from(refund_address));
 
         let igp_contract = abi(IGP, ContractId::this().bits());
 
@@ -364,12 +400,7 @@ impl PostDispatchHook for Contract {
             .pay_for_gas {
                 asset_id: b256::from(AssetId::base()),
                 coins: msg_amount(),
-            }(
-                message_id,
-                destination_domain,
-                gas_amount,
-                Identity::Address(Address::from(sender)),
-            );
+            }(message_id, destination_domain, gas_limit, refund_identity);
     }
 
     /// Compute the payment required by the postDispatch call
@@ -388,20 +419,37 @@ impl PostDispatchHook for Contract {
     /// * If the contract is not initialized.
     /// * If the message is invalid
     /// * If IGP call fails
+    /// * If metadata is invalid
     #[storage(read)]
-    fn quote_dispatch(_metadata: Bytes, message: Bytes) -> u64 {
+    fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
+        let metadata_valid = check_metadata_length_and_variant(metadata) || metadata.len() == 0; //empty metadata is also allowed 
+        require(metadata_valid, IgpError::UnsupportedMetadataFormat);
+
         let message = EncodedMessage::from_bytes(message);
         let domain = message.destination();
-        let gas_amount = storage.default_gas_amount.read();
-        let igp_contract = abi(IGP, ContractId::this().bits());
+        let gas_limit = u256_to_u64(StandardHookMetadata::get_gas_limit(metadata, DEFAULT_GAS_AMOUNT.as_u256())).unwrap();
 
-        igp_contract.quote_gas_payment(domain, gas_amount)
+        quote_gas(domain, gas_limit)
     }
 }
 
 // --------------------------------------------
 // --------- Internal Functions ---------------
 // --------------------------------------------
+
+
+fn check_metadata_length_and_variant(metadata: Bytes) -> bool {
+    if metadata.len() < MIN_METADATA_LENGTH {
+        return false;
+    }
+
+    let variant = StandardHookMetadata::get_variant(metadata);
+    if variant != DEFAULT_VARIANT {
+        return false;
+    }
+
+    true
+}
 
 /// Converts a `u256` to `u64`, returning `None` if the value overflows `u64`.
 fn u256_to_u64(value: u256) -> Option<u64> {
@@ -428,6 +476,7 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
 
     // Get the gas data for the destination domain.
     let RemoteGasData {
+        domain: _,
         token_exchange_rate,
         gas_price,
         token_decimals,
@@ -438,7 +487,7 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
     let destination_gas_cost = u256::from(total_gas_amount) * u256::from(gas_price);
 
     // Convert to the local native token.
-    let origin_cost = (destination_gas_cost * u256::from(token_exchange_rate)) / u256::from(storage.token_exchange_rate_scale.read());
+    let origin_cost = (destination_gas_cost * u256::from(token_exchange_rate)) / u256::from(TOKEN_EXCHANGE_RATE_SCALE);
 
     // Convert from the remote token's decimals to the local token's decimals.
     let origin_cost = convert_decimals(origin_cost, token_decimals, BASE_ASSET_DECIMALS);

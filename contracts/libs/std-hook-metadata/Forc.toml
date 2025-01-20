@@ -1,0 +1,8 @@
+[project]
+authors = ["Emre Keskin"]
+entry = "lib.sw"
+license = "Apache-2.0"
+name = "std_hook_metadata"
+
+[dependencies]
+std_lib_extended = { path = "../std-lib-extended" }

@@ -4,7 +4,10 @@ pub mod token;
 use crate::cases::FailedTestCase;
 
 use alloy::primitives::{Bytes as AlloyBytes, FixedBytes};
-use fuels::types::{bech32::Bech32ContractId, Bits256, Bytes, U256};
+use fuels::{
+    accounts::wallet::WalletUnlocked,
+    types::{bech32::Bech32ContractId, Bits256, Bytes, U256},
+};
 use hyperlane_core::{HyperlaneMessage, H256};
 use local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json};
 use rand::{thread_rng, Rng};
@@ -12,6 +15,9 @@ use tokio::time::Instant;
 
 pub const TEST_RECIPIENT: &str =
     "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+const MIN_METADATA_LENGTH: u64 = 98;
+const TEST_GAS_AMOUNT: u64 = 5000;
 
 pub fn summary(test_amount: usize, failed: Vec<FailedTestCase>, start: Instant) {
     println!("\nRan {} test cases", test_amount);
@@ -98,4 +104,25 @@ pub fn get_remote_test_recipient() -> Bits256 {
 pub fn get_fuel_test_recipient() -> FixedBytes<32> {
     let recipient_address = get_contract_address_from_yaml("testRecipient");
     FixedBytes::from_slice(recipient_address.as_slice())
+}
+
+// variant:        [0:2]     // Set to 1
+// msg_value:      [2:34]    // Left as 0
+// gas_limit:      [34:66]   // Left as 0
+// refund_address: [66:98]   // Set to wallet address
+pub fn create_mock_metadata(wallet: &WalletUnlocked) -> Bytes {
+    let mut metadata = vec![0u8; MIN_METADATA_LENGTH as usize];
+
+    metadata[0] = 0;
+    metadata[1] = 1;
+
+    let mut gas_limit_bytes = [0u8; 32];
+
+    gas_limit_bytes[24..32].copy_from_slice(&TEST_GAS_AMOUNT.to_be_bytes());
+    metadata[34..66].copy_from_slice(&gas_limit_bytes);
+
+    let wallet_bytes: [u8; 32] = wallet.address().hash().into();
+    metadata[66..98].copy_from_slice(&wallet_bytes);
+
+    Bytes(metadata)
 }

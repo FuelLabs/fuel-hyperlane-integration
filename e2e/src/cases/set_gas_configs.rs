@@ -25,13 +25,9 @@ async fn set_gas_configs() -> Result<f64, String> {
 
     let owner = Bits256(Address::from(wallet.address()).into());
 
-    let default_gas = get_value_from_agent_config_json("fueltest1", "defaultGas")
-        .and_then(|v| v.as_u64())
-        .unwrap_or(500);
-
     let _ = igp
         .methods()
-        .initialize(owner, owner, 1, default_gas)
+        .initialize(owner, owner)
         .call()
         .await
         .map_err(|e| format!("Failed to initialize IGP: {:?}", e));
@@ -57,6 +53,7 @@ async fn set_gas_configs() -> Result<f64, String> {
     let configs = vec![RemoteGasDataConfig {
         domain: remote_domain,
         remote_gas_data: RemoteGasData {
+            domain: remote_domain,
             token_exchange_rate: 15000000000,
             gas_price: default_remote_gas.into(),
             token_decimals: remote_decimals,

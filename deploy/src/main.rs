@@ -410,10 +410,16 @@ async fn main() {
         ContractId::from(gas_oracle_id.clone())
     );
 
+    let igp_configurables = GasPaymasterConfigurables::default()
+        .with_TOKEN_EXCHANGE_RATE_SCALE(15_000_000_000_000)
+        .unwrap()
+        .with_DEFAULT_GAS_AMOUNT(5000)
+        .unwrap();
+
     // IGP deployment
     let igp_id = Contract::load_from(
         "../contracts/hooks/gas-paymaster/out/debug/gas-paymaster.bin",
-        config.clone(),
+        config.clone().with_configurables(igp_configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -692,7 +698,7 @@ async fn main() {
 
     let init_res = igp
         .methods()
-        .initialize(wallet_address, wallet_address, 15_000_000_000_000, 5000)
+        .initialize(wallet_address, wallet_address)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
@@ -703,6 +709,7 @@ async fn main() {
         .set_remote_gas_data_configs(vec![RemoteGasDataConfig {
             domain: 84532,
             remote_gas_data: RemoteGasData {
+                domain: 84532,
                 // Numbers from BSC and Optimism testnets - 15000000000
                 token_exchange_rate: 15000000000,
                 gas_price: 37999464941,
