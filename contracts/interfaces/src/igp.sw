@@ -97,6 +97,23 @@ abi IGP {
     /// * `config`: [Vec<DomainGasConfig>] - The gas config to set.
     #[storage(read, write)]
     fn set_destination_gas_config(domain: Vec<u32>, config: Vec<DomainGasConfig>);
+
+    /// Gets the exchange rate and gas price for a given domain using the
+    /// configured gas oracle.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [RemoteGasData] - Remote gas data for the domain from the oracle.
+    ///
+    /// ### Reverts
+    ///
+    /// * If no gas oracle is set.
+    #[storage(read)]
+    fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData;
 }
 
 /// Functions required for calculation of overheads

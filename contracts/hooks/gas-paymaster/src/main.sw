@@ -230,6 +230,25 @@ impl IGP for Contract {
             i += 1;
         }
     }
+
+    /// Gets the exchange rate and gas price for a given domain using the
+    /// configured gas oracle.
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The domain to get the gas data for.
+    ///
+    /// ### Returns
+    ///
+    /// * [RemoteGasData] - Remote gas data for the domain from the oracle.
+    ///
+    /// ### Reverts
+    ///
+    /// * If no gas oracle is set.
+    #[storage(read)]
+    fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
+        _get_remote_oracle_gas_data(destination_domain)
+    }
 }
 
 impl Claimable for Contract {
@@ -456,13 +475,9 @@ fn u256_to_u64(value: u256) -> Option<u64> {
     <u64 as TryFrom<u256>>::try_from(value)
 }
 
-/// Gets the exchange rate and gas price for a given domain using the
-/// configured gas oracle.
-/// Reverts if no gas oracle is set.
 #[storage(read)]
-pub fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
+fn _get_remote_oracle_gas_data(destination_domain: u32) -> RemoteGasData {
     let gas_oracle_id = storage.gas_oracles.get(destination_domain).read();
-
     let gas_oracle = abi(GasOracle, gas_oracle_id);
     gas_oracle.get_remote_gas_data(destination_domain)
 }
@@ -480,7 +495,7 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
         token_exchange_rate,
         gas_price,
         token_decimals,
-    } = get_remote_gas_data(destination_domain);
+    } = _get_remote_oracle_gas_data(destination_domain);
 
     // All arithmetic is done using u256 to avoid overflows.
     // The total cost quoted in destination chain's native token.
