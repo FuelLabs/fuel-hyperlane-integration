@@ -125,6 +125,35 @@ impl StandardHookMetadata {
         }
     }
 
+     /// Validates if the metadata is of the correct format and length
+    ///
+    /// ### Arguments
+    ///
+    /// * `metadata`: [Bytes] - The metadata to validate
+    ///
+    /// ### Returns
+    ///
+    /// * [bool] - Whether the metadata is valid or empty
+    pub fn is_valid(metadata: Bytes) -> bool {
+        // Empty metadata is valid
+        if metadata.len() == 0 {
+            return true;
+        }
+
+        // Check minimum length
+        if metadata.len() < MIN_METADATA_LENGTH {
+            return false;
+        }
+
+        // Check variant
+        let variant = Self::get_variant(metadata);
+        if variant != DEFAULT_VARIANT {
+            return false;
+        }
+
+        true
+    }
+
     /// Gets the variant from the struct.
     ///
     /// ### Returns

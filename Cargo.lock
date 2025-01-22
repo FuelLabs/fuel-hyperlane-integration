@@ -63,6 +63,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aggregation-hook"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "hex",
+ "hyperlane-core",
+ "rand",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
 name = "aggregation-ism"
 version = "0.1.0"
 dependencies = [

@@ -1,12 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-  "contracts/mailbox",
-  "contracts/warp-route",
   "test-utils",
   "deploy",
   "e2e",
+  "demo",
   "contracts/hooks/merkle-tree-hook",
+  "contracts/hooks/aggregation",
+  "contracts/hooks/gas-paymaster",
   "contracts/test/merkle-test",
   "contracts/ism/aggregation-ism",
   "contracts/ism/routing/domain-routing-ism",
@@ -14,9 +15,9 @@ members = [
   "contracts/ism/multisig/message-id-multisig-ism",
   "contracts/ism/multisig/merkle-root-multisig-ism",
   "contracts/gas-oracle",
-  "contracts/hooks/gas-paymaster",
   "contracts/validator-announce",
-  "demo",
+  "contracts/mailbox",
+  "contracts/warp-route",
 ]
 
 
