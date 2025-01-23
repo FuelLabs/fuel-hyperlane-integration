@@ -3,7 +3,7 @@ contract;
 use sway_libs::ownership::*;
 use standards::src5::State;
 
-use interfaces::{claimable::*, igp::*, ownable::Ownable, post_dispatch_hook::*,};
+use interfaces::{claimable::*, ownable::Ownable, hooks::{post_dispatch_hook::*, igp::*}};
 use message::{EncodedMessage, Message};
 use std_hook_metadata::*;
 

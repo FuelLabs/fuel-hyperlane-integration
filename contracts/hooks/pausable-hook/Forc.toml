@@ -1,0 +1,10 @@
+[project]
+authors = ["Mantas Miklasevicius"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "pausable-hook"
+
+[dependencies]
+interfaces = { path = "../../interfaces" }
+sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
+standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
