@@ -16,6 +16,8 @@ members = [
   "contracts/hooks/merkle-tree-hook",
   "contracts/hooks/gas-paymaster",
   "contracts/hooks/pausable-hook",
+  "contracts/hooks/aggregation",
+  "contracts/hooks/protocol-fee",
   "contracts/test/merkle-test",
   "contracts/test/mailbox-test",
   "contracts/validator-announce",

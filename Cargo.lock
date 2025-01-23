@@ -7421,6 +7421,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-fee-hook"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "hex",
+ "hyperlane-core",
+ "rand",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
 name = "psl-types"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

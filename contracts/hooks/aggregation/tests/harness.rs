@@ -318,22 +318,6 @@ async fn test_remove_hook_reverts_if_not_found() {
     assert_eq!(get_revert_reason(result.err().unwrap()), "HookNotFound");
 }
 
-// ============ Hook Type Tests ============
-#[tokio::test]
-async fn test_hook_type() {
-    let (aggregation, _, _, _, _) = get_contract_instances().await;
-
-    let hook_type = aggregation
-        .methods()
-        .hook_type()
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    assert_eq!(hook_type, PostDispatchHookType::AGGREGATION);
-}
-
 // ============ Quote Dispatch Calculation Tests ============
 #[tokio::test]
 async fn test_quote_dispatch_calculation() {

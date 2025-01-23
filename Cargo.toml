@@ -17,6 +17,7 @@ members = [
   "contracts/gas-oracle",
   "contracts/hooks/gas-paymaster",
   "contracts/hooks/pausable-hook",
+  "contracts/hooks/protocol-fee",
   "contracts/validator-announce",
   "contracts/mailbox",
   "contracts/warp-route",

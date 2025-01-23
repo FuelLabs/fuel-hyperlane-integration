@@ -11,7 +11,7 @@ use std::{
 use sway_libs::ownership::*;
 use standards::src5::State;
 use std_hook_metadata::*;
-use interfaces::{aggregation_hook::*, ownable::Ownable, post_dispatch_hook::*,};
+use interfaces::{hooks::{aggregation_hook::*, post_dispatch_hook::*,}, ownable::Ownable,};
 
 storage {
     /// The list of hooks to aggregate
@@ -192,10 +192,11 @@ impl PostDispatchHook for Contract {
             let quote = quotes.get(i).unwrap();
 
             let hook_contract = abi(PostDispatchHook, hook.bits());
-            hook_contract.post_dispatch {
-                asset_id: b256::from(AssetId::base()),
-                coins: quote,
-            }(metadata.clone(), message.clone());
+            hook_contract
+                .post_dispatch {
+                    asset_id: b256::from(AssetId::base()),
+                    coins: quote,
+                }(metadata.clone(), message.clone());
 
             i += 1;
         }

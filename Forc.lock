@@ -233,6 +233,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-fee"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#a50375e03c746d3a8f75ea069a5cad1b55831209",
+    "std",
+    "std_hook_metadata",
+    "sway_libs",
+]
+
+[[package]]
 name = "src20-test"
 source = "member"
 dependencies = [
