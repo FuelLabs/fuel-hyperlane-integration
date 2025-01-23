@@ -52,6 +52,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fallback-domain-routing-hook"
+source = "member"
+dependencies = [
+    "interfaces",
+    "message",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#a50375e03c746d3a8f75ea069a5cad1b55831209",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
 name = "gas-oracle"
 source = "member"
 dependencies = [

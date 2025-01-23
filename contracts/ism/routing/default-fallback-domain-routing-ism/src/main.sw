@@ -92,8 +92,6 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * If the ISM is already initialized.
     #[storage(write, read)]
     fn initialize(owner: b256, mailbox: b256){
-        only_not_initialized();
-
         initialize_ownership(Identity::Address(Address::from(owner)));
         storage.mailbox.write(mailbox);
     }
@@ -113,8 +111,6 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * If the length of the domains and modules do not match.
     #[storage(write, read)]
     fn initialize_with_domains(owner: b256, mailbox: b256, domains: Vec<u32>, modules: Vec<b256>) {
-        only_not_initialized();
-
         initialize_ownership(Identity::Address(Address::from(owner)));
         storage.mailbox.write(mailbox);
         let domain_count = domains.len();
@@ -293,14 +289,6 @@ fn _set(domain: u32, module: b256) {
 }
 
 // --- Guards ---
-
-#[storage(read)]
-fn only_not_initialized() {
-    require(
-        _owner() == State::Uninitialized,
-        DefaultFallbackDomainRoutingIsmError::AlreadyInitialized,
-    );
-}
 
 #[storage(read)]
 fn only_initialized() {
