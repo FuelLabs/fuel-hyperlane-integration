@@ -52,14 +52,9 @@ impl ProtocolFee for Contract {
             !_is_initialized(),
             ProtocolFeeError::ProtocolFeeAlreadyInitialized,
         );
-        require(
-            beneficiary
-                .bits() != ZERO_B256,
-            ProtocolFeeError::InvalidBeneficiary,
-        );
 
         initialize_ownership(owner);
-        storage.beneficiary.write(beneficiary);
+        _set_beneficiary(beneficiary);
         storage.max_protocol_fee.write(max_protocol_fee);
         _set_protocol_fee(protocol_fee);
     }
@@ -97,7 +92,10 @@ impl ProtocolFee for Contract {
     #[storage(read, write)]
     fn set_protocol_fee(new_fee: u64) {
         only_owner();
-        require(_is_initialized(), ProtocolFeeError::ProtocolFeeNotInitialized);
+        require(
+            _is_initialized(),
+            ProtocolFeeError::ProtocolFeeNotInitialized,
+        );
 
         _set_protocol_fee(new_fee);
     }
@@ -152,7 +150,7 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, _message: Bytes) {
-        require(_is_initialized(), ProtocolFeeError::ProtocolFeeNotInitialized);
+        require(_is_initialized(), ProtocolFeeError::NotInitialized);
 
         let metadata_valid = StandardHookMetadata::is_valid(metadata);
         require(metadata_valid, ProtocolFeeError::UnsupportedMetadataFormat);
@@ -233,16 +231,7 @@ impl Claimable for Contract {
     /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_beneficiary(beneficiary: Identity) {
-        only_owner();
-        require(
-            beneficiary
-                .bits() != ZERO_B256,
-            ProtocolFeeError::InvalidBeneficiary,
-        );
-        storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent {
-            beneficiary: beneficiary.bits(),
-        });
+        _set_beneficiary(beneficiary);
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
@@ -298,5 +287,24 @@ fn _set_protocol_fee(new_fee: u64) {
     storage.protocol_fee.write(new_fee);
     log(ProtocolFeeSet {
         protocol_fee: new_fee,
+    });
+}
+
+/// Sets the beneficiary to `beneficiary`. Only callable by the owner.
+///
+/// ### Arguments
+///
+/// * `beneficiary`: [Identity] - The new beneficiary.
+#[storage(read, write)]
+fn _set_beneficiary(beneficiary: Identity) {
+    only_owner();
+    require(
+        beneficiary
+            .bits() != ZERO_B256,
+        ProtocolFeeError::InvalidBeneficiary,
+    );
+    storage.beneficiary.write(beneficiary);
+    log(BeneficiarySetEvent {
+        beneficiary: beneficiary.bits(),
     });
 }
