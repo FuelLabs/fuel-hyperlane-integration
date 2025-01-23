@@ -34,8 +34,6 @@ async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocke
 
     let hook = PausableHook::new(hook_id.clone(), wallet.clone());
 
-    //Bits256::from_hex_str(&wallet.address().hash.to_string()).unwrap()
-    // Set Owner
     hook.methods()
         .initialize(Identity::Address(wallet.address().into()))
         .call()

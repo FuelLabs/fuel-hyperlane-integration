@@ -8,8 +8,6 @@ use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::{bytes::Bytes};
 
-///////
-
 impl PausableHook for Contract {
     /// Initializes the contract.
     ///
