@@ -223,6 +223,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pausable-hook"
+source = "member"
+dependencies = [
+    "interfaces",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#a50375e03c746d3a8f75ea069a5cad1b55831209",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
 name = "src20-test"
 source = "member"
 dependencies = [
@@ -266,7 +276,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?branch=master#0d0824a57a7fe920a85f2af7399fbd29c11c7eff"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#205e0e617cea37649c31b93563393ded79c76493"
 dependencies = [
     "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
     "std",
