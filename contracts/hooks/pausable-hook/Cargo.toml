@@ -1,0 +1,18 @@
+[package]
+name = "pausable-hook"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["Mantas M. <mantasm.dev@gmail.com>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true }
+tokio = { workspace = true }
+test-utils = { path = "../../../test-utils" }
+
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

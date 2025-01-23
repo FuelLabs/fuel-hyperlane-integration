@@ -1,7 +1,7 @@
 contract;
 
 use std::bytes::Bytes;
-use interfaces::post_dispatch_hook::*;
+use interfaces::hooks::post_dispatch_hook::*;
 
 impl PostDispatchHook for Contract {
     fn hook_type() -> PostDispatchHookType {

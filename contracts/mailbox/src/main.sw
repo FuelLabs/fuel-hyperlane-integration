@@ -11,7 +11,7 @@ use interfaces::{
     },
     message_recipient::MessageRecipient,
     ownable::Ownable,
-    post_dispatch_hook::*,
+    hooks::post_dispatch_hook::*,
 };
 use std::{
     bytes::Bytes,

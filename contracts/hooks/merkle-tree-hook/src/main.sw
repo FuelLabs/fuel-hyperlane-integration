@@ -4,7 +4,7 @@ use merkle::*;
 use message::EncodedMessage;
 use std::storage::storage_vec::*;
 use std::{block::height, bytes::Bytes, context::msg_amount};
-use interfaces::{mailbox::mailbox::*, merkle_tree_hook::*, post_dispatch_hook::*};
+use interfaces::{mailbox::mailbox::*, hooks::{merkle_tree_hook::*, post_dispatch_hook::*}};
 
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
