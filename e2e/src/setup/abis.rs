@@ -53,4 +53,16 @@ abigen!(
         name = "PostDispatchHook",
         abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json",
     ),
+    Contract(
+        name = "ProtocolFee",
+        abi = "contracts/hooks/protocol-fee/out/debug/protocol-fee-abi.json",
+    ),
+    Contract(
+        name = "AggregationHook",
+        abi = "contracts/hooks/aggregation/out/debug/aggregation-abi.json",
+    ),
+    Contract(
+        name = "PausableHook",
+        abi = "contracts/hooks/pausable-hook/out/debug/pausable-hook-abi.json",
+    ),
 );

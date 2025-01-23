@@ -83,14 +83,14 @@
           "http": "http://127.0.0.1:4000/v1/graphql"
         }
       ],
-      "interchainGasPaymaster": "0x3f6243ce1c04985c7c7285a16d28329738e8389969ccbee59a7d3e146c16cf2e",
-      "mailbox": "0x1ea8b6ef3c3b0a40012d83fb5e12458e43a2308f837498332a5b4c1e9643c6e6",
+      "interchainGasPaymaster": "0x98df6e024dc4b644d2a91e9771b7131413dbd4c30921fdd00b53909fb3cb0346",
+      "mailbox": "0x5f01ea023aa7b540b859127024714fcfaef2af35a5295fdc60e2f30764e53761",
       "postDispatch": "0x9151094dfc5e0d26feebea3bc3ccc8131f4b77337346a328b36f4f19fb5dcad2",
       "testRecipient": "0x07e291ab6efe3049af11122a54d21e5e823f07be01d757fc1c2d67a09663866d",
-      "interchainSecurityModule": "0x423e3e0ebbf670ed08120ae7c9a86f73285a8a7960c08dec17942d5444065060",
-      "merkleTreeHook": "0x1ed4d1623d0d9141b81d135ccbc736db229f90e55b917c5864d0ead43ec02ac8",
+      "interchainSecurityModule": "0xd14bfb1e3e6a3ffb336652cad86e11596199edfc61fc7fe085440719b0be2356",
+      "merkleTreeHook": "0x0b0d46a74d66aa416b40ebca2b44cad3fbead92e594777592d664e9df9d1751e",
       "interchainGasPaymasterHook": "0x66c7e36097542448a6f08fb32048c89afca09348df225fb8c3f53704a3d882c7",
-      "validatorAnnounce": "0xed4778fa9bb5efe8d4290ab8c4d66e3ef561732208117c9e6c95fb1688b1bf1b",
+      "validatorAnnounce": "0x0f8e04c80278cb1567257f2a3015ebba075c6252e7213cea7efe7dd17458bf4a",
       "gasOracle": "0xd41f67b5864ea9a790baafa4c52260ae74a630557557807d0d45ecc62ade0292",
       "aggregationISM": "0xf6654a5265e907e05b2ac674856dd6a8c04e824cc2bc16ae0f289d8076d18a93",
       "domainRoutingISM": "0x3fa404f2d248b78b470e552c49567cc3928280d1d12f94ababd93d9bc3239c90",
@@ -100,6 +100,9 @@
       "warpRouteNative": "0x56f42e6de67e92d128558a9163a5e6097f9bd926436eb7f87023f4afe9463aa5",
       "warpRouteSynthetic": "0xfeff391d75f9d5b46cdce450ec6562e3dfb3d744aa6df7afd86369a7b88d8e42",
       "warpRouteCollateral": "0x6e9112189d97228873345bee84747bd2bf0e939a964b369cbf7ba89752d79bfa",
+      "protocolFee": "0x9a02bca7ecfef639f4f2f62d321b14bbac6d3f7a93feb6849ea143a95f2ca9bd",
+      "pausableHook": "0x206f36050c802990b087ca00293cc0448f4cd400ad06248cfcd0a214b2c8ab37",
+      "aggregationHook": "0x584ceba8e1e93ae3f257ed9339c3283800c429a9a9998f6dd5f21b069c5ec7ac",
       "index": {
         "from": 0
       }

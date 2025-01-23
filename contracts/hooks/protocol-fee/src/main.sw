@@ -50,7 +50,7 @@ impl ProtocolFee for Contract {
     ) {
         require(
             !_is_initialized(),
-            ProtocolFeeError::ContractAlreadyInitialized,
+            ProtocolFeeError::ProtocolFeeAlreadyInitialized,
         );
         require(
             beneficiary
@@ -60,8 +60,8 @@ impl ProtocolFee for Contract {
 
         initialize_ownership(owner);
         storage.beneficiary.write(beneficiary);
-        storage.protocol_fee.write(protocol_fee);
         storage.max_protocol_fee.write(max_protocol_fee);
+        _set_protocol_fee(protocol_fee);
     }
 
     /// Returns the maximum protocol fee that can be set
@@ -97,18 +97,9 @@ impl ProtocolFee for Contract {
     #[storage(read, write)]
     fn set_protocol_fee(new_fee: u64) {
         only_owner();
-        require(_is_initialized(), ProtocolFeeError::NotInitialized);
+        require(_is_initialized(), ProtocolFeeError::ProtocolFeeNotInitialized);
 
-        let max_protocol_fee = storage.max_protocol_fee.read();
-        require(
-            new_fee <= max_protocol_fee,
-            ProtocolFeeError::ExceedsMaxProtocolFee,
-        );
-
-        storage.protocol_fee.write(new_fee);
-        log(ProtocolFeeSet {
-            protocol_fee: new_fee,
-        });
+        _set_protocol_fee(new_fee);
     }
 
     /// Collects protocol fees.
@@ -161,7 +152,7 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, _message: Bytes) {
-        require(_is_initialized(), ProtocolFeeError::NotInitialized);
+        require(_is_initialized(), ProtocolFeeError::ProtocolFeeNotInitialized);
 
         let metadata_valid = StandardHookMetadata::is_valid(metadata);
         require(metadata_valid, ProtocolFeeError::UnsupportedMetadataFormat);
@@ -289,4 +280,23 @@ fn _collect_protocol_fees(asset: Option<AssetId>) {
     let beneficiary = storage.beneficiary.read();
     let amount = this_balance(asset.unwrap_or(AssetId::base()));
     transfer(beneficiary, asset.unwrap_or(AssetId::base()), amount);
+}
+
+/// Sets the protocol fee to `new_fee`.
+///
+/// ### Arguments
+///
+/// * `new_fee`: [u64] - The new protocol fee.
+#[storage(read, write)]
+fn _set_protocol_fee(new_fee: u64) {
+    let max_protocol_fee = storage.max_protocol_fee.read();
+    require(
+        new_fee <= max_protocol_fee,
+        ProtocolFeeError::ExceedsMaxProtocolFee,
+    );
+
+    storage.protocol_fee.write(new_fee);
+    log(ProtocolFeeSet {
+        protocol_fee: new_fee,
+    });
 }

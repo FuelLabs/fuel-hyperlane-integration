@@ -8,8 +8,8 @@ abigen!(Contract(
     abi = "contracts/hooks/protocol-fee/out/debug/protocol-fee-abi.json"
 ));
 
-const PROTOCOL_FEE: u64 = 100;
-const MAX_PROTOCOL_FEE: u64 = 1000;
+const PROTOCOL_FEE: u64 = 1;
+const MAX_PROTOCOL_FEE: u64 = 10;
 const TEST_REFUND_ADDRESS: &str =
     "cafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 
@@ -81,7 +81,7 @@ async fn test_initialization_reverts_if_already_initialized() {
     assert!(result.is_err());
     assert_eq!(
         get_revert_reason(result.err().unwrap()),
-        "ContractAlreadyInitialized"
+        "ProtocolFeeAlreadyInitialized"
     );
 }
 
@@ -90,7 +90,7 @@ async fn test_initialization_reverts_if_already_initialized() {
 async fn test_set_protocol_fee() {
     let (instance, _wallet) = get_contract_instance().await;
 
-    let new_fee = 200;
+    let new_fee = 2;
     instance
         .methods()
         .set_protocol_fee(new_fee)
