@@ -15,6 +15,7 @@ members = [
   "contracts/ism/multisig/merkle-root-multisig-ism",
   "contracts/gas-oracle",
   "contracts/hooks/gas-paymaster",
+  "contracts/hooks/fallback-domain-routing-hook",
   "contracts/hooks/pausable-hook",
   "contracts/validator-announce",
   "demo",

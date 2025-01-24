@@ -1,4 +1,5 @@
 use fuels::{prelude::*, types::Identity};
+use rand::{thread_rng, Rng};
 use test_utils::get_revert_reason;
 
 // Load abi from json
@@ -6,6 +7,15 @@ abigen!(Contract(
     name = "PausableHook",
     abi = "contracts/hooks/pausable-hook/out/debug/pausable-hook-abi.json"
 ));
+
+fn get_deployment_config() -> LoadConfiguration {
+    let mut rng = thread_rng();
+    let mut bytes = [0u8; 32];
+    rng.fill(&mut bytes[..]);
+    let salt = Salt::new(bytes);
+
+    LoadConfiguration::default().with_salt(salt)
+}
 
 async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocked) {
     // Launch a local network and deploy the contract
@@ -23,14 +33,11 @@ async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocke
     let wallet = wallets.pop().unwrap();
     let second_wallet = wallets.pop().unwrap();
 
-    let hook_id = Contract::load_from(
-        "./out/debug/pausable-hook.bin",
-        LoadConfiguration::default(),
-    )
-    .unwrap()
-    .deploy(&wallet, TxPolicies::default())
-    .await
-    .unwrap();
+    let hook_id = Contract::load_from("./out/debug/pausable-hook.bin", get_deployment_config())
+        .unwrap()
+        .deploy(&wallet, TxPolicies::default())
+        .await
+        .unwrap();
 
     let hook = PausableHook::new(hook_id.clone(), wallet.clone());
 

@@ -110,10 +110,8 @@ impl AggregationIsmFunctions for Contract {
     /// * If the contract is already initialized.
     #[storage(read, write)]
     fn initialize(owner: b256) {
-        only_not_initialized();
         initialize_ownership(Identity::Address(Address::from(owner)));
     }
-
 
     /// Sets the threshold for the Aggregation ISM.
     ///
@@ -186,13 +184,6 @@ fn _modules_and_threshold(_message: Bytes) -> (Vec<ContractId>, u8) {
 
 // --- Guards ---
 
-#[storage(read)]
-fn only_not_initialized() {
-    require(
-        _owner() == State::Uninitialized,
-        AggregationIsmError::AlreadyInitialized,
-    );
-}
 #[storage(read)]
 fn only_initialized() {
     require(
