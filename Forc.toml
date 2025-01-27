@@ -14,6 +14,7 @@ members = [
   "contracts/test/ism-test",
   "contracts/test/src20-test",
   "contracts/hooks/merkle-tree-hook",
+  "contracts/hooks/fallback-domain-routing-hook",
   "contracts/hooks/gas-paymaster",
   "contracts/hooks/pausable-hook",
   "contracts/hooks/aggregation",
