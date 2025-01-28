@@ -7,7 +7,6 @@ use message::Message;
 pub enum WarpRouteError {
     InvalidAssetSend: (),
     PaymentNotEqualToRequired: (),
-    AlreadyInitialized: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
     MaxMinted: (),

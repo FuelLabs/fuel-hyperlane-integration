@@ -272,7 +272,6 @@ async fn routing_and_quoting() {
             .call()
             .await;
         // routing to hook successful
-        println!("{:?}", hook_call);
         assert!(hook_call.is_ok());
 
         let hook_called = hook

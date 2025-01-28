@@ -39,7 +39,6 @@ enum MailboxError {
     InvalidMessageOrigin: u32,
     MessageAlreadyDelivered: (),
     MessageVerificationFailed: (),
-    AlreadyInitialized: (),
     MessageTooLarge: u64,
 }
 
