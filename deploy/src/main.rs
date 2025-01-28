@@ -631,6 +631,7 @@ async fn main() {
         WarpRoute::new(warp_route_collateral_id.clone(), fuel_wallet.clone());
 
     let wallet_address = Bits256(Address::from(fuel_wallet.address()).into());
+    let wallet_identity = Identity::from(fuel_wallet.address());
     let test_ism_address = Bits256(ContractId::from(test_ism_id.clone()).into());
     let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
 
@@ -639,24 +640,21 @@ async fn main() {
     /////////////////////
 
     // Aggregation ISM
+    let aggregation_ism_threshold = 2;
+    let test_isms_to_aggregate = vec![
+        ContractId::from(test_ism_id.clone()),
+        ContractId::from(test_ism_id.clone()),
+    ];
     let init_res = aggregation_ism
         .methods()
-        .initialize(wallet_address)
+        .initialize(
+            wallet_identity,
+            test_isms_to_aggregate,
+            aggregation_ism_threshold,
+        )
         .call()
         .await;
 
-    let set_res = aggregation_ism.methods().set_threshold(2).call().await;
-    assert!(set_res.is_ok(), "Failed to set threshold.");
-
-    for _ in 0..2 {
-        let set_res = aggregation_ism
-            .methods()
-            .enroll_module(test_ism_id.clone())
-            .call()
-            .await;
-
-        assert!(set_res.is_ok(), "Failed to enroll ISM in Aggregation ISM.");
-    }
     assert!(init_res.is_ok(), "Failed to initialize Aggregation ISM.");
 
     // Domain Routing ISM

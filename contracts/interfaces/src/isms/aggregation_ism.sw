@@ -24,23 +24,9 @@ abi AggregationIsmFunctions {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address to be set as the owner of the contract.
-    #[storage(read, write)]
-    fn initialize(owner: b256);
-
-    /// Sets the threshold for the Aggregation ISM.
-    ///
-    /// ### Arguments
-    ///
+    /// * `owner`: [Identity] - The address to be set as the owner of the contract.
+    /// * `modules`: [Vec<ContractId>] - The list of modules to be used for message verification.
     /// * `threshold`: [u8] - The threshold of approval for the Aggregation ISM.
-    #[storage(write)]
-    fn set_threshold(threshold: u8);
-
-    /// Enrolls a module to the Aggregation ISM.
-    ///
-    /// ### Arguments
-    ///
-    /// * `module`: [ContractId] - The address of the module to be enrolled.
-    #[storage(write)]
-    fn enroll_module(module: ContractId);
+    #[storage(read, write)]
+    fn initialize(owner: Identity, modules: Vec<ContractId>, threshold: u8);
 }
