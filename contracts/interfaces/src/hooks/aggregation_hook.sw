@@ -26,9 +26,3 @@ abi AggregationHook {
     #[storage(read)]
     fn get_hooks() -> Vec<ContractId>;
 }
-
-/// Errors that can occur in the AggregationHook contract.
-pub enum AggregationHookError {
-    /// Incorrect total hook payment.
-    IncorrectTotalHookPayment: (),
-}

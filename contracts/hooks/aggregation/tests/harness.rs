@@ -286,10 +286,6 @@ async fn test_post_dispatch_insufficient_payment() {
         .await;
 
     assert!(result.is_err());
-    assert_eq!(
-        get_revert_reason(result.err().unwrap()),
-        "IncorrectTotalHookPayment"
-    );
 }
 
 // ============ Post Dispatch Test with Payment ============
@@ -357,55 +353,4 @@ async fn test_post_dispatch_with_payment() {
 
     assert!(wallet_balance_before - wallet_balance_after >= total_quote);
     assert_eq!(igp_balance_after - igp_balance_before, total_quote);
-}
-
-// ============ Post Dispatch Test with Overpayment ============
-#[tokio::test]
-async fn test_post_dispatch_with_overpayment_should_fail() {
-    let (aggregation, mock_hook1, mock_hook2, igp, oracle) = get_contract_instances().await;
-
-    let metadata = create_mock_metadata();
-    let message = create_mock_message();
-
-    let total_quote = aggregation
-        .methods()
-        .quote_dispatch(metadata.clone(), message.clone())
-        .with_contract_ids(&[
-            igp.contract_id().clone(),
-            oracle.contract_id().clone(),
-            mock_hook1.contract_id().clone(),
-            mock_hook2.contract_id().clone(),
-        ])
-        .call()
-        .await
-        .unwrap()
-        .value;
-
-    let overpayment = 10_000;
-    let total_payment = total_quote + overpayment;
-
-    let overpayment_result = aggregation
-        .methods()
-        .post_dispatch(metadata, message)
-        .with_contract_ids(&[
-            igp.contract_id().clone(),
-            oracle.contract_id().clone(),
-            mock_hook1.contract_id().clone(),
-            mock_hook2.contract_id().clone(),
-        ])
-        .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
-        .call_params(CallParameters::new(
-            total_payment,
-            get_base_asset(),
-            1_000_000,
-        ))
-        .unwrap()
-        .call()
-        .await;
-
-    assert!(overpayment_result.is_err());
-    assert_eq!(
-        get_revert_reason(overpayment_result.err().unwrap()),
-        "IncorrectTotalHookPayment"
-    );
 }

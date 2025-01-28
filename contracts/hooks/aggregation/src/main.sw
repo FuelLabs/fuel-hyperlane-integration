@@ -92,7 +92,13 @@ impl PostDispatchHook for Contract {
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
         let hooks = storage.hooks.load_vec();
 
-        let (_, total) = _calculate_quotes(hooks, metadata, message);
+        let mut total = 0;
+        let mut i = 0;
+        while i < hooks.len() {
+            let hook = hooks.get(i).unwrap();
+            total += _hook_qoute_dispatch(hook, metadata, message);
+            i += 1;
+        }
         total
     }
 
@@ -111,17 +117,10 @@ impl PostDispatchHook for Contract {
     fn post_dispatch(metadata: Bytes, message: Bytes) {
         let hooks = storage.hooks.load_vec();
 
-        let (quotes, total) = _calculate_quotes(hooks, metadata, message);
-
-        require(
-            msg_amount() == total,
-            AggregationHookError::IncorrectTotalHookPayment,
-        );
-
         let mut i = 0;
         while i < hooks.len() {
             let hook = hooks.get(i).unwrap();
-            let quote = quotes.get(i).unwrap();
+            let quote = _hook_qoute_dispatch(hook, metadata, message);
 
             let hook_contract = abi(PostDispatchHook, hook.bits());
             hook_contract
@@ -140,31 +139,8 @@ impl PostDispatchHook for Contract {
 // ------------------------------------------------------------
 
 
-/// Internal function to calculate quotes for all hooks
-///
-/// ### Arguments
-///
-/// * hooks: [Vec<ContractId>] - List of hooks to calculate quotes for
-/// * metadata: [Bytes] - The metadata to pass to each hook
-/// * message: [Bytes] - The message to pass to each hook
-///
-/// ### Returns
-///
-/// * ([Vec<u64>], u64) - Tuple of (individual quotes, total sum)
-fn _calculate_quotes(hooks: Vec<ContractId>, metadata: Bytes, message: Bytes) -> (Vec<u64>, u64) {
-    let mut quotes = Vec::new();
-    let mut total = 0;
 
-    let mut i = 0;
-    while i < hooks.len() {
-        let hook = hooks.get(i).unwrap();
-        let hook_contract = abi(PostDispatchHook, hook.bits());
-        let quote = hook_contract.quote_dispatch(metadata.clone(), message.clone());
-
-        quotes.push(quote);
-        total += quote;
-
-        i += 1;
-    }
-    (quotes, total)
+fn _hook_qoute_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u64 {
+    let hook_contract = abi(PostDispatchHook, hook.bits());
+    hook_contract.quote_dispatch(metadata.clone(), message.clone())
 }
