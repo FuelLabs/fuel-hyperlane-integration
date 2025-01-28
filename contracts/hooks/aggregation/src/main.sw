@@ -96,7 +96,7 @@ impl PostDispatchHook for Contract {
         let mut i = 0;
         while i < hooks.len() {
             let hook = hooks.get(i).unwrap();
-            total += _hook_qoute_dispatch(hook, metadata, message);
+            total += _hook_quote_dispatch(hook, metadata, message);
             i += 1;
         }
         total
@@ -120,7 +120,7 @@ impl PostDispatchHook for Contract {
         let mut i = 0;
         while i < hooks.len() {
             let hook = hooks.get(i).unwrap();
-            let quote = _hook_qoute_dispatch(hook, metadata, message);
+            let quote = _hook_quote_dispatch(hook, metadata, message);
 
             let hook_contract = abi(PostDispatchHook, hook.bits());
             hook_contract
@@ -140,7 +140,7 @@ impl PostDispatchHook for Contract {
 
 
 
-fn _hook_qoute_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u64 {
+fn _hook_quote_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u64 {
     let hook_contract = abi(PostDispatchHook, hook.bits());
     hook_contract.quote_dispatch(metadata.clone(), message.clone())
 }
