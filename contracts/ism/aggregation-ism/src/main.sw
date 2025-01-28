@@ -9,7 +9,6 @@ use sway_libs::ownership::*;
 /// Error types for the Aggregation ISM.
 enum AggregationIsmError {
     DidNotMeetThreshold: (),
-    NotInitialized: (),
 }
 
 storage {
