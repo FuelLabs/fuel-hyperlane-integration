@@ -84,10 +84,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [u64] - The payment required for the postDispatch call.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
         let hooks = storage.hooks.load_vec();
@@ -108,10 +104,6 @@ impl PostDispatchHook for Contract {
     ///
     /// * `metadata`: [Bytes] - The metadata required for the hook.
     /// * `message`: [Bytes] - The message being dispatched.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
