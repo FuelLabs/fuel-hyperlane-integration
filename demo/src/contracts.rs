@@ -693,7 +693,13 @@ impl Contracts {
             .fuel
             .warp_route_collateral
             .methods()
-            .transfer_remote(get_basesepolia_chain_id(), Bits256(address_array), amount)
+            .transfer_remote(
+                get_basesepolia_chain_id(),
+                Bits256(address_array),
+                amount,
+                None,
+                None,
+            )
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
             .call_params(CallParameters::new(
                 amount + quote,
@@ -800,7 +806,13 @@ impl Contracts {
             .fuel
             .warp_route_synthetic
             .methods()
-            .transfer_remote(get_basesepolia_chain_id(), Bits256(address_array), amount)
+            .transfer_remote(
+                get_basesepolia_chain_id(),
+                Bits256(address_array),
+                amount,
+                None,
+                None,
+            )
             .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
             .call_params(CallParameters::new(quote, asset_id, 223_526))
             .unwrap()

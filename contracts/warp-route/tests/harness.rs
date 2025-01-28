@@ -321,9 +321,15 @@ mod warp_route {
         let warp_init_res = call_handler.call().await;
         assert!(warp_init_res.is_ok(), "Failed to initialize Warp Route.");
 
+        let owner_identity = Identity::Address(wallet.address().into());
         let mailbox_init_res = mailbox
             .methods()
-            .initialize(owner, default_ism_address, hook_address, hook_address)
+            .initialize(
+                owner_identity,
+                default_ism_address,
+                hook_address,
+                hook_address,
+            )
             .call()
             .await;
         assert!(mailbox_init_res.is_ok(), "Failed to initialize Mailbox.");
@@ -704,7 +710,7 @@ mod warp_route {
 
             let call = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox_id.into(),
@@ -856,7 +862,7 @@ mod warp_route {
             // Transfer remote
             warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox_id.into(),
@@ -909,7 +915,7 @@ mod warp_route {
 
             let call_zero = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount_zero)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount_zero, None, None)
                 .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
                 .with_contract_ids(&[mailbox_id.into(), post_dispatch_id.into()])
                 .call()
@@ -950,7 +956,7 @@ mod warp_route {
             // Attempt an operation that should fail when paused
             let call = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .call()
                 .await;
             assert_eq!(get_revert_reason(call.unwrap_err()), "Paused");
@@ -970,7 +976,7 @@ mod warp_route {
 
             let call = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .with_contract_ids(&[
                     warp_route_id.into(),
                     mailbox_id.into(),
@@ -1147,7 +1153,7 @@ mod warp_route {
 
             let call = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .with_contract_ids(&[mailbox_id.into(), post_dispatch_id.into()])
                 .call()
                 .await
@@ -1300,6 +1306,8 @@ mod warp_route {
                     TEST_REMOTE_DOMAIN,
                     Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
                     2_000,
+                    None,
+                    None,
                 ) // Amount exceeds minted tokens
                 .with_variable_output_policy(VariableOutputPolicy::Exactly(5))
                 .with_contract_ids(&[mailbox_id.into(), post_dispatch_id.into()])
@@ -1458,7 +1466,7 @@ mod warp_route {
             // Transfer remote
             let call = warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .call_params(call_params)
                 .unwrap()
                 .with_contract_ids(&[
@@ -1569,7 +1577,7 @@ mod warp_route {
             // Transfer remote
             warp_route
                 .methods()
-                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount)
+                .transfer_remote(TEST_REMOTE_DOMAIN, recipient, amount, None, None)
                 .call_params(call_params)
                 .unwrap()
                 .with_contract_ids(&[

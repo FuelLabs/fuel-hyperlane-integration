@@ -151,7 +151,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     //Attempt to send remote message with overpayment should fail
     let gas_overpayment = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount)
+        .transfer_remote(remote_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + mailbox_qoute.value + 1,
             base_asset,
@@ -176,7 +176,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount)
+        .transfer_remote(remote_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + wr_quote.value,
             base_asset,

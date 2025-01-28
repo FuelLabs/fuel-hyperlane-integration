@@ -216,7 +216,13 @@ impl WarpRoute for Contract {
     /// * If any external call fails
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) -> b256 {
+    fn transfer_remote(
+        destination_domain: u32,
+        recipient: b256,
+        amount: u64,
+        metadata: Option<Bytes>,
+        hook: Option<ContractId>,
+    ) -> b256 {
         reentrancy_guard();
         require_not_paused();
 
@@ -231,7 +237,8 @@ impl WarpRoute for Contract {
 
         let asset = storage.asset_id.read();
         let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
-        let hook_contract = storage.default_hook.read();
+        let default_hook = storage.default_hook.read();
+        let hook_contract = hook.unwrap_or(default_hook);
 
         let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
         let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
@@ -273,6 +280,8 @@ impl WarpRoute for Contract {
             },
         }
 
+        let metadata = metadata.unwrap_or(Bytes::new()); // send empty metadata if not provided
+
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {
             coins: quote,
@@ -281,7 +290,7 @@ impl WarpRoute for Contract {
             destination_domain,
             remote_domain_router,
             message_body,
-            Bytes::new(), // no metadata
+            metadata,
             hook_contract,
         );
 

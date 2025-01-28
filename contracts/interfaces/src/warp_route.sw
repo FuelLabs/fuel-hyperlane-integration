@@ -74,7 +74,13 @@ abi WarpRoute {
     /// * `amount`: [u64] - The amount of tokens to transfer
     #[payable]
     #[storage(read, write)]
-    fn transfer_remote(destination_domain: u32, recipient: b256, amount: u64) -> b256;
+    fn transfer_remote(
+        destination_domain: u32,
+        recipient: b256,
+        amount: u64,
+        metadata: Option<Bytes>,
+        hook: Option<ContractId>,
+    ) -> b256;
 
     /// Gets the token mode of the WarpRoute contract
     ///
