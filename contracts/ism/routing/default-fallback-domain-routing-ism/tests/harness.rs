@@ -56,7 +56,7 @@ fn generate_test_message() -> RawHyperlaneMessage {
 async fn get_contract_instance() -> (
     DefaultFallbackRoutingIsm<WalletUnlocked>,
     Mailbox<WalletUnlocked>,
-    Bits256,
+    Identity,
     Bits256,
     TestIsm<WalletUnlocked>,
 ) {
@@ -96,13 +96,13 @@ async fn get_contract_instance() -> (
     let fallback_routing_ism =
         DefaultFallbackRoutingIsm::new(fallback_routing_ism_id.clone(), wallet.clone());
     let test_ism = deploy_test_ism(&wallet).await;
-    let wallet_address = Bits256(Address::from(wallet.address()).into());
+    let wallet_identity = Identity::from(wallet.address());
 
     // Setup default mailbox ISM
     let test_ism_id = Bits256(ContractId::from(test_ism.id()).into());
     mailbox
         .methods()
-        .initialize(wallet_address, test_ism_id, test_ism_id, test_ism_id)
+        .initialize(wallet_identity, test_ism_id, test_ism_id, test_ism_id)
         .call()
         .await
         .unwrap();
@@ -110,7 +110,7 @@ async fn get_contract_instance() -> (
     (
         fallback_routing_ism,
         mailbox,
-        wallet_address,
+        wallet_identity,
         test_ism_id,
         test_ism,
     )
@@ -125,12 +125,12 @@ async fn get_contract_instance() -> (
 
 #[tokio::test]
 async fn initialize_with_mailbox() {
-    let (fallback_routing_ism, mailbox, wallet_address, _, _) = get_contract_instance().await;
+    let (fallback_routing_ism, mailbox, wallet_identity, _, _) = get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address)
+        .initialize(wallet_identity, mailbox_address)
         .call()
         .await
         .unwrap();
@@ -153,21 +153,18 @@ async fn initialize_with_mailbox() {
 
     assert_eq!(mailbox_address, mailbox);
 
-    assert_eq!(
-        owner_res,
-        State::Initialized(Identity::Address(Address::from(wallet_address.0)))
-    );
+    assert_eq!(owner_res, State::Initialized(wallet_identity));
 }
 
 #[tokio::test]
 async fn route_fallback() {
-    let (fallback_routing_ism, mailbox, wallet_address, test_ism_id, _) =
+    let (fallback_routing_ism, mailbox, wallet_identity, test_ism_id, _) =
         get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address)
+        .initialize(wallet_identity, mailbox_address)
         .call()
         .await
         .unwrap();
@@ -190,12 +187,12 @@ async fn route_fallback() {
 
 #[tokio::test]
 async fn verify_fallback_success() {
-    let (fallback_routing_ism, mailbox, wallet_address, _, _) = get_contract_instance().await;
+    let (fallback_routing_ism, mailbox, wallet_identity, _, _) = get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address)
+        .initialize(wallet_identity, mailbox_address)
         .call()
         .await
         .unwrap();
@@ -219,13 +216,13 @@ async fn verify_fallback_success() {
 
 #[tokio::test]
 async fn verify_fallback_fail() {
-    let (fallback_routing_ism, mailbox, wallet_address, _, test_ism) =
+    let (fallback_routing_ism, mailbox, wallet_identity, _, test_ism) =
         get_contract_instance().await;
 
     let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
     fallback_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address)
+        .initialize(wallet_identity, mailbox_address)
         .call()
         .await
         .unwrap();

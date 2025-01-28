@@ -23,15 +23,15 @@ impl AggregationHook for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The owner of the contract.
+    /// * `owner`: [Identity] - The owner of the contract.
     /// * `hooks`: [Vec<ContractId>] - The hooks to initialize with.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(owner: b256, hooks: Vec<ContractId>) {
-        initialize_ownership(Identity::Address(Address::from(owner)));
+    fn initialize(owner: Identity, hooks: Vec<ContractId>) {
+        initialize_ownership(owner);
         let mut i = 0;
         while i < hooks.len() {
             storage.hooks.push(hooks.get(i).unwrap());

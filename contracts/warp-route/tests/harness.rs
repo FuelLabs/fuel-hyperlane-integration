@@ -251,7 +251,7 @@ mod warp_route {
         let post_dispatch = PostDispatchMock::new(post_dispatch_id.clone(), wallet.clone());
         let default_ism = TestInterchainSecurityModule::new(default_ism_id.clone(), wallet.clone());
 
-        let owner = Bits256(Address::from(wallet.address()).into());
+        let owner = Identity::from(wallet.address());
         let mailbox_address = Bits256(ContractId::from(mailbox.id()).into());
         let hook_address = Bits256(ContractId::from(post_dispatch.id()).into());
         let default_ism_address = Bits256(ContractId::from(default_ism.id()).into());

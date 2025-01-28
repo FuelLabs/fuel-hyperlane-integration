@@ -38,7 +38,7 @@ abi WarpRoute {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner of the contract
+    /// * `owner`: [Identity] - The address of the owner of the contract
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
@@ -51,7 +51,7 @@ abi WarpRoute {
     /// * `asset_contract_id`: [Option<b256>] - The asset contract ID of the token
     #[storage(read, write)]
     fn initialize(
-        owner: b256,
+        owner: Identity,
         mailbox_address: b256,
         mode: WarpRouteTokenMode,
         hook: b256,

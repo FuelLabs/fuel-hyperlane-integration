@@ -69,7 +69,7 @@ impl Mailbox for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The owner of the contract.
+    /// * `owner`: [Identity] - The owner of the contract.
     /// * `default_ism`: [b256] - The default ISM contract Id.
     /// * `default_hook`: [b256] - The default hook contract Id.
     /// * `required_hook`: [b256] - The required hook contract Id.
@@ -79,17 +79,12 @@ impl Mailbox for Contract {
     /// * If the contract is already initialized.
     #[storage(write)]
     fn initialize(
-        owner: b256,
+        owner: Identity,
         default_ism: b256,
         default_hook: b256,
         required_hook: b256,
     ) {
-        require(
-            _owner() == State::Uninitialized,
-            MailboxError::AlreadyInitialized,
-        );
-
-        initialize_ownership(Identity::Address(Address::from(owner)));
+        initialize_ownership(owner);
         storage.default_ism.write(ContractId::from(default_ism));
         storage.default_hook.write(ContractId::from(default_hook));
         storage.required_hook.write(ContractId::from(required_hook));

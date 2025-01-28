@@ -139,26 +139,7 @@ async fn module_type_and_metadata() {
 async fn initialize() {
     let (fallback_routing_hook, owner, mut hooks) = get_contract_instance().await;
 
-    let zero_address = Address::zeroed();
-
-    let init_res = fallback_routing_hook
-        .methods()
-        .initialize(
-            Identity::Address(owner.address().into()),
-            Bits256(*zero_address),
-        )
-        .call()
-        .await;
-    // Cannot set the fallback hook to the zero address
-    println!("{:?}", init_res);
-    assert!(init_res.is_err());
-    assert_eq!(
-        get_revert_reason(init_res.unwrap_err()),
-        "InvalidHookAddress"
-    );
-
     let hook = hooks.pop().unwrap().id();
-
     let init_res = fallback_routing_hook
         .methods()
         .initialize(

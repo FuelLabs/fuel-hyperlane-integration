@@ -1,23 +1,15 @@
 library;
 
 abi DomainRoutingIsm {
-    /// Sets the owner of the ISM.
-    ///
-    /// ### Arguments
-    ///
-    /// * `owner`: [b256] - The address of the owner.
-    #[storage(write, read)]
-    fn initialize(owner: b256);
-
     /// Sets the ISMs to be used for the specified origin domains
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner.
+    /// * `owner`: [Identity] - The address of the owner.
     /// * `domains`: [Vec<u32>] - The list of origin domains.
     /// * `modules`: [Vec<b256>] - The list of ISMs to be used for the specified domains.
     #[storage(write, read)]
-    fn initialize_with_domains(owner: b256, domains: Vec<u32>, modules: Vec<b256>);
+    fn initialize_with_domains(owner: Identity, domains: Vec<u32>, modules: Vec<b256>);
 
     /// Sets the ISM to be used for the specified origin domain
     ///
