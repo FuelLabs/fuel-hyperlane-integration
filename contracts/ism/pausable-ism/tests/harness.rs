@@ -41,7 +41,7 @@ async fn get_contract_instance() -> (PausableIsm<WalletUnlocked>, WalletUnlocked
     let ism = PausableIsm::new(ism_id.clone(), wallet.clone());
 
     ism.methods()
-        .initialize(Identity::Address(wallet.address().into()))
+        .initialize_ownership(Identity::from(wallet.address()))
         .call()
         .await
         .unwrap();

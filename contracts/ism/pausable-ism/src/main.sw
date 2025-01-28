@@ -2,25 +2,11 @@ contract;
 
 use interfaces::{
     ownable::Ownable,
-    isms::{pausable_ism::*, ism::*}
+    isms::ism::*
 };
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::{bytes::Bytes};
-
-
-
-impl PausableIsm for Contract {
-    /// Initializes the contract.
-    ///
-    /// ### Arguments
-    ///
-    /// * `owner`: [Identity] - The owner of the contract.
-    #[storage(write)]
-    fn initialize(owner: Identity) {
-        initialize_ownership(owner);
-    }
-}
 
 impl InterchainSecurityModule for Contract {
     /// Returns an enum that represents the type of security model
@@ -55,8 +41,8 @@ impl InterchainSecurityModule for Contract {
 }
 
 
-/// The Pausable ISM inherits all the needed functions of the Hyperlane PausableISM interface
-/// through the Pausable abi.
+/// All other functions for the PausableIsm Hyperlane interface are inherited through the Pausable abi.
+/// Source: [sway-libs](https://github.com/FuelLabs/sway-libs/blob/master/libs/src/pausable.sw)
 impl Pausable for Contract {
     #[storage(write)]
     fn pause() {
