@@ -31,75 +31,12 @@ impl AggregationHook for Contract {
     /// * If the contract is already initialized.
     #[storage(write)]
     fn initialize(owner: b256, hooks: Vec<ContractId>) {
-        require(
-            !_is_initialized(),
-            AggregationHookError::ContractAlreadyInitialized,
-        );
         initialize_ownership(Identity::Address(Address::from(owner)));
         let mut i = 0;
         while i < hooks.len() {
             storage.hooks.push(hooks.get(i).unwrap());
             i += 1;
         }
-    }
-
-    /// Adds a new hook to the aggregator
-    ///
-    /// ### Arguments
-    ///
-    /// * `hook`: [ContractId] - The hook to add
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized
-    /// * If the caller is not the owner
-    /// * If the hook already exists
-    #[storage(read, write)]
-    fn add_hook(hook: ContractId) {
-        only_owner();
-        require(
-            _is_initialized(),
-            AggregationHookError::ContractNotInitialized,
-        );
-        require(!_hook_exists(hook), AggregationHookError::HookAlreadyExists);
-
-        storage.hooks.push(hook);
-    }
-
-    /// Removes a hook from the contract.
-    ///
-    /// ### Arguments
-    ///
-    /// * `hook`: [ContractId] - The hook to remove
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized
-    /// * If the caller is not the owner
-    /// * If the hook does not exist
-    #[storage(read, write)]
-    fn remove_hook(hook: ContractId) {
-        only_owner();
-        require(
-            _is_initialized(),
-            AggregationHookError::ContractNotInitialized,
-        );
-
-        let hooks = storage.hooks.load_vec();
-        let mut i = 0;
-        let mut found = false;
-
-        while i < hooks.len() {
-            if hooks.get(i).unwrap() == hook {
-                let removed = storage.hooks.remove(i);
-                require(removed == hook, AggregationHookError::HookCannotBeRemoved);
-                found = true;
-                break;
-            }
-            i += 1;
-        }
-
-        require(found, AggregationHookError::HookNotFound);
     }
 
     /// Returns the hooks.
@@ -109,10 +46,6 @@ impl AggregationHook for Contract {
     /// * `hooks`: [Vec<ContractId>] - The hooks.
     #[storage(read)]
     fn get_hooks() -> Vec<ContractId> {
-        require(
-            _is_initialized(),
-            AggregationHookError::ContractNotInitialized,
-        );
         storage.hooks.load_vec()
     }
 }
@@ -158,7 +91,6 @@ impl PostDispatchHook for Contract {
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
         let hooks = storage.hooks.load_vec();
-        require(hooks.len() > 0, AggregationHookError::NoHooksConfigured);
 
         let (_, total) = _calculate_quotes(hooks, metadata, message);
         total
@@ -178,9 +110,9 @@ impl PostDispatchHook for Contract {
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
         let hooks = storage.hooks.load_vec();
-        require(hooks.len() > 0, AggregationHookError::NoHooksConfigured);
 
         let (quotes, total) = _calculate_quotes(hooks, metadata, message);
+
         require(
             msg_amount() == total,
             AggregationHookError::IncorrectTotalHookPayment,
@@ -203,68 +135,10 @@ impl PostDispatchHook for Contract {
     }
 }
 
-// --------------------------------------------
-// --------- Ownable Implementation -----------
-// --------------------------------------------
-
-impl Ownable for Contract {
-    #[storage(read)]
-    fn owner() -> State {
-        _owner()
-    }
-    #[storage(read)]
-    fn only_owner() {
-        only_owner();
-    }
-    #[storage(write)]
-    fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
-    }
-    #[storage(read, write)]
-    fn initialize_ownership(new_owner: Identity) {
-        initialize_ownership(new_owner);
-    }
-    #[storage(read, write)]
-    fn renounce_ownership() {
-        renounce_ownership();
-    }
-}
-
 // ------------------------------------------------------------
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
 
-/// Checks if the contract is initialized.
-///
-/// ### Returns
-///
-/// * [bool] - Whether the contract is initialized.
-#[storage(read)]
-fn _is_initialized() -> bool {
-    _owner() != State::Uninitialized
-}
-
-/// Checks if a hook exists in the contract.
-///
-/// ### Arguments
-///
-/// * `hook`: [ContractId] - The hook to check for
-///
-/// ### Returns
-///
-/// * [bool] - Whether the hook exists.
-#[storage(read)]
-fn _hook_exists(hook: ContractId) -> bool {
-    let hooks = storage.hooks.load_vec();
-    let mut i = 0;
-    while i < hooks.len() {
-        if hooks.get(i).unwrap() == hook {
-            return true;
-        }
-        i += 1;
-    }
-    false
-}
 
 /// Internal function to calculate quotes for all hooks
 ///

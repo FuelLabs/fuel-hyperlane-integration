@@ -18,9 +18,11 @@ use standards::src5::State;
 use std_hook_metadata::*;
 use interfaces::{claimable::*, hooks::{post_dispatch_hook::*, protocol_fee::*}, ownable::*,};
 
+configurable {
+    MAX_PROTOCOL_FEE: u64 = 0,
+}
+
 storage {
-    /// The maximum protocol fee that can be set
-    max_protocol_fee: u64 = 0,
     /// The current protocol fee
     protocol_fee: u64 = 0,
     /// The beneficiary of protocol fees
@@ -42,20 +44,9 @@ impl ProtocolFee for Contract {
     /// * If the contract is already initialized
     /// * If the beneficiary is invalid
     #[storage(read, write)]
-    fn initialize(
-        max_protocol_fee: u64,
-        protocol_fee: u64,
-        beneficiary: Identity,
-        owner: Identity,
-    ) {
-        require(
-            !_is_initialized(),
-            ProtocolFeeError::ProtocolFeeAlreadyInitialized,
-        );
-
+    fn initialize(protocol_fee: u64, beneficiary: Identity, owner: Identity) {
         initialize_ownership(owner);
         _set_beneficiary(beneficiary);
-        storage.max_protocol_fee.write(max_protocol_fee);
         _set_protocol_fee(protocol_fee);
     }
 
@@ -64,9 +55,8 @@ impl ProtocolFee for Contract {
     /// ### Returns
     ///
     /// * [u64] - The maximum protocol fee
-    #[storage(read)]
     fn max_protocol_fee() -> u64 {
-        storage.max_protocol_fee.read()
+        MAX_PROTOCOL_FEE
     }
 
     /// Returns the current protocol fee
@@ -92,11 +82,6 @@ impl ProtocolFee for Contract {
     #[storage(read, write)]
     fn set_protocol_fee(new_fee: u64) {
         only_owner();
-        require(
-            _is_initialized(),
-            ProtocolFeeError::ProtocolFeeNotInitialized,
-        );
-
         _set_protocol_fee(new_fee);
     }
 
@@ -150,8 +135,6 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, _message: Bytes) {
-        require(_is_initialized(), ProtocolFeeError::NotInitialized);
-
         let metadata_valid = StandardHookMetadata::is_valid(metadata);
         require(metadata_valid, ProtocolFeeError::UnsupportedMetadataFormat);
 
@@ -249,16 +232,6 @@ impl Claimable for Contract {
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
 
-/// Checks if the contract is initialized.
-///
-/// ### Returns
-///
-/// * [bool] - Whether the contract is initialized.
-#[storage(read)]
-fn _is_initialized() -> bool {
-    _owner() != State::Uninitialized
-}
-
 /// Collects protocol fees.
 ///
 /// ### Arguments
@@ -278,9 +251,8 @@ fn _collect_protocol_fees(asset: Option<AssetId>) {
 /// * `new_fee`: [u64] - The new protocol fee.
 #[storage(read, write)]
 fn _set_protocol_fee(new_fee: u64) {
-    let max_protocol_fee = storage.max_protocol_fee.read();
     require(
-        new_fee <= max_protocol_fee,
+        new_fee <= MAX_PROTOCOL_FEE,
         ProtocolFeeError::ExceedsMaxProtocolFee,
     );
 

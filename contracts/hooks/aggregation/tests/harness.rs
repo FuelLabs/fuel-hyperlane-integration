@@ -234,88 +234,8 @@ async fn test_initialization_reverts_if_already_initialized() {
     assert!(result.is_err());
     assert_eq!(
         get_revert_reason(result.err().unwrap()),
-        "ContractAlreadyInitialized"
+        "CannotReinitialized"
     );
-}
-
-// ============ Add Hook Tests ============
-#[tokio::test]
-async fn test_add_hook() {
-    let (aggregation, _, mock_hook2, _, _) = get_contract_instances().await;
-
-    let new_hook = mock_hook2.contract_id().into();
-    aggregation
-        .methods()
-        .add_hook(new_hook)
-        .call()
-        .await
-        .unwrap();
-
-    let stored_hooks = aggregation
-        .methods()
-        .get_hooks()
-        .call()
-        .await
-        .unwrap()
-        .value;
-    assert_eq!(stored_hooks.len(), 3);
-    assert!(stored_hooks.contains(&new_hook));
-}
-
-// ============ Add Duplicate Hook Tests ============
-#[tokio::test]
-async fn test_add_hook_reverts_if_duplicate() {
-    let (aggregation, mock_hook1, _, _, _) = get_contract_instances().await;
-
-    let hook: ContractId = mock_hook1.contract_id().into();
-    let result = aggregation.methods().add_hook(hook).call().await;
-
-    assert!(result.is_err());
-    assert_eq!(
-        get_revert_reason(result.err().unwrap()),
-        "HookAlreadyExists"
-    );
-}
-
-// ============ Remove Hook Tests ============
-#[tokio::test]
-async fn test_remove_hook() {
-    let (aggregation, mock_hook1, _, _, _) = get_contract_instances().await;
-
-    // Remove first hook
-    let hook_to_remove = mock_hook1.contract_id().into();
-    aggregation
-        .methods()
-        .remove_hook(hook_to_remove)
-        .call()
-        .await
-        .unwrap();
-
-    let stored_hooks = aggregation
-        .methods()
-        .get_hooks()
-        .call()
-        .await
-        .unwrap()
-        .value;
-    assert_eq!(stored_hooks.len(), 1);
-    assert!(!stored_hooks.contains(&hook_to_remove));
-}
-
-// ============ Remove Hook Test with Non-Existent Hook ============
-#[tokio::test]
-async fn test_remove_hook_reverts_if_not_found() {
-    let (aggregation, _, mock_hook2, _, _) = get_contract_instances().await;
-
-    // Try to remove second hook that wasn't added
-    let result = aggregation
-        .methods()
-        .remove_hook(mock_hook2.contract_id())
-        .call()
-        .await;
-
-    assert!(result.is_err());
-    assert_eq!(get_revert_reason(result.err().unwrap()), "HookNotFound");
 }
 
 // ============ Quote Dispatch Calculation Tests ============

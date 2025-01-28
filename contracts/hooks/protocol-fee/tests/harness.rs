@@ -42,23 +42,25 @@ async fn get_contract_instance() -> (ProtocolFee<WalletUnlocked>, WalletUnlocked
 
     let wallet = wallets.pop().unwrap();
 
-    let id = Contract::load_from("./out/debug/protocol-fee.bin", LoadConfiguration::default())
-        .unwrap()
-        .deploy(&wallet, TxPolicies::default())
-        .await
+    let protocol_fee_configurables = ProtocolFeeConfigurables::default()
+        .with_MAX_PROTOCOL_FEE(MAX_PROTOCOL_FEE)
         .unwrap();
+
+    let id = Contract::load_from(
+        "./out/debug/protocol-fee.bin",
+        LoadConfiguration::default().with_configurables(protocol_fee_configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
 
     let instance = ProtocolFee::new(id, wallet.clone());
     let owner_identity = Identity::Address(wallet.address().into());
 
     instance
         .methods()
-        .initialize(
-            MAX_PROTOCOL_FEE,
-            PROTOCOL_FEE,
-            owner_identity,
-            owner_identity,
-        )
+        .initialize(PROTOCOL_FEE, owner_identity, owner_identity)
         .call()
         .await
         .unwrap();
@@ -74,14 +76,14 @@ async fn test_initialization_reverts_if_already_initialized() {
 
     let result = instance
         .methods()
-        .initialize(MAX_PROTOCOL_FEE, PROTOCOL_FEE, owner, owner)
+        .initialize(PROTOCOL_FEE, owner, owner)
         .call()
         .await;
 
     assert!(result.is_err());
     assert_eq!(
         get_revert_reason(result.err().unwrap()),
-        "ProtocolFeeAlreadyInitialized"
+        "CannotReinitialized"
     );
 }
 

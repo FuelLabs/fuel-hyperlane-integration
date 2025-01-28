@@ -10,10 +10,6 @@ pub enum ProtocolFeeError {
     ExceedsMaxProtocolFee: (),
     /// The provided beneficiary address/contract is invalid (zero)
     InvalidBeneficiary: (),
-    /// The protocol fee contract is already initialized
-    ProtocolFeeAlreadyInitialized: (),
-    /// The protocol fee contract is not initialized
-    ProtocolFeeNotInitialized: (),
     /// The metadata is not valid
     UnsupportedMetadataFormat: (),
 }
@@ -34,7 +30,7 @@ abi ProtocolFee {
     /// * If protocol_fee > max_protocol_fee
     /// * If beneficiary is zero address/contract
     #[storage(read, write)]
-    fn initialize(max_protocol_fee: u64, protocol_fee: u64, beneficiary: Identity, owner: Identity);
+    fn initialize(protocol_fee: u64, beneficiary: Identity, owner: Identity);
 
     /// Sets a new protocol fee.
     ///
@@ -62,10 +58,17 @@ abi ProtocolFee {
     fn collect_protocol_fees();
 
     /// Returns the maximum protocol fee that can be set
-    #[storage(read)]
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The maximum protocol fee
     fn max_protocol_fee() -> u64;
 
     /// Returns the current protocol fee
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The current protocol fee
     #[storage(read)]
     fn protocol_fee() -> u64;
 }

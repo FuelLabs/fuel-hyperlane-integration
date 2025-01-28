@@ -455,9 +455,17 @@ async fn main() {
     // Protocol Fee Hook Deployment //
     //////////////////////////////////
 
+    const MAX_PROTOCOL_FEE: u64 = 10;
+
+    let protocol_fee_configurables = ProtocolFeeConfigurables::default()
+        .with_MAX_PROTOCOL_FEE(MAX_PROTOCOL_FEE)
+        .unwrap();
+
     let protocol_fee_hook_id = Contract::load_from(
         "../contracts/hooks/protocol-fee/out/debug/protocol-fee.bin",
-        config.clone(),
+        config
+            .clone()
+            .with_configurables(protocol_fee_configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -868,17 +876,11 @@ async fn main() {
     // Protocol Fee Hook Initialization //
     //////////////////////////////////////
 
-    let max_protocol_fee = 10;
     let protocol_fee = 1;
 
     let init_res = protocol_fee_hook
         .methods()
-        .initialize(
-            max_protocol_fee,
-            protocol_fee,
-            owner_identity,
-            owner_identity,
-        )
+        .initialize(protocol_fee, owner_identity, owner_identity)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize Protocol Fee Hook.");
