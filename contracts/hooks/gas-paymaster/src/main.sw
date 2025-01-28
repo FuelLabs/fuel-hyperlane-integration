@@ -3,7 +3,7 @@ contract;
 use sway_libs::ownership::*;
 use standards::src5::State;
 
-use interfaces::{claimable::*, ownable::Ownable, hooks::{post_dispatch_hook::*, igp::*}};
+use interfaces::{hooks::{igp::*, post_dispatch_hook::*}, ownable::Ownable, gas_oracle::GasOracle};
 use message::{EncodedMessage, Message};
 use std_hook_metadata::*;
 
@@ -249,9 +249,7 @@ impl IGP for Contract {
     fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
         _get_remote_oracle_gas_data(destination_domain)
     }
-}
 
-impl Claimable for Contract {
     /// Gets the current beneficiary.
     ///
     /// ### Returns
@@ -276,7 +274,7 @@ impl Claimable for Contract {
         only_owner();
         storage.beneficiary.write(beneficiary);
         log(BeneficiarySetEvent {
-            beneficiary: beneficiary.bits(),
+            beneficiary: beneficiary,
         });
     }
 
@@ -289,7 +287,7 @@ impl Claimable for Contract {
         transfer(beneficiary, asset.unwrap_or(AssetId::base()), balance);
 
         log(ClaimEvent {
-            beneficiary: beneficiary.bits(),
+            beneficiary,
             amount: balance,
         });
     }
@@ -465,7 +463,13 @@ fn u256_to_u64(value: u256) -> Option<u64> {
 fn _get_remote_oracle_gas_data(destination_domain: u32) -> RemoteGasData {
     let gas_oracle_id = storage.gas_oracles.get(destination_domain).read();
     let gas_oracle = abi(GasOracle, gas_oracle_id);
-    gas_oracle.get_remote_gas_data(destination_domain)
+    let remote_gas_data = gas_oracle.get_remote_gas_data(destination_domain);
+    RemoteGasData {
+        domain: remote_gas_data.domain,
+        token_exchange_rate: remote_gas_data.token_exchange_rate,
+        gas_price: remote_gas_data.gas_price,
+        token_decimals: remote_gas_data.token_decimals,
+    }
 }
 
 /// Quotes the required interchain gas payment to be paid in the base asset.
