@@ -28,7 +28,7 @@ abigen!(
     ),
     Contract(
         name = "PostDispatchHook",
-        abi = "contracts/mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch-abi.json"
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json"
     )
 );
 
@@ -127,7 +127,7 @@ async fn get_contract_instances() -> (
 
     // Deploy two mock hooks for testing
     let mock_hook1_id = Contract::load_from(
-        "../../mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch.bin",
+        "../../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",
         LoadConfiguration::default(),
     )
     .unwrap()
@@ -138,7 +138,7 @@ async fn get_contract_instances() -> (
     let salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
 
     let mock_hook2_id = Contract::load_from(
-        "../../mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch.bin",
+        "../../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",
         LoadConfiguration::default().with_salt(salt),
     )
     .unwrap()
