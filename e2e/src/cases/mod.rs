@@ -2,6 +2,7 @@ mod asset_send_with_gas;
 mod collateral_asset_recieve;
 mod collateral_asset_send;
 mod gas_overpayment_and_claim;
+mod hooks_setup;
 mod message_recieve;
 mod message_send_with_gas;
 mod native_asset_recieve;
@@ -70,5 +71,6 @@ pub fn pull_test_cases() -> Vec<TestCase> {
         synthetic_asset_recieve::test(),
         collateral_asset_recieve::test(),
         native_asset_recieve::test(),
+        hooks_setup::test(),
     ]
 }

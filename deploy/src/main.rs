@@ -82,6 +82,18 @@ abigen!(
         name = "SRC20Test",
         abi = "contracts/test/src20-test/out/debug/src20-test-abi.json",
     ),
+    Contract(
+        name = "ProtocolFee",
+        abi = "contracts/hooks/protocol-fee/out/debug/protocol-fee-abi.json",
+    ),
+    Contract(
+        name = "AggregationHook",
+        abi = "contracts/hooks/aggregation/out/debug/aggregation-abi.json",
+    ),
+    Contract(
+      name = "PausableHook",
+      abi = "contracts/hooks/pausable-hook/out/debug/pausable-hook-abi.json",
+    ),
 );
 
 struct DeploymentEnv {
@@ -129,6 +141,12 @@ struct ContractAddresses {
     collateral_asset_contract_id: String,
     #[serde(rename = "testCollateralAsset")]
     collateral_asset_id: String,
+    #[serde(rename = "aggregationHook")]
+    aggregation_hook: String,
+    #[serde(rename = "pausableHook")]
+    pausable_hook: String,
+    #[serde(rename = "protocolFee")]
+    protocol_fee: String,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -152,6 +170,9 @@ impl ContractAddresses {
         warp_route_collateral: ContractId,
         collateral_asset_contract_id: ContractId,
         collateral_asset_id: AssetId,
+        aggregation_hook: ContractId,
+        pausable_hook: ContractId,
+        protocol_fee: ContractId,
     ) -> Self {
         Self {
             mailbox: format!("0x{}", mailbox),
@@ -172,6 +193,9 @@ impl ContractAddresses {
             warp_route_collateral: format!("0x{}", warp_route_collateral),
             collateral_asset_id: format!("0x{}", collateral_asset_id),
             collateral_asset_contract_id: format!("0x{}", collateral_asset_contract_id),
+            aggregation_hook: format!("0x{}", aggregation_hook),
+            pausable_hook: format!("0x{}", pausable_hook),
+            protocol_fee: format!("0x{}", protocol_fee),
         }
     }
 }
@@ -391,6 +415,68 @@ async fn main() {
         ContractId::from(merkle_tree_id.clone())
     );
 
+    /////////////////////////////////
+    // Aggregation Hook Deployment //
+    /////////////////////////////////
+
+    let aggregation_hook_id = Contract::load_from(
+        "../contracts/hooks/aggregation/out/debug/aggregation.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "aggregationHook: 0x{}",
+        ContractId::from(aggregation_hook_id.clone())
+    );
+
+    ///////////////////////////////
+    // Pausable Hook Deployment //
+    //////////////////////////////
+
+    let pausable_hook_id = Contract::load_from(
+        "../contracts/hooks/pausable-hook/out/debug/pausable-hook.bin",
+        config.clone(),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "pausableHook: 0x{}",
+        ContractId::from(pausable_hook_id.clone())
+    );
+
+    //////////////////////////////////
+    // Protocol Fee Hook Deployment //
+    //////////////////////////////////
+
+    const MAX_PROTOCOL_FEE: u64 = 10;
+
+    let protocol_fee_configurables = ProtocolFeeConfigurables::default()
+        .with_MAX_PROTOCOL_FEE(MAX_PROTOCOL_FEE)
+        .unwrap();
+
+    let protocol_fee_hook_id = Contract::load_from(
+        "../contracts/hooks/protocol-fee/out/debug/protocol-fee.bin",
+        config
+            .clone()
+            .with_configurables(protocol_fee_configurables),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "protocolFee: 0x{}",
+        ContractId::from(protocol_fee_hook_id.clone())
+    );
+
     /////////////////////////////////////////
     // Gas Paymaster Components Deployment //
     /////////////////////////////////////////
@@ -524,6 +610,9 @@ async fn main() {
     let post_dispatch_mock = PostDispatch::new(post_dispatch_mock_id.clone(), fuel_wallet.clone());
     let mailbox = Mailbox::new(mailbox_contract_id.clone(), fuel_wallet.clone());
     let merkle_tree_hook = MerkleTreeHook::new(merkle_tree_id.clone(), fuel_wallet.clone());
+    let aggregation_hook = AggregationHook::new(aggregation_hook_id.clone(), fuel_wallet.clone());
+    let pausable_hook = PausableHook::new(pausable_hook_id.clone(), fuel_wallet.clone());
+    let protocol_fee_hook = ProtocolFee::new(protocol_fee_hook_id.clone(), fuel_wallet.clone());
     let gas_oracle = GasOracle::new(gas_oracle_id.clone(), fuel_wallet.clone());
     let igp = GasPaymaster::new(igp_id.clone(), fuel_wallet.clone());
     let test_recipient = TestRecipient::new(recipient_id.clone(), fuel_wallet.clone());
@@ -773,8 +862,47 @@ async fn main() {
     println!("Merkle Tree Hook initialized.");
 
     ///////////////////////////////
+    // Pausable Hook Initialization //
+    ///////////////////////////////
+    let init_res = pausable_hook
+        .methods()
+        .initialize(owner_identity)
+        .call()
+        .await;
+    assert!(init_res.is_ok(), "Failed to initialize Pausable Hook.");
+    println!("Pausable Hook initialized.");
+
+    //////////////////////////////////////
+    // Protocol Fee Hook Initialization //
+    //////////////////////////////////////
+
+    let protocol_fee = 1;
+
+    let init_res = protocol_fee_hook
+        .methods()
+        .initialize(protocol_fee, owner_identity, owner_identity)
+        .call()
+        .await;
+    assert!(init_res.is_ok(), "Failed to initialize Protocol Fee Hook.");
+    println!("Protocol Fee Hook initialized.");
+
+    //////////////////////////////////////
+    // Aggregation Hook Initialization //
+    //////////////////////////////////////
+
+    let hooks = vec![post_dispatch_mock_id.clone().into(), igp_id.clone().into()];
+
+    let init_res = aggregation_hook
+        .methods()
+        .initialize(wallet_address, hooks)
+        .call()
+        .await;
+    assert!(init_res.is_ok(), "Failed to initialize Aggregation Hook.");
+    println!("Aggregation Hook initialized.");
+
+    ///////////////////////////////
     // Warp Route Initialization //
-    /////////////////////////////
+    ///////////////////////////////
 
     // Initalize Warp Routes
     let native_init_res = warp_route_native
@@ -870,6 +998,9 @@ async fn main() {
         warp_route_collateral_id.into(),
         collateral_asset_contract_id.into(),
         collateral_asset_id,
+        aggregation_hook_id.into(),
+        pausable_hook_id.into(),
+        protocol_fee_hook_id.into(),
     );
 
     let yaml = serde_yaml::to_string(&addresses).unwrap();

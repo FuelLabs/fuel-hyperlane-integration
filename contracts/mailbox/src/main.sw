@@ -4,6 +4,7 @@ use sway_libs::{ownership::*, pausable::*, reentrancy::reentrancy_guard,};
 use standards::src5::State;
 
 use interfaces::{
+    hooks::post_dispatch_hook::*,
     isms::ism::*,
     mailbox::{
         events::*,
@@ -11,7 +12,6 @@ use interfaces::{
     },
     message_recipient::MessageRecipient,
     ownable::Ownable,
-    hooks::post_dispatch_hook::*,
 };
 use std::{
     bytes::Bytes,

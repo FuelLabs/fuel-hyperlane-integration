@@ -375,7 +375,7 @@ impl PostDispatchHook for Contract {
     /// * [bool] - Whether the hook supports the metadata.
     #[storage(read)]
     fn supports_metadata(metadata: Bytes) -> bool {
-        check_metadata_length_and_variant(metadata) || metadata.len() == 0 //empty metadata is also allowed
+        StandardHookMetadata::is_valid(metadata)
     }
 
     /// Manages payments on a source chain to cover gas costs of relaying
@@ -399,7 +399,7 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
-        let metadata_valid = check_metadata_length_and_variant(metadata) || metadata.len() == 0; //empty metadata is also allowed 
+        let metadata_valid = StandardHookMetadata::is_valid(metadata);
         require(metadata_valid, IgpError::UnsupportedMetadataFormat);
 
         let message = EncodedMessage::from_bytes(message);
@@ -441,7 +441,7 @@ impl PostDispatchHook for Contract {
     /// * If metadata is invalid
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
-        let metadata_valid = check_metadata_length_and_variant(metadata) || metadata.len() == 0; //empty metadata is also allowed 
+        let metadata_valid = StandardHookMetadata::is_valid(metadata);
         require(metadata_valid, IgpError::UnsupportedMetadataFormat);
 
         let message = EncodedMessage::from_bytes(message);
@@ -455,20 +455,6 @@ impl PostDispatchHook for Contract {
 // --------------------------------------------
 // --------- Internal Functions ---------------
 // --------------------------------------------
-
-
-fn check_metadata_length_and_variant(metadata: Bytes) -> bool {
-    if metadata.len() < MIN_METADATA_LENGTH {
-        return false;
-    }
-
-    let variant = StandardHookMetadata::get_variant(metadata);
-    if variant != DEFAULT_VARIANT {
-        return false;
-    }
-
-    true
-}
 
 /// Converts a `u256` to `u64`, returning `None` if the value overflows `u64`.
 fn u256_to_u64(value: u256) -> Option<u64> {

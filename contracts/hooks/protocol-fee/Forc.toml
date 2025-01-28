@@ -1,12 +1,12 @@
 [project]
-authors = ["mantasm"]
+authors = ["Emre Keskin"]
 entry = "main.sw"
 license = "Apache-2.0"
-name = "gas-paymaster"
+name = "protocol-fee"
 
 [dependencies]
 interfaces = { path = "../../interfaces" }
 message = { path = "../../libs/message" }
-std_hook_metadata = { path = "../../libs/std-hook-metadata" }
 standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
+std_hook_metadata = { path = "../../libs/std-hook-metadata" }
 sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
