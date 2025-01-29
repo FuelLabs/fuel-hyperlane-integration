@@ -53,6 +53,7 @@ use interfaces::{
 };
 use standards::{src20::SRC20, src5::State};
 use message::{EncodedMessage, Message};
+use std_hook_metadata::*;
 
 storage {
     /// The mode of the WarpRoute contract
@@ -274,7 +275,18 @@ impl WarpRoute for Contract {
             },
         }
 
-        let metadata = metadata.unwrap_or(Bytes::new()); // send empty metadata if not provided
+        let metadata = match metadata {
+            Some(metadata) => metadata,
+            None => {
+                let gas_limit = _get_quote_for_gas_payment(
+                    destination_domain,
+                    remote_domain_router,
+                    message_body,
+                    hook_contract,
+                );
+                StandardHookMetadata::override_gas_limit(gas_limit.as_u256())
+            },
+        };
 
         //Dispatch the message to the destination domain
         let message_id = mailbox.dispatch {

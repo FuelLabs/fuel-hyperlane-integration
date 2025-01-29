@@ -4,11 +4,10 @@ use std::bytes::Bytes;
 use std_lib_extended::bytes::*;
 
 /// Byte layout of StandardHookMetadata:
-///   variant:        [0:2]     
-///   msg_value:      [2:34]    
-///   gas_limit:      [34:66]   
-///   refund_address: [66:98]   
-
+///   variant:        [0:2]
+///   msg_value:      [2:34]
+///   gas_limit:      [34:66]
+///   refund_address: [66:98]
 pub struct StandardHookMetadata {
     /// The metadata variant identifier
     pub variant: u16,
@@ -25,8 +24,7 @@ pub const VARIANT_OFFSET: u64 = 0;
 pub const MSG_VALUE_OFFSET: u64 = 2;
 pub const GAS_LIMIT_OFFSET: u64 = 34;
 pub const REFUND_ADDRESS_OFFSET: u64 = 66;
-pub const MIN_METADATA_LENGTH: u64 = 98; 
-
+pub const MIN_METADATA_LENGTH: u64 = 98;
 /// Standard variant value
 pub const DEFAULT_VARIANT: u16 = 1;
 
@@ -125,7 +123,7 @@ impl StandardHookMetadata {
         }
     }
 
-     /// Validates if the metadata is of the correct format and length
+    /// Validates if the metadata is of the correct format and length
     ///
     /// ### Arguments
     ///
@@ -214,7 +212,7 @@ impl StandardHookMetadata {
         let buffer = gas_limit.abi_encode(buffer);
         let buffer = refund_address.abi_encode(buffer);
         let buffer = custom_metadata.abi_encode(buffer);
-        
+
         Bytes::from(buffer.as_raw_slice())
     }
 
@@ -244,12 +242,7 @@ impl StandardHookMetadata {
     ///
     /// * [Bytes] - The encoded metadata.
     pub fn override_msg_value(msg_value: u256) -> Bytes {
-        Self::format_metadata(
-            msg_value,
-            0,
-            0x0000000000000000000000000000000000000000000000000000000000000000,
-            Bytes::new(),
-        )
+        Self::format_metadata(msg_value, 0, msg_sender().unwrap().bits(), Bytes::new())
     }
 
     /// Creates metadata with only gas_limit set.
@@ -262,12 +255,7 @@ impl StandardHookMetadata {
     ///
     /// * [Bytes] - The encoded metadata.
     pub fn override_gas_limit(gas_limit: u256) -> Bytes {
-        Self::format_metadata(
-            0,
-            gas_limit,
-            0x0000000000000000000000000000000000000000000000000000000000000000,
-            Bytes::new(),
-        )
+        Self::format_metadata(0, gas_limit, msg_sender().unwrap().bits(), Bytes::new())
     }
 
     /// Creates metadata with only refund_address set.

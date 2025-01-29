@@ -9,3 +9,4 @@ interfaces = { path = "../interfaces" }
 message = { path = "../libs/message" }
 standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
 sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
+std_hook_metadata = { path = "../libs/std-hook-metadata" }
