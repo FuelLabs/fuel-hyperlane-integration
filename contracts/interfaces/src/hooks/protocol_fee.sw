@@ -99,9 +99,3 @@ pub struct ProtocolFeeSet {
 pub struct BeneficiarySetEvent {
     pub beneficiary: Identity,
 }
-
-/// Logged when the balance is claimed and sent to the beneficiary.
-pub struct ClaimEvent {
-    pub beneficiary: b256,
-    pub amount: u64,
-}
