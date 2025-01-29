@@ -36,11 +36,6 @@ pub struct RemoteGasDataConfig {
     pub remote_gas_data: RemoteGasData,
 }
 
-/// Logged when a remote gas data config is set.
-pub struct RemoteGasDataSetEvent {
-    pub config: RemoteGasDataConfig,
-}
-
 abi GasOracle {
     /// Gets the gas data for a remote domain.
     ///
