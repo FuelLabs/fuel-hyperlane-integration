@@ -2,7 +2,7 @@ contract;
 
 use sway_libs::ownership::*;
 use standards::src5::State;
-use interfaces::{hooks::igp::*, ownable::Ownable};
+use interfaces::{hooks::gas_oracle::*, ownable::Ownable};
 use std::hash::*;
 
 storage {

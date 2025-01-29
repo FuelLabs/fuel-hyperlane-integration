@@ -16,7 +16,7 @@ use std::{
 use sway_libs::ownership::*;
 use standards::src5::State;
 use std_hook_metadata::*;
-use interfaces::{claimable::*, hooks::{post_dispatch_hook::*, protocol_fee::*}, ownable::*,};
+use interfaces::{hooks::{post_dispatch_hook::*, protocol_fee::*}, ownable::*,};
 
 configurable {
     MAX_PROTOCOL_FEE: u64 = 0,
@@ -90,6 +90,31 @@ impl ProtocolFee for Contract {
     #[storage(read)]
     fn collect_protocol_fees() {
         _collect_protocol_fees(None);
+    }
+
+    /// Gets the current beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The new beneficiary.
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        _set_beneficiary(beneficiary);
     }
 }
 
@@ -188,42 +213,6 @@ impl Ownable for Contract {
     }
 }
 
-impl Claimable for Contract {
-    /// Gets the current beneficiary.
-    ///
-    /// ### Returns
-    ///
-    /// * [Identity] - The beneficiary.
-    #[storage(read)]
-    fn beneficiary() -> Identity {
-        storage.beneficiary.read()
-    }
-
-    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
-    ///
-    /// ### Arguments
-    ///
-    /// * `beneficiary`: [Identity] - The new beneficiary.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the caller is not the owner.
-    #[storage(read, write)]
-    fn set_beneficiary(beneficiary: Identity) {
-        _set_beneficiary(beneficiary);
-    }
-
-    /// Sends all base asset funds to the beneficiary. Callable by anyone.
-    ///
-    /// ### Arguments
-    ///
-    /// * `asset`: [Option<AssetId>] - The asset to collect fees from, defaults to base asset.
-    #[storage(read)]
-    fn claim(asset: Option<AssetId>) {
-        _collect_protocol_fees(asset);
-    }
-}
-
 // ------------------------------------------------------------
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
@@ -265,7 +254,6 @@ fn _set_protocol_fee(new_fee: u64) {
 /// * `beneficiary`: [Identity] - The new beneficiary.
 #[storage(read, write)]
 fn _set_beneficiary(beneficiary: Identity) {
-    only_owner();
     require(
         beneficiary
             .bits() != ZERO_B256,
@@ -273,6 +261,6 @@ fn _set_beneficiary(beneficiary: Identity) {
     );
     storage.beneficiary.write(beneficiary);
     log(BeneficiarySetEvent {
-        beneficiary: beneficiary.bits(),
+        beneficiary: beneficiary,
     });
 }

@@ -3,7 +3,7 @@ contract;
 use sway_libs::ownership::*;
 use standards::src5::State;
 
-use interfaces::{claimable::*, ownable::Ownable, hooks::{post_dispatch_hook::*, igp::*}};
+use interfaces::{hooks::{igp::*, gas_oracle::*, post_dispatch_hook::*}, ownable::Ownable };
 use message::{EncodedMessage, Message};
 use std_hook_metadata::*;
 
@@ -241,9 +241,7 @@ impl IGP for Contract {
     fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
         _get_remote_oracle_gas_data(destination_domain)
     }
-}
 
-impl Claimable for Contract {
     /// Gets the current beneficiary.
     ///
     /// ### Returns
@@ -268,7 +266,7 @@ impl Claimable for Contract {
         only_owner();
         storage.beneficiary.write(beneficiary);
         log(BeneficiarySetEvent {
-            beneficiary: beneficiary.bits(),
+            beneficiary: beneficiary,
         });
     }
 
@@ -281,7 +279,7 @@ impl Claimable for Contract {
         transfer(beneficiary, asset.unwrap_or(AssetId::base()), balance);
 
         log(ClaimEvent {
-            beneficiary: beneficiary.bits(),
+            beneficiary,
             amount: balance,
         });
     }

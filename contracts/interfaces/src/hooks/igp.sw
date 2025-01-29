@@ -1,9 +1,16 @@
 library;
 
+use ::hooks::gas_oracle::RemoteGasData;
 use std::u128::U128;
 
 /// Default to the same number of decimals as the local base asset.
 const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
+
+/// Gas config for a domain.
+pub struct DomainGasConfig {
+    pub gas_oracle: b256,
+    pub gas_overhead: u64,
+}
 
 abi IGP {
     /// Initializes the contract with the given parameters.
@@ -114,6 +121,30 @@ abi IGP {
     /// * If no gas oracle is set.
     #[storage(read)]
     fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData;
+
+    /// Gets the beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity;
+
+    /// Sets the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The beneficiary.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity);
+
+    /// Claims the contract's balance and sends it to the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `asset`: Option<[AssetId]> - The asset to claim. If None, the base asset is used.
+    #[storage(read)]
+    fn claim(asset: Option<AssetId>);
 }
 
 /// Functions required for calculation of overheads
@@ -124,82 +155,6 @@ abi IGPWithOverhead {
 
     #[storage(read, write)]
     fn set_gas_overhead(domain: u32, gas_overhead: u64);
-}
-
-/// Gas data for a remote domain.
-pub struct RemoteGasData {
-    pub domain: u32,
-    pub token_exchange_rate: U128,
-    pub gas_price: U128,
-    pub token_decimals: u8,
-}
-
-/// Gas data for a remote domain.
-pub struct ExchangeRateAndGasData {
-    pub token_exchange_rate: U128,
-    pub gas_price: U128,
-}
-
-/// Gas config for a domain.
-pub struct DomainGasConfig {
-    pub gas_oracle: b256,
-    pub gas_overhead: u64,
-}
-
-impl RemoteGasData {
-    pub fn default() -> Self {
-        Self {
-            domain: 0,
-            token_exchange_rate: U128::new(),
-            gas_price: U128::new(),
-            token_decimals: DEFAULT_TOKEN_DECIMALS,
-        }
-    }
-}
-
-/// An oracle that provides gas data for a remote domain.
-abi GasOracle {
-    /// Gets the gas data for a remote domain.
-    ///
-    /// ### Arguments
-    ///
-    /// * `domain`: [u32] - The domain to get the gas data for.
-    ///
-    /// ### Returns
-    ///
-    /// * [RemoteGasData] - The gas data for the remote domain.
-    #[storage(read)]
-    fn get_remote_gas_data(domain: u32) -> RemoteGasData;
-
-    /// Gets the exchange rate and gas price for a remote domain.
-    ///
-    /// ### Arguments
-    ///
-    /// * `domain`: [u32] - The domain to get the gas data for.
-    ///
-    /// ### Returns
-    ///
-    /// * [ExchangeRateAndGasData] - The exchange rate and gas price for the remote domain.
-    #[storage(read)]
-    fn get_exchange_rate_and_gas_price(domain: u32) -> ExchangeRateAndGasData;
-}
-
-///ORACLE STORAGE CONTRACT INTERFACE
-/// A config for setting remote gas data.
-pub struct RemoteGasDataConfig {
-    pub domain: u32,
-    pub remote_gas_data: RemoteGasData,
-}
-
-/// Logged when a remote gas data config is set.
-pub struct RemoteGasDataSetEvent {
-    pub config: RemoteGasDataConfig,
-}
-
-/// A gas oracle with remote gas data in storage.
-abi StorageGasOracle {
-    #[storage(read, write)]
-    fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>);
 }
 
 //  ----------------- Events -----------------
@@ -223,4 +178,15 @@ pub struct DestinationGasConfigSetEvent {
     pub domain: u32,
     pub oracle: b256,
     pub overhead: u64,
+}
+
+/// Logged when the beneficiary is set.
+pub struct BeneficiarySetEvent {
+    pub beneficiary: Identity,
+}
+
+/// Logged when the balance is claimed and sent to the beneficiary.
+pub struct ClaimEvent {
+    pub beneficiary: Identity,
+    pub amount: u64,
 }

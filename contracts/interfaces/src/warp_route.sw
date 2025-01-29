@@ -152,6 +152,30 @@ abi WarpRoute {
     /// * `destination_domain`: [u32] - The destination domain
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32) -> u64;
+
+    /// Gets the beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity;
+
+    /// Sets the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The beneficiary.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity);
+
+    /// Claims the contract's balance and sends it to the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `asset`: Option<[AssetId]> - The asset to claim. If None, the base asset is used.
+    #[storage(read)]
+    fn claim(asset: Option<AssetId>);
 }
 
 // --------------- Events ---------------
@@ -182,4 +206,15 @@ pub struct ReceivedTransferRemoteEvent {
 pub struct TokensLockedEvent {
     pub amount: u64,
     pub asset: AssetId,
+}
+
+/// Logged when the beneficiary is set.
+pub struct BeneficiarySetEvent {
+    pub beneficiary: Identity,
+}
+
+/// Logged when the balance is claimed and sent to the beneficiary.
+pub struct ClaimEvent {
+    pub beneficiary: Identity,
+    pub amount: u64,
 }

@@ -191,7 +191,7 @@ async fn test_claim() {
     assert_eq!(
         events,
         vec![ClaimEvent {
-            beneficiary: Bits256(Address::from(wallet.address()).into()),
+            beneficiary: Identity::from(wallet.address()),
             amount,
         }]
     );
@@ -708,7 +708,7 @@ async fn test_set_beneficiary() {
     assert_eq!(
         events,
         vec![BeneficiarySetEvent {
-            beneficiary: Bits256::from_hex_str(TEST_REFUND_ADDRESS).unwrap(),
+            beneficiary: Identity::Address(Address::from_str(TEST_REFUND_ADDRESS).unwrap()),
         }]
     );
 
