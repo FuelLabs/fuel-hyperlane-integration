@@ -92,7 +92,7 @@ impl ProtocolFee for Contract {
         _collect_protocol_fees(None);
     }
 
-       /// Gets the current beneficiary.
+    /// Gets the current beneficiary.
     ///
     /// ### Returns
     ///
@@ -113,6 +113,7 @@ impl ProtocolFee for Contract {
     /// * If the caller is not the owner.
     #[storage(read, write)]
     fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
         _set_beneficiary(beneficiary);
     }
 }
@@ -253,7 +254,6 @@ fn _set_protocol_fee(new_fee: u64) {
 /// * `beneficiary`: [Identity] - The new beneficiary.
 #[storage(read, write)]
 fn _set_beneficiary(beneficiary: Identity) {
-    only_owner();
     require(
         beneficiary
             .bits() != ZERO_B256,
