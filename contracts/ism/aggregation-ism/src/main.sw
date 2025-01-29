@@ -9,7 +9,6 @@ use sway_libs::ownership::*;
 /// Error types for the Aggregation ISM.
 enum AggregationIsmError {
     DidNotMeetThreshold: (),
-    NotInitialized: (),
 }
 
 storage {
@@ -102,48 +101,16 @@ impl AggregationIsmFunctions for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address to be set as the owner of the contract.
+    /// * `owner`: [Identity] - The address to be set as the owner of the contract.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(read, write)]
-    fn initialize(owner: b256) {
-        initialize_ownership(Identity::Address(Address::from(owner)));
-    }
-
-    /// Sets the threshold for the Aggregation ISM.
-    ///
-    /// ### Arguments
-    ///
-    /// * `threshold`: [u8] - The threshold of approval for the Aggregation ISM.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
-    /// * If the caller is not the owner.
-    #[storage(write)]
-    fn set_threshold(threshold: u8) {
-        only_initialized();
-        only_owner();
+    fn initialize(owner: Identity, modules: Vec<ContractId>, threshold: u8) {
+        initialize_ownership(owner);
+        storage.modules.store_vec(modules);
         storage.threshold.write(threshold);
-    }
-
-    /// Enrolls a module to the Aggregation ISM.
-    ///
-    /// ### Arguments
-    ///
-    /// * `module`: [ContractId] - The address of the module to be enrolled.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
-    /// * If the caller is not the owner.
-    #[storage(write)]
-    fn enroll_module(module: ContractId) {
-        only_initialized();
-        only_owner();
-        storage.modules.push(module);
     }
 }
 
@@ -179,14 +146,4 @@ fn _modules_and_threshold(_message: Bytes) -> (Vec<ContractId>, u8) {
     let modules = storage.modules.load_vec();
     let threshold = storage.threshold.read();
     (modules, threshold)
-}
-
-// --- Guards ---
-
-#[storage(read)]
-fn only_initialized() {
-    require(
-        _owner() != State::Uninitialized,
-        AggregationIsmError::NotInitialized,
-    );
 }

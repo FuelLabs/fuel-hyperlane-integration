@@ -11,6 +11,7 @@ fuels = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 futures = { workspace = true }
+test-utils = { path = "../../../test-utils" }
 
 [[test]]
 harness = true

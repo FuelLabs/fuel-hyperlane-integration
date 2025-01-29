@@ -1,9 +1,10 @@
 use fuels::{
     prelude::*,
-    types::{errors::transaction::Reason, Bits256, ContractId},
+    types::{ContractId, Identity},
 };
 use futures::future::join_all;
 use rand::{thread_rng, Rng};
+use test_utils::get_revert_reason;
 
 // Load abi from json
 abigen!(
@@ -63,7 +64,11 @@ fn generate_test_bytes() -> Bytes {
     Bytes(bytes)
 }
 
-async fn get_contract_instance() -> (AggregationIsm<WalletUnlocked>, Vec<TestIsm<WalletUnlocked>>) {
+async fn get_contract_instance() -> (
+    AggregationIsm<WalletUnlocked>,
+    Vec<TestIsm<WalletUnlocked>>,
+    Identity,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -94,28 +99,21 @@ async fn get_contract_instance() -> (AggregationIsm<WalletUnlocked>, Vec<TestIsm
     ];
 
     let aggregation_ism = AggregationIsm::new(aggregation_ism_id.clone(), wallet.clone());
-    let wallet_address = Bits256(Address::from(wallet.address()).into());
+    let wallet_address = Identity::from(wallet.address());
 
-    aggregation_ism
-        .methods()
-        .initialize(wallet_address)
-        .call()
-        .await
-        .unwrap();
-
-    (aggregation_ism, test_isms)
+    (aggregation_ism, test_isms, wallet_address)
 }
 
 #[tokio::test]
 async fn module_type() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
     let module_type = ism.methods().module_type().call().await.unwrap().value;
     assert_eq!(module_type, ModuleType::AGGREGATION);
 }
 
 #[tokio::test]
-async fn aggregation_getters_and_setters() {
-    let (ism, _) = get_contract_instance().await;
+async fn aggregation_initialize() {
+    let (ism, _, owner) = get_contract_instance().await;
 
     let bytes = Bytes(vec![0u8]);
 
@@ -130,14 +128,15 @@ async fn aggregation_getters_and_setters() {
     assert_eq!(modules, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(5).call().await.unwrap();
+    let example_modules = vec![
+        ContractId::zeroed(),
+        ContractId::zeroed(),
+        ContractId::zeroed(),
+    ];
+    let example_threshold = 3;
+
     ism.methods()
-        .enroll_module(ContractId::zeroed())
-        .call()
-        .await
-        .unwrap();
-    ism.methods()
-        .enroll_module(ContractId::zeroed())
+        .initialize(owner, example_modules.clone(), example_threshold)
         .call()
         .await
         .unwrap();
@@ -150,13 +149,13 @@ async fn aggregation_getters_and_setters() {
         .unwrap()
         .value;
 
-    assert_eq!(modules.len(), 2);
-    assert_eq!(threshold, 5);
+    assert_eq!(modules.len(), example_modules.len());
+    assert_eq!(threshold, example_threshold);
 }
 
 #[tokio::test]
 async fn all_isms_accept() {
-    let (ism, test_isms) = get_contract_instance().await;
+    let (ism, test_isms, owner) = get_contract_instance().await;
 
     let bytes = generate_test_bytes();
 
@@ -171,19 +170,26 @@ async fn all_isms_accept() {
     assert_eq!(modules, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(3).call().await.unwrap();
+    let expected_threshold = 3;
+    let test_ism_ids: Vec<ContractId> = test_isms
+        .iter()
+        .map(|ism| ism.contract_id().into())
+        .collect::<Vec<_>>();
 
+    // Set all ISMs to accept
     let mut futures = vec![];
     for test_ism in test_isms {
         futures.push(test_ism.methods().set_accept(true).call());
-
-        ism.methods()
-            .enroll_module(test_ism.contract_id())
-            .call()
-            .await
-            .unwrap();
     }
     let _ = join_all(futures).await;
+
+    // Initialize
+    ism.methods()
+        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .call()
+        .await
+        .unwrap();
+
     let (modules, _) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
@@ -191,7 +197,7 @@ async fn all_isms_accept() {
         .await
         .unwrap()
         .value;
-    assert_eq!(modules.len(), 3);
+    assert_eq!(modules.len(), test_ism_ids.len());
 
     let result = ism
         .methods()
@@ -209,7 +215,7 @@ async fn all_isms_accept() {
 
 #[tokio::test]
 async fn invalid_metadata() {
-    let (ism, test_isms) = get_contract_instance().await;
+    let (ism, test_isms, owner) = get_contract_instance().await;
 
     let bytes = Bytes(Vec::new());
 
@@ -224,19 +230,26 @@ async fn invalid_metadata() {
     assert_eq!(modules, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(3).call().await.unwrap();
+    let expected_threshold = 3;
+    let test_ism_ids: Vec<ContractId> = test_isms
+        .iter()
+        .map(|ism| ism.contract_id().into())
+        .collect::<Vec<_>>();
 
+    // Set all ISMs to accept
     let mut futures = vec![];
     for test_ism in test_isms {
         futures.push(test_ism.methods().set_accept(true).call());
-
-        ism.methods()
-            .enroll_module(test_ism.contract_id())
-            .call()
-            .await
-            .unwrap();
     }
     let _ = join_all(futures).await;
+
+    // Initialize
+    ism.methods()
+        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .call()
+        .await
+        .unwrap();
+
     let (modules, _) = ism
         .methods()
         .modules_and_threshold(bytes.clone())
@@ -244,7 +257,7 @@ async fn invalid_metadata() {
         .await
         .unwrap()
         .value;
-    assert_eq!(modules.len(), 3);
+    assert_eq!(modules.len(), test_ism_ids.len());
 
     let error = ism
         .methods()
@@ -253,16 +266,12 @@ async fn invalid_metadata() {
         .await
         .unwrap_err();
 
-    if let Error::Transaction(Reason::Reverted { reason, .. }) = error {
-        assert_eq!(reason, "DidNotMeetThreshold");
-    } else {
-        panic!("Unexpected error");
-    }
+    assert_eq!(get_revert_reason(error), "DidNotMeetThreshold");
 }
 
 #[tokio::test]
 async fn one_ism_rejects() {
-    let (ism, test_isms) = get_contract_instance().await;
+    let (ism, test_isms, owner) = get_contract_instance().await;
 
     let bytes = generate_test_bytes();
 
@@ -277,8 +286,13 @@ async fn one_ism_rejects() {
     assert_eq!(modules, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(3).call().await.unwrap();
+    let expected_threshold = 3;
+    let test_ism_ids: Vec<ContractId> = test_isms
+        .iter()
+        .map(|ism| ism.contract_id().into())
+        .collect::<Vec<_>>();
 
+    // Set one out of three ISMs to reject
     let mut rejected_ism = false;
     for test_ism in test_isms {
         match rejected_ism {
@@ -288,13 +302,14 @@ async fn one_ism_rejects() {
             }
             true => test_ism.methods().set_accept(true).call().await.unwrap(),
         };
-
-        ism.methods()
-            .enroll_module(test_ism.contract_id())
-            .call()
-            .await
-            .unwrap();
     }
+
+    // Initialize
+    ism.methods()
+        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .call()
+        .await
+        .unwrap();
 
     let (modules, _) = ism
         .methods()
@@ -303,7 +318,7 @@ async fn one_ism_rejects() {
         .await
         .unwrap()
         .value;
-    assert_eq!(modules.len(), 3);
+    assert_eq!(modules.len(), modules.len());
 
     let error = ism
         .methods()
@@ -312,9 +327,5 @@ async fn one_ism_rejects() {
         .await
         .unwrap_err();
 
-    if let Error::Transaction(Reason::Reverted { reason, .. }) = error {
-        assert_eq!(reason, "DidNotMeetThreshold");
-    } else {
-        panic!("Unexpected error");
-    }
+    assert_eq!(get_revert_reason(error), "DidNotMeetThreshold");
 }
