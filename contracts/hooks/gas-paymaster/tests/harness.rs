@@ -192,7 +192,7 @@ async fn test_claim() {
     assert_eq!(
         events,
         vec![ClaimEvent {
-            beneficiary: Identity::Address(Address::from(wallet.address())),
+            beneficiary: Identity::from(wallet.address()),
             amount,
         }]
     );
