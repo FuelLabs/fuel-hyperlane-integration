@@ -25,6 +25,7 @@ members = [
   "contracts/ism/multisig/merkle-root-multisig-ism",
   "contracts/ism/multisig/message-id-multisig-ism",
   "contracts/ism/aggregation-ism",
+  "contracts/ism/pausable-ism",
   "contracts/ism/routing/domain-routing-ism",
   "contracts/ism/routing/default-fallback-domain-routing-ism",
   "contracts/ism/libs/merkle-root-multisig-ism-metadata",
