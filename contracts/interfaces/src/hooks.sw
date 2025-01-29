@@ -1,5 +1,6 @@
 library;
 
+pub mod gas_oracle;
 pub mod igp;
 pub mod merkle_tree_hook;
 pub mod post_dispatch_hook;

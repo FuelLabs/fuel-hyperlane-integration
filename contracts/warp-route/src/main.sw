@@ -44,7 +44,6 @@ use std::{
 };
 
 use interfaces::{
-    claimable::*,
     mailbox::mailbox::*,
     message_recipient::MessageRecipient,
     ownable::Ownable,
@@ -401,6 +400,34 @@ impl WarpRoute for Contract {
                 .read(),
         )
     }
+
+    #[storage(read)]
+    fn beneficiary() -> Identity {
+        storage.beneficiary.read()
+    }
+
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity) {
+        only_owner();
+        storage.beneficiary.write(beneficiary);
+        log(BeneficiarySetEvent {
+            beneficiary,
+        });
+    }
+
+    #[storage(read)]
+    fn claim(asset: Option<AssetId>) {
+        let beneficiary = storage.beneficiary.read();
+        let asset = asset.unwrap_or(storage.asset_id.read());
+        let balance = this_balance(asset);
+
+        transfer(beneficiary, asset, balance);
+
+        log(ClaimEvent {
+            beneficiary,
+            amount: balance,
+        });
+    }
 }
 
 impl TokenRouter for Contract {
@@ -612,38 +639,6 @@ impl MessageRecipient for Contract {
     #[storage(read)]
     fn interchain_security_module() -> ContractId {
         storage.default_ism.read()
-    }
-}
-
-// ---------------  Pausable, Claimable and Ownable  ---------------
-
-impl Claimable for Contract {
-    #[storage(read)]
-    fn beneficiary() -> Identity {
-        storage.beneficiary.read()
-    }
-
-    #[storage(read, write)]
-    fn set_beneficiary(beneficiary: Identity) {
-        only_owner();
-        storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent {
-            beneficiary: beneficiary.bits(),
-        });
-    }
-
-    #[storage(read)]
-    fn claim(asset: Option<AssetId>) {
-        let beneficiary = storage.beneficiary.read();
-        let asset = asset.unwrap_or(storage.asset_id.read());
-        let balance = this_balance(asset);
-
-        transfer(beneficiary, asset, balance);
-
-        log(ClaimEvent {
-            beneficiary: beneficiary.bits(),
-            amount: balance,
-        });
     }
 }
 

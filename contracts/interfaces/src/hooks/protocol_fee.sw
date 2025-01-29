@@ -71,6 +71,22 @@ abi ProtocolFee {
     /// * [u64] - The current protocol fee
     #[storage(read)]
     fn protocol_fee() -> u64;
+
+    /// Gets the beneficiary.
+    ///
+    /// ### Returns
+    ///
+    /// * [Identity] - The beneficiary.
+    #[storage(read)]
+    fn beneficiary() -> Identity;
+
+    /// Sets the beneficiary.
+    ///
+    /// ### Arguments
+    ///
+    /// * `beneficiary`: [Identity] - The beneficiary.
+    #[storage(read, write)]
+    fn set_beneficiary(beneficiary: Identity);
 }
 
 /// Events emitted by the ProtocolFee contract
@@ -79,7 +95,7 @@ pub struct ProtocolFeeSet {
     pub protocol_fee: u64,
 }
 
-pub struct BeneficiarySet {
-    /// The new beneficiary that was set
+/// Logged when the beneficiary is set.
+pub struct BeneficiarySetEvent {
     pub beneficiary: Identity,
 }

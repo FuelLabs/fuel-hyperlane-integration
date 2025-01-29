@@ -321,9 +321,15 @@ mod warp_route {
         let warp_init_res = call_handler.call().await;
         assert!(warp_init_res.is_ok(), "Failed to initialize Warp Route.");
 
+        let owner_identity = Identity::Address(wallet.address().into());
         let mailbox_init_res = mailbox
             .methods()
-            .initialize(owner, default_ism_address, hook_address, hook_address)
+            .initialize(
+                owner_identity,
+                default_ism_address,
+                hook_address,
+                hook_address,
+            )
             .call()
             .await;
         assert!(mailbox_init_res.is_ok(), "Failed to initialize Mailbox.");
