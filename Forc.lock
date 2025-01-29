@@ -334,5 +334,6 @@ dependencies = [
     "message",
     "standards git+https://github.com/FuelLabs/sway-standards?branch=master#ea5c821086f40ad1c99f7b6802a7b5837573abd7",
     "std",
+    "std_hook_metadata",
     "sway_libs",
 ]

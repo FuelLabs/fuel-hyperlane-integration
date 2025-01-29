@@ -97,7 +97,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount)
+        .transfer_remote(remote_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(quote.value, base_asset, 20_000_000))
         .unwrap()
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)

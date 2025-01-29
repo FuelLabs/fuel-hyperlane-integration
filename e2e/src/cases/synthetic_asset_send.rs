@@ -170,7 +170,13 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, remote_adjusted_amount)
+        .transfer_remote(
+            remote_domain,
+            test_recipient,
+            remote_adjusted_amount,
+            None,
+            None,
+        )
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .with_contract_ids(&[
             fuel_mailbox_id.into(),

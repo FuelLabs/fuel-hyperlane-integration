@@ -72,7 +72,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount)
+        .transfer_remote(remote_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + quote.value,
             base_asset,
