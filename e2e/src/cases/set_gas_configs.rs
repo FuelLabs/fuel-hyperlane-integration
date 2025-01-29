@@ -9,7 +9,7 @@ use crate::{
         local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
     },
 };
-use fuels::types::{Address, Bits256};
+use fuels::types::{Bits256, Identity};
 use tokio::time::Instant;
 
 async fn set_gas_configs() -> Result<f64, String> {
@@ -23,7 +23,7 @@ async fn set_gas_configs() -> Result<f64, String> {
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
     let gas_oracle = GasOracle::new(gas_oracle_id, wallet.clone());
 
-    let owner = Bits256(Address::from(wallet.address()).into());
+    let owner = Identity::from(wallet.address());
 
     let _ = igp
         .methods()

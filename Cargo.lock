@@ -3027,6 +3027,7 @@ dependencies = [
  "fuels",
  "hyperlane-core",
  "rand",
+ "test-utils",
  "tokio",
 ]
 

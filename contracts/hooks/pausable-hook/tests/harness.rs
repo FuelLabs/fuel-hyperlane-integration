@@ -42,7 +42,7 @@ async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocke
     let hook = PausableHook::new(hook_id.clone(), wallet.clone());
 
     hook.methods()
-        .initialize(Identity::Address(wallet.address().into()))
+        .initialize_ownership(Identity::from(wallet.address()))
         .call()
         .await
         .unwrap();
@@ -114,7 +114,6 @@ async fn pausable() {
 
     // Pause
     let pause_res = hook.methods().pause().call().await;
-    println!("{:?}", pause_res);
     assert!(pause_res.is_ok());
 
     let is_paused = hook

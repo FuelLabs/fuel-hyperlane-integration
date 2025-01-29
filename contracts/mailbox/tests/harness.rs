@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use fuels::{
     prelude::*,
-    types::{Bits256, Bytes},
+    types::{Bits256, Bytes, Identity},
 };
 use hyperlane_core::{Encode, HyperlaneMessage as HyperlaneAgentMessage, H256};
 
@@ -94,13 +94,13 @@ async fn get_contract_instance() -> (
     let mailbox_instance = Mailbox::new(mailbox_id.clone(), wallet.clone());
     let post_dispatch = PostDispatchMock::new(post_dispatch_id.clone(), wallet.clone());
 
-    let wallet_address = Bits256(Address::from(wallet.address()).into());
+    let wallet_identity = Identity::from(wallet.address());
     let post_dispatch_address = Bits256(ContractId::from(post_dispatch.id()).into());
 
     let init_res = mailbox_instance
         .methods()
         .initialize(
-            wallet_address,
+            wallet_identity,
             post_dispatch_address,
             post_dispatch_address,
             post_dispatch_address,
