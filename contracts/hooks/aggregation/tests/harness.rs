@@ -28,7 +28,7 @@ abigen!(
     ),
     Contract(
         name = "PostDispatchHook",
-        abi = "contracts/mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch-abi.json"
+        abi = "contracts/mocks/mock-post-dispatch/out/debug/mock-post-dispatch-abi.json"
     )
 );
 
@@ -127,7 +127,7 @@ async fn get_contract_instances() -> (
 
     // Deploy two mock hooks for testing
     let mock_hook1_id = Contract::load_from(
-        "../../mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch.bin",
+        "../../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",
         LoadConfiguration::default(),
     )
     .unwrap()
@@ -138,7 +138,7 @@ async fn get_contract_instances() -> (
     let salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
 
     let mock_hook2_id = Contract::load_from(
-        "../../mocks/mock-post-dispatch/src/out/debug/mock-post-dispatch.bin",
+        "../../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",
         LoadConfiguration::default().with_salt(salt),
     )
     .unwrap()
@@ -162,10 +162,9 @@ async fn get_contract_instances() -> (
     let igp = GasPaymaster::new(igp_id, wallet.clone());
 
     let owner_identity = Identity::Address(wallet.address().into());
-    let owner_b256 = Bits256(Address::from(wallet.address()).into());
 
     igp.methods()
-        .initialize(owner_b256, owner_b256)
+        .initialize(owner_identity, owner_identity)
         .call()
         .await
         .unwrap();
@@ -206,7 +205,7 @@ async fn get_contract_instances() -> (
 
     aggregation
         .methods()
-        .initialize(owner_b256, hooks)
+        .initialize(owner_identity, hooks)
         .call()
         .await
         .unwrap();
@@ -222,12 +221,12 @@ async fn test_initialization_reverts_if_already_initialized() {
     let wallet = aggregation.account();
 
     let hooks = vec![mock_hook1.contract_id().into()];
-    let owner_b256 = Bits256(Address::from(wallet.address()).into());
+    let owner_identity = Identity::Address(wallet.address().into());
 
     // Second initialization should fail
     let result = aggregation
         .methods()
-        .initialize(owner_b256, hooks)
+        .initialize(owner_identity, hooks)
         .call()
         .await;
 

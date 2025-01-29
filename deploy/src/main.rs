@@ -630,7 +630,6 @@ async fn main() {
     let warp_route_collateral =
         WarpRoute::new(warp_route_collateral_id.clone(), fuel_wallet.clone());
 
-    let wallet_address = Bits256(Address::from(fuel_wallet.address()).into());
     let wallet_identity = Identity::from(fuel_wallet.address());
     let test_ism_address = Bits256(ContractId::from(test_ism_id.clone()).into());
     let mailbox_address = Bits256(ContractId::from(mailbox_contract_id.clone()).into());
@@ -661,7 +660,7 @@ async fn main() {
     let init_res = domain_routing_ism
         .methods()
         .initialize_with_domains(
-            wallet_address,
+            wallet_identity,
             vec![11155111, 84532],
             vec![test_ism_address, test_ism_address],
         )
@@ -673,7 +672,7 @@ async fn main() {
     // Fallback Domain Routing ISM
     let init_res = fallback_domain_routing_ism
         .methods()
-        .initialize(wallet_address, mailbox_address)
+        .initialize(wallet_identity, mailbox_address)
         .call()
         .await;
 
@@ -759,7 +758,7 @@ async fn main() {
     let init_res = mailbox
         .methods()
         .initialize(
-            wallet_address,
+            wallet_identity,
             test_ism_address,
             post_dispatch_mock_address, // Initially set to mocks
             post_dispatch_mock_address,
@@ -785,7 +784,7 @@ async fn main() {
 
     let init_res = igp
         .methods()
-        .initialize(wallet_address, wallet_address)
+        .initialize(wallet_identity, wallet_identity)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize IGP.");
@@ -864,7 +863,7 @@ async fn main() {
     ///////////////////////////////
     let init_res = pausable_hook
         .methods()
-        .initialize(owner_identity)
+        .initialize_ownership(owner_identity)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize Pausable Hook.");
@@ -892,7 +891,7 @@ async fn main() {
 
     let init_res = aggregation_hook
         .methods()
-        .initialize(wallet_address, hooks)
+        .initialize(wallet_identity, hooks)
         .call()
         .await;
     assert!(init_res.is_ok(), "Failed to initialize Aggregation Hook.");
@@ -906,7 +905,7 @@ async fn main() {
     let native_init_res = warp_route_native
         .methods()
         .initialize(
-            wallet_address,
+            wallet_identity,
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::NATIVE,
             post_dispatch_mock_address,
@@ -929,7 +928,7 @@ async fn main() {
     let synthetic_init_res = warp_route_synthetic
         .methods()
         .initialize(
-            wallet_address,
+            wallet_identity,
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::SYNTHETIC,
             post_dispatch_mock_address,
@@ -952,7 +951,7 @@ async fn main() {
     let collateral_init_res = warp_route_collateral
         .methods()
         .initialize(
-            wallet_address,
+            wallet_identity,
             Bits256(mailbox_contract_id.hash().into()),
             WarpRouteTokenMode::COLLATERAL,
             post_dispatch_mock_address,

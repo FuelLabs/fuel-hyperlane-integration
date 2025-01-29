@@ -11,7 +11,6 @@ use ::serde::{de::Error as SerdeError, Deserialize, Deserializer};
 use fuels::{
     accounts::{wallet::WalletUnlocked, Account},
     crypto::SecretKey,
-    tx::Receipt,
     types::{
         bech32::Bech32Address, errors::transaction::Reason, errors::Error, transaction::TxPolicies,
         AssetId, Bits256, EvmAddress, B512,
@@ -130,42 +129,6 @@ pub fn get_revert_reason(call_error: Error) -> String {
             call_error
         );
     }
-}
-
-// Given an Error from a call or simulation, returns the revert reason.
-// Panics if it's unable to find the revert reason.
-pub fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::Transaction(Reason::Reverted { receipts, .. }) = call_error {
-        receipts
-    } else {
-        panic!(
-            "Error is not a RevertTransactionError. Error: {:?}",
-            call_error
-        );
-    };
-
-    // The receipts will be:
-    // [any prior receipts..., LogData with reason, Revert, ScriptResult]
-    // We want the LogData with the reason, which is utf-8 encoded as the `data`.
-
-    let revert_reason_receipt = &receipts[receipts.len() - 3];
-    let data = if let Receipt::LogData { data, .. } = revert_reason_receipt {
-        data
-    } else {
-        panic!(
-            "Expected LogData receipt. Receipt: {:?}",
-            revert_reason_receipt
-        );
-    };
-
-    let data: Vec<u8> = data
-        .as_ref()
-        .unwrap()
-        .iter()
-        .cloned()
-        .filter(|&byte| byte != 0)
-        .collect();
-    String::from_utf8(data).unwrap()
 }
 
 /// Kludge to deserialize into Bits256

@@ -244,6 +244,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pausable-ism"
+source = "member"
+dependencies = [
+    "interfaces",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#ea5c821086f40ad1c99f7b6802a7b5837573abd7",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
 name = "protocol-fee"
 source = "member"
 dependencies = [

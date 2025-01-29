@@ -10,14 +10,14 @@ abi IGP {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner of the contract.
-    /// * `beneficiary`: [b256] - The address of the beneficiary to receive gas payments.
+    /// * `owner`: [Identity] - The address of the owner of the contract.
+    /// * `beneficiary`: [Identity] - The address of the beneficiary to receive gas payments.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(owner: b256, beneficiary: b256);
+    fn initialize(owner: Identity, beneficiary: Identity);
 
     /// Quotes the total payment for a given gas amount.
     ///
