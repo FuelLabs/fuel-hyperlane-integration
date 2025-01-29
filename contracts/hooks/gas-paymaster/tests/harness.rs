@@ -1,4 +1,3 @@
-use abigen_bindings::gas_oracle_mod::interfaces::gas_oracle::RemoteGasData;
 use fuels::{
     prelude::*,
     types::{Bits256, Identity},

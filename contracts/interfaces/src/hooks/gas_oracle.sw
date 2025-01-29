@@ -73,25 +73,3 @@ abi StorageGasOracle {
     fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>);
 }
 
-//  ----------------- Events -----------------
-
-/// Logged when the gas oracle is set for a domain.
-pub struct GasOracleSetEvent {
-    pub domain: u32,
-    pub gas_oracle: b256,
-}
-
-/// Logged when a gas payment is made.
-pub struct GasPaymentEvent {
-    pub message_id: b256,
-    pub destination_domain: u32,
-    pub gas_amount: u64,
-    pub payment: u64,
-}
-
-/// Logged when a destination gas config is set.
-pub struct DestinationGasConfigSetEvent {
-    pub domain: u32,
-    pub oracle: b256,
-    pub overhead: u64,
-}

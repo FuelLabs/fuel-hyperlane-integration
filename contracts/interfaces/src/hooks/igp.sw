@@ -1,33 +1,15 @@
 library;
 
+use ::hooks::gas_oracle::RemoteGasData;
 use std::u128::U128;
 
 /// Default to the same number of decimals as the local base asset.
 const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
 
-/// Gas data for a remote domain.
-pub struct RemoteGasData {
-    pub domain: u32,
-    pub token_exchange_rate: U128,
-    pub gas_price: U128,
-    pub token_decimals: u8,
-}
-
 /// Gas config for a domain.
 pub struct DomainGasConfig {
     pub gas_oracle: b256,
     pub gas_overhead: u64,
-}
-
-impl RemoteGasData {
-    pub fn default() -> Self {
-        Self {
-            domain: 0,
-            token_exchange_rate: U128::new(),
-            gas_price: U128::new(),
-            token_decimals: DEFAULT_TOKEN_DECIMALS,
-        }
-    }
 }
 
 abi IGP {
