@@ -8,8 +8,6 @@ use message::{EncodedMessage, Message};
 
 /// Errors that can occur in the DefaultFallbackDomainRoutingIsm.
 enum DefaultFallbackDomainRoutingIsmError {
-    AlreadyInitialized:(),
-    NotInitialized:(),
     DomainModuleLengthMismatch:(u64, u64),
 }
 
@@ -46,12 +44,9 @@ impl InterchainSecurityModule for Contract {
     ///
     /// ### Reverts
     ///
-    /// * If the ISM is not initialized.
     /// * If the ISM call fails.
     #[storage(read)]
     fn verify(metadata: Bytes, message: Bytes) -> bool {
-        only_initialized();
-
         let ism_id = _route(message);
         let ism = abi(InterchainSecurityModule, ism_id);
         ism.verify(metadata, message)
@@ -68,13 +63,8 @@ impl RoutingIsm for Contract {
     /// ### Returns
     ///
     /// * [b256] - The ISM to use to verify the message
-    ///
-    /// ### Reverts
-    ///
-    /// * If the ISM is not initialized.
     #[storage(read)]
     fn route(message: Bytes) -> b256 {
-        only_initialized();
         _route(message)
     }
 }
@@ -84,15 +74,15 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner.
+    /// * `owner`: [Identity] - The address of the owner.
     /// * `mailbox`: [b256] - The address of the mailbox.
     ///
     /// ### Reverts
     ///
     /// * If the ISM is already initialized.
     #[storage(write, read)]
-    fn initialize(owner: b256, mailbox: b256){
-        initialize_ownership(Identity::Address(Address::from(owner)));
+    fn initialize(owner: Identity, mailbox: b256){
+        initialize_ownership(owner);
         storage.mailbox.write(mailbox);
     }
 
@@ -100,7 +90,7 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner.
+    /// * `owner`: [Identity] - The address of the owner.
     /// * `mailbox`: [b256] - The address of the mailbox.
     /// * `domains`: [Vec<u32>] - The list of origin domains.
     /// * `modules`: [Vec<b256>] - The list of ISMs to be used for the specified domains.
@@ -110,8 +100,8 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * If the ISM is already initialized.
     /// * If the length of the domains and modules do not match.
     #[storage(write, read)]
-    fn initialize_with_domains(owner: b256, mailbox: b256, domains: Vec<u32>, modules: Vec<b256>) {
-        initialize_ownership(Identity::Address(Address::from(owner)));
+    fn initialize_with_domains(owner: Identity, mailbox: b256, domains: Vec<u32>, modules: Vec<b256>) {
+        initialize_ownership(owner);
         storage.mailbox.write(mailbox);
         let domain_count = domains.len();
         let module_count = modules.len();
@@ -147,9 +137,7 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * If the caller is not the owner.
     #[storage(write, read)]
     fn set(domain: u32, module: b256) {
-        only_initialized();
         only_owner();
-
         _set(domain, module);
     }   
 
@@ -165,9 +153,7 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * If the caller is not the owner.
     #[storage(write, read)]
     fn remove(domain: u32) {
-        only_initialized();
         only_owner();
-
         let success = storage.domain_modules.remove(domain);
         if success {
             _remove_domain(domain);
@@ -286,14 +272,4 @@ fn _set(domain: u32, module: b256) {
         storage.domains.push(domain);
     }
     storage.domain_modules.insert(domain, module);
-}
-
-// --- Guards ---
-
-#[storage(read)]
-fn only_initialized() {
-    require(
-        _owner() != State::Uninitialized,
-        DefaultFallbackDomainRoutingIsmError::NotInitialized,
-    );
 }

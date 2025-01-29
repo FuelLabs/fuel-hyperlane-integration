@@ -1,5 +1,5 @@
 [package]
-name = "aggregation-ism"
+name = "pausable-ism"
 description = "A cargo-generate template for Rust + Sway integration testing."
 version = "0.1.0"
 edition = "2021"
@@ -10,7 +10,6 @@ license = "Apache-2.0"
 fuels = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
-futures = { workspace = true }
 test-utils = { path = "../../../test-utils" }
 
 [[test]]

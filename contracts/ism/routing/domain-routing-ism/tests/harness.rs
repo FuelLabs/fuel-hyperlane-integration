@@ -1,9 +1,10 @@
 use fuels::{
     prelude::*,
-    types::{errors::transaction::Reason, Bits256},
+    types::{errors::transaction::Reason, Bits256, Identity},
 };
 use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage, H256};
 use rand::{thread_rng, Rng};
+use test_utils::get_revert_reason;
 
 // Load abi from json
 abigen!(
@@ -90,11 +91,11 @@ async fn get_contract_instance() -> (
         deploy_test_ism(&wallet).await,
     ];
 
-    let wallet_address = Bits256(Address::from(wallet.address()).into());
+    let owner_identity = Identity::from(wallet.address());
 
     domain_routing_ism
         .methods()
-        .initialize(wallet_address)
+        .initialize_ownership(owner_identity)
         .call()
         .await
         .unwrap();
@@ -123,14 +124,16 @@ async fn getters_and_setters() {
     assert_eq!(domains.len(), 0);
 
     let domain = 1;
-    let domain_1_ism = domain_routing_ism
+    let not_set_domain_res = domain_routing_ism
         .methods()
         .module(domain)
         .simulate(Execution::StateReadOnly)
-        .await
-        .unwrap()
-        .value;
-    assert_eq!(domain_1_ism, Bits256::zeroed());
+        .await;
+    assert!(not_set_domain_res.is_err());
+    assert_eq!(
+        get_revert_reason(not_set_domain_res.unwrap_err()),
+        "DomainNotSet(1)"
+    );
 
     let test_ism = &test_isms[0];
     let test_ism_id = Bits256(ContractId::from(test_ism.id()).into());
@@ -180,17 +183,16 @@ async fn getters_and_setters() {
 
     assert_eq!(domains.len(), 0);
 
-    let domain_1_ism = domain_routing_ism
+    let not_set_domain_res = domain_routing_ism
         .methods()
         .module(domain)
         .simulate(Execution::StateReadOnly)
-        .await
-        .unwrap()
-        .value;
-
-    assert_eq!(domain_1_ism, Bits256::zeroed());
-
-    // set it and check again, do for all state chaning funcitons
+        .await;
+    assert!(not_set_domain_res.is_err());
+    assert_eq!(
+        get_revert_reason(not_set_domain_res.unwrap_err()),
+        "DomainNotSet(1)"
+    );
 }
 
 #[tokio::test]

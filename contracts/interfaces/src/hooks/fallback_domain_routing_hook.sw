@@ -32,8 +32,3 @@ abi FallbackDomainRoutingHook {
     #[storage(read, write)]
     fn set_hooks(hooks: Vec<HookConfig>);
 }
-
-pub enum FallbackDomainRoutingHookError {
-    InvalidHookAddress: (),
-    NotInitialized: (),
-}

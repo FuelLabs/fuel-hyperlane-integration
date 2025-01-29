@@ -2,23 +2,11 @@ contract;
 
 use interfaces::{
     ownable::Ownable,
-    hooks::{post_dispatch_hook::*, pausable_hook::*},
+    hooks::post_dispatch_hook::*,
 };
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::{bytes::Bytes};
-
-impl PausableHook for Contract {
-    /// Initializes the contract.
-    ///
-    /// ### Arguments
-    ///
-    /// * `owner`: [Identity] - The owner of the contract.
-    #[storage(write)]
-    fn initialize(owner: Identity) {
-        initialize_ownership(owner);
-    }
-}
 
 impl PostDispatchHook for Contract {
     /// Returns an enum that represents the type of hook
@@ -77,8 +65,8 @@ impl PostDispatchHook for Contract {
     }
 }
 
-/// The Pausable Hook inherits all the needed functions of the Hyperlane PausableHook interface
-/// through the Pausable abi.
+/// All functions required for the PausableHook Hyperlane interface are inherited through the Pausable abi.
+/// Source: [sway-libs](https://github.com/FuelLabs/sway-libs/blob/master/libs/src/pausable.sw)
 impl Pausable for Contract {
     #[storage(write)]
     fn pause() {

@@ -1,0 +1,70 @@
+[[package]]
+name = "core"
+source = "path+from-root-F64B6E1A883A7E7B"
+
+[[package]]
+name = "interfaces"
+source = "path+from-root-B0AF346A2469FCF7"
+dependencies = [
+    "merkle",
+    "message",
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
+name = "merkle"
+source = "path+from-root-B0AF346A2469FCF7"
+dependencies = ["std"]
+
+[[package]]
+name = "message"
+source = "path+from-root-B0AF346A2469FCF7"
+dependencies = [
+    "std",
+    "std_lib_extended",
+]
+
+[[package]]
+name = "pausable-ism"
+source = "member"
+dependencies = [
+    "interfaces",
+    "standards git+https://github.com/FuelLabs/sway-standards?branch=master#ea5c821086f40ad1c99f7b6802a7b5837573abd7",
+    "std",
+    "sway_libs",
+]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?branch=master#ea5c821086f40ad1c99f7b6802a7b5837573abd7"
+dependencies = ["std"]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.5.0#348f7175df4c012b23c86cdb18aab79025ca1f18"
+dependencies = ["std"]
+
+[[package]]
+name = "standards"
+source = "git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c"
+dependencies = ["std"]
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?tag=v0.66.4#d7dd104dac4394aa7af56f05b720c975744db853"
+dependencies = ["core"]
+
+[[package]]
+name = "std_lib_extended"
+source = "path+from-root-B0AF346A2469FCF7"
+dependencies = ["std"]
+
+[[package]]
+name = "sway_libs"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#205e0e617cea37649c31b93563393ded79c76493"
+dependencies = [
+    "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
+    "std",
+]

@@ -23,15 +23,15 @@ impl AggregationHook for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The owner of the contract.
+    /// * `owner`: [Identity] - The owner of the contract.
     /// * `hooks`: [Vec<ContractId>] - The hooks to initialize with.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(owner: b256, hooks: Vec<ContractId>) {
-        initialize_ownership(Identity::Address(Address::from(owner)));
+    fn initialize(owner: Identity, hooks: Vec<ContractId>) {
+        initialize_ownership(owner);
         let mut i = 0;
         while i < hooks.len() {
             storage.hooks.push(hooks.get(i).unwrap());
@@ -84,10 +84,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [u64] - The payment required for the postDispatch call.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
         let hooks = storage.hooks.load_vec();
@@ -108,10 +104,6 @@ impl PostDispatchHook for Contract {
     ///
     /// * `metadata`: [Bytes] - The metadata required for the hook.
     /// * `message`: [Bytes] - The message being dispatched.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized.
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
