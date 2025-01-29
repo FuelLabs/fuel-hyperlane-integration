@@ -11,6 +11,7 @@ fuels = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 hyperlane-core = { workspace = true }
+test-utils = { path = "../../../../test-utils" }
 
 
 [[test]]

@@ -28,7 +28,6 @@ use std::{
 enum IgpError {
     InsufficientGasPayment: (),
     InterchainGasPaymentInBaseAsset: (),
-    ContractAlreadyInitialized: (),
     UnsupportedMetadataFormat: (),
     InvalidDomainConfigLength: (),
 }
@@ -53,23 +52,16 @@ impl IGP for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The owner of the contract.
-    /// * `beneficiary`: [b256] - The beneficiary of the contract.
+    /// * `owner`: [Identity] - The owner of the contract.
+    /// * `beneficiary`: [Identity] - The beneficiary of the contract.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
     #[storage(write)]
-    fn initialize(owner: b256, beneficiary: b256) {
-        require(
-            _owner() == State::Uninitialized,
-            IgpError::ContractAlreadyInitialized,
-        );
-
-        initialize_ownership(Identity::Address(Address::from(owner)));
-        storage
-            .beneficiary
-            .write(Identity::Address(Address::from(beneficiary)));
+    fn initialize(owner: Identity, beneficiary: Identity) {
+        initialize_ownership(owner);
+        storage.beneficiary.write(beneficiary);
     }
 
     /// Quotes the required interchain gas payment to be paid in the base asset.

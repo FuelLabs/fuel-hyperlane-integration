@@ -102,7 +102,7 @@ impl WarpRoute for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [b256] - The address of the owner of the contract
+    /// * `owner`: [Identity] - The address of the owner of the contract
     /// * `mailbox_address`: [b256] - The address of the mailbox contract to use
     /// * `mode`: [WarpRouteTokenMode] - The mode of the WarpRoute contract
     /// * `hook`: [b256] - The address of the post dispatch hook contract to use
@@ -120,7 +120,7 @@ impl WarpRoute for Contract {
     /// * If the asset ID is not provided in collateral mode
     #[storage(read, write)]
     fn initialize(
-        owner: b256,
+        owner: Identity,
         mailbox_address: b256,
         mode: WarpRouteTokenMode,
         hook: b256,
@@ -133,14 +133,8 @@ impl WarpRoute for Contract {
         asset_id: Option<AssetId>,
         asset_contract_id: Option<b256>,
     ) {
-        require(
-            _owner() == State::Uninitialized,
-            WarpRouteError::AlreadyInitialized,
-        );
-
-        let owner_id = Identity::Address(Address::from(owner));
-        initialize_ownership(owner_id);
-        storage.beneficiary.write(owner_id);
+        initialize_ownership(owner);
+        storage.beneficiary.write(owner);
         storage.mailbox.write(ContractId::from(mailbox_address));
         storage.default_hook.write(ContractId::from(hook));
         storage.default_ism.write(ContractId::from(ism));

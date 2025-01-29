@@ -30,10 +30,6 @@ impl FallbackDomainRoutingHook for Contract {
     #[storage(write)]
     fn initialize(owner: Identity, fallback: b256) {
         initialize_ownership(owner);
-        require(
-            fallback != ZERO_B256,
-            FallbackDomainRoutingHookError::InvalidHookAddress,
-        );
         storage.fallback_hook.write(fallback);
     }
 
@@ -142,7 +138,6 @@ impl PostDispatchHook for Contract {
 
 #[storage(read)]
 fn _get_configured_hook(message: Bytes) -> b256 {
-    only_initialized();
     let domain = EncodedMessage::from_bytes(message).destination();
     let hook = storage.hooks.get(domain).try_read();
 
@@ -176,14 +171,4 @@ impl Ownable for Contract {
     fn renounce_ownership() {
         renounce_ownership();
     }
-}
-
-// --- Guards ---
-
-#[storage(read)]
-fn only_initialized() {
-    require(
-        _owner() != State::Uninitialized,
-        FallbackDomainRoutingHookError::NotInitialized,
-    );
 }

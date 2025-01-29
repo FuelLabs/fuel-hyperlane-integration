@@ -115,10 +115,7 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
     let owner_identity = Identity::Address(wallet.address().into());
 
     igp.methods()
-        .initialize(
-            Bits256(Address::from(wallet.address()).into()),
-            Bits256(Address::from(wallet.address()).into()),
-        )
+        .initialize(owner_identity, owner_identity)
         .call()
         .await
         .unwrap();

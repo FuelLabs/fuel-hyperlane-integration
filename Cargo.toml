@@ -14,6 +14,7 @@ members = [
   "contracts/ism/routing/default-fallback-domain-routing-ism",
   "contracts/ism/multisig/message-id-multisig-ism",
   "contracts/ism/multisig/merkle-root-multisig-ism",
+  "contracts/ism/pausable-ism",
   "contracts/gas-oracle",
   "contracts/hooks/gas-paymaster",
   "contracts/hooks/fallback-domain-routing-hook",

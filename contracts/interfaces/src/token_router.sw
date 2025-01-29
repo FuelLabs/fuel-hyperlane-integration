@@ -5,14 +5,7 @@ use message::EncodedMessage;
 
 /// Errors that can occur when interacting with the TokenRouter contract
 pub enum TokenRouterError {
-    /// Thrown when attempting to initialize an already initialized contract
-    ContractAlreadyInitialized: (),
-    /// Thrown when trying to interact with an uninitialized contract
-    ContractNotInitialized: (),
-    /// Thrown when attempting to interact with a domain that has no router set
     RouterNotSet: (),
-    /// Thrown when the message sender doesn't match the enrolled router
-    InvalidSender: (),
     /// Thrown when the length of domains and routers arrays don't match
     RouterLengthMismatch: (),
 }

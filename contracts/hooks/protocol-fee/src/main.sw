@@ -87,9 +87,6 @@ impl ProtocolFee for Contract {
 
     /// Collects protocol fees.
     ///
-    /// ### Reverts
-    ///
-    /// * If the contract is not initialized
     #[storage(read)]
     fn collect_protocol_fees() {
         _collect_protocol_fees(None);
@@ -153,7 +150,6 @@ impl PostDispatchHook for Contract {
     ///
     /// ### Reverts
     ///
-    /// * If the contract is not initialized
     /// * If the metadata is invalid
     /// * If the protocol fee is insufficient
     #[payable]
