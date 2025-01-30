@@ -50,6 +50,7 @@ async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocke
     (hook, second_wallet)
 }
 
+// ============ Post Dispatch Interface ============
 #[tokio::test]
 async fn post_dispatch_interface() {
     let (hook, _) = get_contract_instance().await;
@@ -98,6 +99,7 @@ async fn post_dispatch_interface() {
     assert!(post_dispatch.is_ok());
 }
 
+// ============ Pausable ============
 #[tokio::test]
 async fn pausable() {
     let (hook, non_owner_wallet) = get_contract_instance().await;
@@ -163,6 +165,7 @@ async fn pausable() {
     assert_eq!(get_revert_reason(unpause_err), "NotOwner");
 }
 
+// ============ Pausable Post Dispatch ============
 #[tokio::test]
 async fn pausable_post_dispatch() {
     let (hook, _) = get_contract_instance().await;

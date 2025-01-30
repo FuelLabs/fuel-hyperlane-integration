@@ -2,6 +2,21 @@ library;
 
 use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
 
+pub enum MerkleRootMultisigError {
+    NoMultisigThreshold: (),
+    NoValidatorMatch: (),
+    FailedToRecoverSigner: (),
+    InvalidMerkleIndexMetadata: (),
+    FailedToRecoverSignature: Bytes,
+}
+
+pub enum MessageIdMultisigError {
+    NoMultisigThreshold: (),
+    NoValidatorMatch: (),
+    FailedToRecoverSigner: (),
+    FailedToRecoverSignature: Bytes,
+}
+
 // Official Multisig ISM interface for Hyperlane V3
 abi MultisigIsm {
     /// Returns the validators and threshold for the Multisig ISM for the given message.

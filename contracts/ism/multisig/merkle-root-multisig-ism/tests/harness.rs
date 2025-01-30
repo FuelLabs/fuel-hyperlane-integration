@@ -43,6 +43,7 @@ async fn get_contract_instance() -> (MerkeRootMultisigIsm<WalletUnlocked>, Contr
     (merkle_root_multisig, merkle_root_multisig_id.into())
 }
 
+// ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
     let (ism, _) = get_contract_instance().await;
@@ -52,6 +53,7 @@ async fn module_type() {
     assert_eq!(module_type, ModuleType::MERKLE_ROOT_MULTISIG);
 }
 
+// ============ Getters and Setters ============
 #[tokio::test]
 async fn getters_and_setters() {
     let (ism, _) = get_contract_instance().await;

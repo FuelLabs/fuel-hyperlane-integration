@@ -34,6 +34,7 @@ async fn get_contract_instance() -> (TestStorageMerkleTree<WalletUnlocked>, Cont
     (instance, merkle_id.into())
 }
 
+// ============ Satisfies Test Cases ============
 #[tokio::test]
 async fn satisfies_test_cases() {
     let test_cases = get_merkle_test_cases("./tests/test_cases.json");

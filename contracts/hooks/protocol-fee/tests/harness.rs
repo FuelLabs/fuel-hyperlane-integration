@@ -147,6 +147,7 @@ async fn test_set_beneficiary() {
     assert_eq!(current_beneficiary, new_beneficiary);
 }
 
+// ============ Set Beneficiary Zero Address ============
 #[tokio::test]
 async fn test_set_beneficiary_zero_address() {
     let (instance, _wallet) = get_contract_instance().await;
@@ -211,6 +212,7 @@ async fn test_post_dispatch_with_payment() {
     assert!(wallet_balance_before - wallet_balance_after >= fee);
 }
 
+// ============ Post Dispatch Insufficient Payment ============
 #[tokio::test]
 async fn test_post_dispatch_insufficient_payment() {
     let (instance, _wallet) = get_contract_instance().await;
@@ -240,7 +242,7 @@ async fn test_post_dispatch_insufficient_payment() {
     );
 }
 
-// ============ Quote Dispatch Tests ============
+// ============ Quote Dispatch ============
 #[tokio::test]
 async fn test_quote_dispatch() {
     let (instance, _wallet) = get_contract_instance().await;
@@ -266,7 +268,7 @@ async fn test_quote_dispatch() {
     assert_eq!(quote, fee);
 }
 
-// ============ Fee Collection Tests ============
+// ============ Fee Collection ============
 #[tokio::test]
 async fn test_collect_protocol_fees() {
     let (instance, wallet) = get_contract_instance().await;

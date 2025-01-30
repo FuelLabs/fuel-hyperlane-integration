@@ -123,6 +123,7 @@ async fn get_contract_instance() -> (
 // Since the main functionality is the same, we can only test the module fallback functionality
 // -----------------------------------------------------------------------------------------------
 
+// ============ Initialize With Mailbox ============
 #[tokio::test]
 async fn initialize_with_mailbox() {
     let (fallback_routing_ism, mailbox, wallet_identity, _, _) = get_contract_instance().await;
@@ -156,6 +157,7 @@ async fn initialize_with_mailbox() {
     assert_eq!(owner_res, State::Initialized(wallet_identity));
 }
 
+// ============ Route Fallback ============
 #[tokio::test]
 async fn route_fallback() {
     let (fallback_routing_ism, mailbox, wallet_identity, test_ism_id, _) =
@@ -185,6 +187,7 @@ async fn route_fallback() {
     assert_eq!(fallback_routed_ism, test_ism_id);
 }
 
+// ============ Verify Fallback Success ============
 #[tokio::test]
 async fn verify_fallback_success() {
     let (fallback_routing_ism, mailbox, wallet_identity, _, _) = get_contract_instance().await;
@@ -214,6 +217,7 @@ async fn verify_fallback_success() {
     assert!(success);
 }
 
+// ============ Verify Fallback Fail ============
 #[tokio::test]
 async fn verify_fallback_fail() {
     let (fallback_routing_ism, mailbox, wallet_identity, _, test_ism) =

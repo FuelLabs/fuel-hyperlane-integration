@@ -6,11 +6,6 @@ use aggregation_ism_metadata::*;
 use standards::src5::State;
 use sway_libs::ownership::*;
 
-/// Error types for the Aggregation ISM.
-enum AggregationIsmError {
-    DidNotMeetThreshold: (),
-}
-
 storage {
     /// The list of modules to be used for message verification.
     modules: StorageVec<ContractId> = StorageVec {},

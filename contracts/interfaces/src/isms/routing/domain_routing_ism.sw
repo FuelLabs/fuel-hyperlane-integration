@@ -1,5 +1,10 @@
 library;
 
+pub enum DomainRoutingIsmError {
+    DomainModuleLengthMismatch: (u64, u64),
+    DomainNotSet: u32,
+}
+
 abi DomainRoutingIsm {
     /// Sets the ISMs to be used for the specified origin domains
     ///

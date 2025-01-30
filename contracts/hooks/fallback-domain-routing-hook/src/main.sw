@@ -86,7 +86,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    #[storage(read)]
     fn supports_metadata(_metadata: Bytes) -> bool {
         // routing hook does not care about metadata shape
         true

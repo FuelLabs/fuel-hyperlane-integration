@@ -35,7 +35,6 @@ abi PostDispatchHook {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    #[storage(read)]
     fn supports_metadata(metadata: Bytes) -> bool;
 
     /// Post action after a message is dispatched via the Mailbox

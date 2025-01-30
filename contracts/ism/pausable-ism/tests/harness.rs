@@ -49,6 +49,7 @@ async fn get_contract_instance() -> (PausableIsm<WalletUnlocked>, WalletUnlocked
     (ism, second_wallet)
 }
 
+// ============ ISM Interface ============
 #[tokio::test]
 async fn ism_interface() {
     let (ism, _) = get_contract_instance().await;
@@ -75,6 +76,7 @@ async fn ism_interface() {
     assert!(verified_res.unwrap().value);
 }
 
+// ============ Pausable ============
 #[tokio::test]
 async fn pausable() {
     let (ism, non_owner_wallet) = get_contract_instance().await;
@@ -141,6 +143,7 @@ async fn pausable() {
     assert_eq!(get_revert_reason(unpause_err), "NotOwner");
 }
 
+// ============ Pausable Verify ============
 #[tokio::test]
 async fn pausable_verify() {
     let (ism, _) = get_contract_instance().await;

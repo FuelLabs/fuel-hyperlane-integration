@@ -149,7 +149,6 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
 }
 
 // ============ claim ============
-
 #[tokio::test]
 async fn test_claim() {
     let (igp, _) = get_contract_instances().await;
@@ -609,6 +608,7 @@ async fn test_quote_gas_payment() {
     assert_eq!(quote, 3000000000000u64);
 }
 
+// ============ Quote Gas Payment Reverts if No Gas Oracle Set ============
 #[tokio::test]
 async fn test_quote_gas_payment_reverts_if_no_gas_oracle_set() {
     let (igp, _) = get_contract_instances().await;
@@ -622,7 +622,7 @@ async fn test_quote_gas_payment_reverts_if_no_gas_oracle_set() {
     assert!(quote.is_err());
 }
 
-// ============ set_gas_oracle ============
+// ============ Set Gas Oracle ============
 
 #[tokio::test]
 async fn test_set_gas_oracle() {
@@ -668,6 +668,7 @@ async fn test_set_gas_oracle() {
     assert_eq!(gas_oracle, Some(oracle_contract_id_bits256));
 }
 
+// ============ Set Gas Oracle Reverts if Not Owner ============
 #[tokio::test]
 async fn test_set_gas_oracle_reverts_if_not_owner() {
     let (igp, oracle) = get_contract_instances().await;
@@ -689,7 +690,7 @@ async fn test_set_gas_oracle_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
-// ============ set_beneficiary ============
+// ============ Set Beneficiary ============
 
 #[tokio::test]
 async fn test_set_beneficiary() {
@@ -717,6 +718,7 @@ async fn test_set_beneficiary() {
     assert_eq!(beneficiary, new_beneficiary);
 }
 
+// ============ Set Beneficiary Reverts if Not Owner ============
 #[tokio::test]
 async fn test_set_beneficiary_reverts_if_not_owner() {
     let (igp, _) = get_contract_instances().await;
@@ -736,7 +738,7 @@ async fn test_set_beneficiary_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
-// ============ get_remote_gas_data ============
+// ============ Get Remote Gas Data ============
 
 #[tokio::test]
 async fn test_get_remote_gas_data() {
@@ -781,7 +783,7 @@ async fn test_get_remote_gas_data() {
     );
 }
 
-// ============ get_remote_gas_data_reverts_if_no_gas_oracle_set ============
+// ============ Get Remote Gas Data Reverts if No Gas Oracle Set ============
 
 #[tokio::test]
 async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {

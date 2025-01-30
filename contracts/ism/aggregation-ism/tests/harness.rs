@@ -104,6 +104,7 @@ async fn get_contract_instance() -> (
     (aggregation_ism, test_isms, wallet_address)
 }
 
+// ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
     let (ism, _, _) = get_contract_instance().await;
@@ -111,6 +112,7 @@ async fn module_type() {
     assert_eq!(module_type, ModuleType::AGGREGATION);
 }
 
+// ============ Initialize ============
 #[tokio::test]
 async fn aggregation_initialize() {
     let (ism, _, owner) = get_contract_instance().await;
@@ -153,6 +155,7 @@ async fn aggregation_initialize() {
     assert_eq!(threshold, example_threshold);
 }
 
+// ============ All ISMs Accept ============
 #[tokio::test]
 async fn all_isms_accept() {
     let (ism, test_isms, owner) = get_contract_instance().await;
@@ -213,6 +216,7 @@ async fn all_isms_accept() {
     assert!(result);
 }
 
+// ============ Invalid Metadata ============
 #[tokio::test]
 async fn invalid_metadata() {
     let (ism, test_isms, owner) = get_contract_instance().await;
@@ -269,6 +273,7 @@ async fn invalid_metadata() {
     assert_eq!(get_revert_reason(error), "DidNotMeetThreshold");
 }
 
+// ============ One ISM Rejects ============
 #[tokio::test]
 async fn one_ism_rejects() {
     let (ism, test_isms, owner) = get_contract_instance().await;

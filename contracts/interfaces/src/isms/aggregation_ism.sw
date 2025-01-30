@@ -2,6 +2,11 @@ library;
 
 use std::bytes::Bytes;
 
+pub enum AggregationIsmError {
+    DidNotMeetThreshold: (),
+}
+
+
 ///  Official Aggregation ISM interface for Hyperlane V3
 abi AggregationIsm {
     /// Returns the modules and threshold for the Aggregation ISM for the given message.
