@@ -16,14 +16,6 @@ use message_id_multisig_ism_metadata::MessageIdMultisigIsmMetadata;
 use message::EncodedMessage;
 use std_lib_extended::bytes::*;
 
-/// Error types for the Message ID Multisig ISM.
-enum MessageIdMultisigError {
-    NoMultisigThreshold: (),
-    NoValidatorMatch: (),
-    FailedToRecoverSigner: (),
-    FailedToRecoverSignature: Bytes,
-}
-
 storage {
     /// The list of validators that can approve messages.
     validators: StorageVec<EvmAddress> = StorageVec {},

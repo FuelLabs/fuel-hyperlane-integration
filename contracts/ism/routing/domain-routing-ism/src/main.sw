@@ -6,11 +6,6 @@ use sway_libs::{ownership::*};
 use interfaces::{isms::{ism::*, routing::{domain_routing_ism::*, routing_ism::*}}, ownable::*};
 use message::{EncodedMessage, Message};
 
-/// Errors that can occur in the DomainRoutingIsm.
-enum DomainRoutingIsmError {
-    DomainModuleLengthMismatch:(u64, u64),
-    DomainNotSet:(u32),
-}
 
 storage {
     /// Mapping of modules which are used for specific domains.

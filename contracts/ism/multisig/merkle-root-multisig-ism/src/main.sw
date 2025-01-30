@@ -16,15 +16,6 @@ use message::EncodedMessage;
 use std_lib_extended::bytes::*;
 use merkle::*;
 
-/// Error types for the Merkle Root Multisig ISM.
-enum MerkleRootMultisigError {
-    NoMultisigThreshold: (),
-    NoValidatorMatch: (),
-    FailedToRecoverSigner: (),
-    InvalidMerkleIndexMetadata: (),
-    FailedToRecoverSignature: Bytes,
-}
-
 storage {
     /// The list of validators that can approve messages.
     validators: StorageVec<EvmAddress> = StorageVec {},

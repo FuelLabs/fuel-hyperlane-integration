@@ -69,6 +69,7 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
     ]
 }
 
+// ============ Set/Get Remote Gas Data Configs ============
 #[tokio::test]
 async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
     let (oracle, _) = get_contract_instance().await;
@@ -96,6 +97,7 @@ async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
     }
 }
 
+// ============ Get Exchange Rate and Gas Price for Unknown Domain ============
 #[tokio::test]
 async fn test_exchange_rate_and_gas_price_unknown_domain() {
     let (oracle, _) = get_contract_instance().await;
@@ -117,6 +119,7 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
     assert_eq!(token_decimals, 9u8);
 }
 
+// ============ Set Remote Gas Data Configs Reverts if Not Owner ============
 #[tokio::test]
 async fn test_set_remote_gas_data_configs_reverts_if_not_owner() {
     let (oracle, _) = get_contract_instance().await;

@@ -22,11 +22,7 @@ use std::{
 use std_lib_extended::bytes::*;
 use interfaces::va::*;
 
-/// Errors which can occur in the ValidatorAnnounce contract.
-enum ValidatorAnnounceError {
-    ValidatorNotSigner: (),
-    ReplayAnnouncement: (),
-}
+
 
 configurable {
     /// The local domain. Defaults to "fuel" in bytes.

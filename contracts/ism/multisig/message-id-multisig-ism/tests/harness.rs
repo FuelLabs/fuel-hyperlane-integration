@@ -138,6 +138,7 @@ async fn get_contract_instance() -> (MessageIdMultisigIsm<WalletUnlocked>, Contr
     (message_id_multisig_ism, message_id_multisig_ism_id.into())
 }
 
+// ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
     let (ism, _) = get_contract_instance().await;
@@ -147,6 +148,7 @@ async fn module_type() {
     assert_eq!(module_type, ModuleType::MESSAGE_ID_MULTISIG);
 }
 
+// ============ Getters and Setters ============
 #[tokio::test]
 async fn getters_and_setters() {
     let (ism, _) = get_contract_instance().await;
@@ -183,6 +185,7 @@ async fn getters_and_setters() {
     assert_eq!(threshold, 1);
 }
 
+// ============ Digest ============
 #[tokio::test]
 async fn digest() {
     let (ism, _) = get_contract_instance().await;
@@ -208,6 +211,7 @@ async fn digest() {
     }
 }
 
+// ============ Signature At ============
 #[tokio::test]
 async fn signature_at() {
     let (ism, _) = get_contract_instance().await;
@@ -236,6 +240,7 @@ async fn signature_at() {
     assert_eq!(signature_2, signatures[1]);
 }
 
+// ============ Verify No Threshold ============
 #[tokio::test]
 async fn verify_no_threshold() {
     let (ism, _) = get_contract_instance().await;
@@ -270,6 +275,7 @@ async fn verify_no_threshold() {
     }
 }
 
+// ============ Verify Invalid Metadata Len ============
 #[tokio::test]
 async fn verify_invalid_metadata_len() {
     let (ism, _) = get_contract_instance().await;
@@ -303,6 +309,7 @@ async fn verify_invalid_metadata_len() {
     }
 }
 
+// ============ Verify Invalid Metadata ============
 #[tokio::test]
 async fn verify_invalid_metadata() {
     let (ism, _) = get_contract_instance().await;

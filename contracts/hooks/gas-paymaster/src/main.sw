@@ -24,14 +24,6 @@ use std::{
     u128::U128,
 };
 
-/// Errors that can occur during IGP operations.
-enum IgpError {
-    InsufficientGasPayment: (),
-    InterchainGasPaymentInBaseAsset: (),
-    UnsupportedMetadataFormat: (),
-    InvalidDomainConfigLength: (),
-}
-
 configurable {
     BASE_ASSET_DECIMALS: u8 = 9,
     TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000,
@@ -363,7 +355,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    #[storage(read)]
     fn supports_metadata(metadata: Bytes) -> bool {
         StandardHookMetadata::is_valid(metadata)
     }

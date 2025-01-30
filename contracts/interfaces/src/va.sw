@@ -10,13 +10,12 @@ use std::{
     vm::evm::evm_address::EvmAddress,
 };
 
-/// Event emitted when a validator announces their storage location.
-pub struct ValidatorAnnouncementEvent {
-    /// The address of the announcing validator
-    pub validator: EvmAddress,
-    /// The storage location being announced
-    pub storage_location: String,
+/// Errors which can occur in the ValidatorAnnounce contract.
+pub enum ValidatorAnnounceError {
+    ValidatorNotSigner: (),
+    ReplayAnnouncement: (),
 }
+
 
 /// Official Hyperlane V3 Interface
 abi ValidatorAnnounce {
@@ -112,4 +111,12 @@ abi ValidatorAnnounceFunctions {
     /// * `domain`: [u32] - The local domain
     #[storage(write)]
     fn set_local_domain(domain: u32);
+}
+
+/// Event emitted when a validator announces their storage location.
+pub struct ValidatorAnnouncementEvent {
+    /// The address of the announcing validator
+    pub validator: EvmAddress,
+    /// The storage location being announced
+    pub storage_location: String,
 }

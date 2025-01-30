@@ -111,6 +111,7 @@ async fn get_contract_instance() -> (
     )
 }
 
+// ============ Hook Event Logs ============
 #[tokio::test]
 async fn test_hook_event_logs() {
     let (mailbox, hook, mailbox_id, _, roots, messages) = get_contract_instance().await;
@@ -163,6 +164,7 @@ async fn test_hook_event_logs() {
     }
 }
 
+// ============ Quote Dispatch ============
 #[tokio::test]
 async fn test_quote_dispatch() {
     let (_, hook, _, _, _, messages) = get_contract_instance().await;
@@ -184,6 +186,7 @@ async fn test_quote_dispatch() {
     }
 }
 
+// ============ Module Type ============
 #[tokio::test]
 async fn test_module_type() {
     let (_, hook, _, _, _, _) = get_contract_instance().await;

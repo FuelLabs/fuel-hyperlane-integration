@@ -163,7 +163,6 @@ pub fn test_message(
 }
 
 // ============ dispatch ============
-
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
@@ -188,6 +187,7 @@ async fn test_dispatch_too_large_message() {
     assert_eq!(reason, "MessageTooLarge(6000)");
 }
 
+// ============ Dispatch Logs Message ============
 #[tokio::test]
 async fn test_dispatch_logs_message() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
@@ -248,6 +248,7 @@ async fn test_dispatch_logs_message() {
     );
 }
 
+// ============ Dispatch Returns Id ============
 #[tokio::test]
 async fn test_dispatch_returns_id() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
@@ -274,6 +275,7 @@ async fn test_dispatch_returns_id() {
     assert_eq!(bits256_to_h256(dispatch_call.value), id);
 }
 
+// ============ Dispatch Reverts If Paused ============
 #[tokio::test]
 async fn test_dispatch_reverts_if_paused() {
     let (mailbox, _, _, post_dispatch_id, _) = get_contract_instance().await;
@@ -297,7 +299,7 @@ async fn test_dispatch_reverts_if_paused() {
     assert_eq!(get_revert_reason(call.unwrap_err()), "Paused");
 }
 
-// ============ process ============
+// ============ Process ============
 
 #[tokio::test]
 async fn test_process_event() {
@@ -342,6 +344,7 @@ async fn test_process_event() {
     );
 }
 
+// ============ Process Handled ============
 #[tokio::test]
 async fn test_process_handled() {
     let (mailbox, _, recipient, _, ism_id) = get_contract_instance().await;
@@ -367,6 +370,7 @@ async fn test_process_handled() {
     assert!(handled.value);
 }
 
+// ============ Process Deliver Twice ============
 #[tokio::test]
 async fn test_process_deliver_twice() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
@@ -408,6 +412,7 @@ async fn test_process_deliver_twice() {
     );
 }
 
+// ============ Process ISM Reject ============
 #[tokio::test]
 async fn test_process_ism_reject() {
     let (mailbox, _, recipient, _, default_ism) = get_contract_instance().await;
@@ -431,6 +436,7 @@ async fn test_process_ism_reject() {
     );
 }
 
+// ============ Process Reverts If Paused ============
 #[tokio::test]
 async fn test_process_reverts_if_paused() {
     let (mailbox, _, recipient, _, _) = get_contract_instance().await;
@@ -451,7 +457,7 @@ async fn test_process_reverts_if_paused() {
     assert_eq!(get_revert_reason(process_call_error), "Paused");
 }
 
-// ============ pause ============
+// ============ Pause ============
 
 #[tokio::test]
 async fn test_pause() {
@@ -470,6 +476,7 @@ async fn test_pause() {
     assert!(paused);
 }
 
+// ============ Pause Reverts If Not Owner ============
 #[tokio::test]
 async fn test_pause_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
@@ -488,7 +495,7 @@ async fn test_pause_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
-// ============ unpause ============
+// ============ Unpause ============
 
 #[tokio::test]
 async fn test_unpause() {
@@ -511,6 +518,7 @@ async fn test_unpause() {
     assert!(!paused);
 }
 
+// ============ Unpause Reverts If Not Owner ============
 #[tokio::test]
 async fn test_unpause_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
@@ -532,7 +540,7 @@ async fn test_unpause_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
-// ============ recipient_ism ============
+// ============ Recipient Ism ============
 
 #[tokio::test]
 async fn test_recipient_ism() {
@@ -564,7 +572,7 @@ async fn test_recipient_ism() {
     assert_eq!(set_ism.value, default_ism.into());
 }
 
-// ============ set_default_ism ============
+// ============ Set Default Ism ============
 
 #[tokio::test]
 async fn test_set_default_ism() {
@@ -610,6 +618,7 @@ async fn test_set_default_ism() {
     assert_eq!(default_ism, new_default_ism);
 }
 
+// ============ Set Default Ism Reverts If Not Owner ============
 #[tokio::test]
 async fn test_set_default_ism_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
@@ -631,7 +640,7 @@ async fn test_set_default_ism_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner",);
 }
 
-// ============ set_default_hook ============
+// ============ Set Default Hook ============
 
 #[tokio::test]
 async fn test_set_default_hook() {
@@ -676,6 +685,7 @@ async fn test_set_default_hook() {
     assert_eq!(default_hook, new_default_hook);
 }
 
+// ============ Set Default Hook Reverts If Not Owner ============
 #[tokio::test]
 async fn test_set_default_hook_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;
@@ -697,7 +707,7 @@ async fn test_set_default_hook_reverts_if_not_owner() {
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner",);
 }
 
-// ============ set_required_hook ============
+// ============ Set Required Hook ============
 
 #[tokio::test]
 async fn test_set_required_hook() {
@@ -733,6 +743,7 @@ async fn test_set_required_hook() {
     assert_eq!(required_hook, new_required_hook);
 }
 
+// ============ Set Required Hook Reverts If Not Owner ============
 #[tokio::test]
 async fn test_set_required_hook_reverts_if_not_owner() {
     let (mailbox, _, _, _, _) = get_contract_instance().await;

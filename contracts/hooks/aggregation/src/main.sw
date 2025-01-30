@@ -69,7 +69,6 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    #[storage(read)]
     fn supports_metadata(metadata: Bytes) -> bool {
         StandardHookMetadata::is_valid(metadata)
     }

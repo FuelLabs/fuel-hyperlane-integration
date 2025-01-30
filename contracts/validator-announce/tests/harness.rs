@@ -182,6 +182,7 @@ async fn get_contract_instance(
 // -------------------------------- Announce ----------------------------------
 // ----------------------------------------------------------------------------
 
+// ============ Announce Success ============
 #[tokio::test]
 async fn announce_success() {
     for index in 0..4 {
@@ -231,6 +232,7 @@ async fn announce_success() {
     }
 }
 
+// ============ Announce Replay ============
 #[tokio::test]
 async fn announce_replay() {
     let (va_contract, test_data) = get_contract_instance(0).await;
@@ -279,6 +281,7 @@ async fn announce_replay() {
     }
 }
 
+// ============ Announce Invalid Signer ============
 #[tokio::test]
 async fn announce_invalid_signer() {
     let (va_contract, test_data) = get_contract_instance(0).await;
@@ -329,6 +332,7 @@ async fn announce_invalid_signer() {
     }
 }
 
+// ============ Announce Invalid Signature ============
 #[tokio::test]
 async fn announce_invalid_signature() {
     let (va_contract, test_data) = get_contract_instance(0).await;
@@ -379,6 +383,7 @@ async fn announce_invalid_signature() {
 // ------------------------- Get Announced Validators -------------------------
 // ----------------------------------------------------------------------------
 
+// ============ Get Announced Validators ============
 #[tokio::test]
 async fn get_announced_validators() {
     let (va_contract, test_data) = get_contract_instance(0).await;
@@ -471,6 +476,7 @@ async fn get_announced_validators() {
 // ------------------------- Get Announced Storage Locations ------------------
 // ----------------------------------------------------------------------------
 
+// ============ Get Announced Storage Locations One Validator ============
 #[tokio::test]
 async fn get_announced_storage_locations_one_validator() {
     let (va_contract, test_data) = get_contract_instance(0).await;
@@ -524,6 +530,7 @@ async fn get_announced_storage_locations_one_validator() {
     }
 }
 
+// ============ Get Announced Storage Locations Four Validators ============
 #[tokio::test]
 async fn get_announced_storage_locations_four_validators() {
     let (va_contract, test_data) = get_contract_instance(0).await;

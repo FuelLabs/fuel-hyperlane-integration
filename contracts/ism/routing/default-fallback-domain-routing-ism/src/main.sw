@@ -6,10 +6,6 @@ use sway_libs::{ownership::*};
 use interfaces::{mailbox::mailbox::Mailbox, isms::{ism::*, routing::{default_fallback_domain_routing_ism::*, routing_ism::*}}, ownable::*};
 use message::{EncodedMessage, Message};
 
-/// Errors that can occur in the DefaultFallbackDomainRoutingIsm.
-enum DefaultFallbackDomainRoutingIsmError {
-    DomainModuleLengthMismatch:(u64, u64),
-}
 
 storage {
     /// Mapping of modules which are used for specific domains.

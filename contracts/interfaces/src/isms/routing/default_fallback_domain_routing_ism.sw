@@ -1,5 +1,9 @@
 library;
 
+pub enum DefaultFallbackDomainRoutingIsmError {
+    DomainModuleLengthMismatch:(u64, u64),
+}
+
 abi DefaultFallbackDomainRoutingIsm {
     /// Sets the owner and mailbox of the ISM.
     ///

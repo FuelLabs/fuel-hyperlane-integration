@@ -3,6 +3,17 @@ library;
 use std::{bytes::Bytes, storage::*};
 use message::EncodedMessage;
 
+pub enum MailboxError {
+    InvalidISMAddress: (),
+    InvalidHookAddress: (),
+    InvalidProtocolVersion: u8,
+    InvalidMessageOrigin: u32,
+    MessageAlreadyDelivered: (),
+    MessageVerificationFailed: (),
+    MessageTooLarge: u64,
+}
+
+
 abi Mailbox {
     /// Initializes the contract.
     ///

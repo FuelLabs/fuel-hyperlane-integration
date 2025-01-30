@@ -31,17 +31,6 @@ const VERSION = 3;
 /// The max bytes in a message body. Equal to 2 KiB, or 2 * (2 ** 10).
 const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
 
-/// Errors that can occur while interacting with the mailbox contract.
-enum MailboxError {
-    InvalidISMAddress: (),
-    InvalidHookAddress: (),
-    InvalidProtocolVersion: u8,
-    InvalidMessageOrigin: u32,
-    MessageAlreadyDelivered: (),
-    MessageVerificationFailed: (),
-    MessageTooLarge: u64,
-}
-
 configurable {
     /// The domain of the local chain.
     /// Defaults to `fuel` (0x6675656c).

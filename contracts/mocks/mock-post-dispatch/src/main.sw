@@ -13,7 +13,6 @@ impl PostDispatchHook for Contract {
         PostDispatchHookType::UNUSED
     }
 
-    #[storage(read)]
     fn supports_metadata(_metadata: Bytes) -> bool {
         true
     }

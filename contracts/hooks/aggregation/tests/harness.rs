@@ -214,7 +214,6 @@ async fn get_contract_instances() -> (
 }
 
 // ============ Initialization Test ============
-
 #[tokio::test]
 async fn test_initialization_reverts_if_already_initialized() {
     let (aggregation, mock_hook1, _, _, _) = get_contract_instances().await;

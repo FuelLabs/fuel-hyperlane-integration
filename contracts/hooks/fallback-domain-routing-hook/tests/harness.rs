@@ -110,6 +110,7 @@ async fn get_contract_instance() -> (
     (fallback_routing_hook, deployer, hooks)
 }
 
+// ============ Module Type and Metadata ============
 #[tokio::test]
 async fn module_type_and_metadata() {
     let (fallback_routing_hook, _, _) = get_contract_instance().await;
@@ -135,6 +136,7 @@ async fn module_type_and_metadata() {
     assert!(supports_metadata);
 }
 
+// ============ Initialize ============
 #[tokio::test]
 async fn initialize() {
     let (fallback_routing_hook, owner, mut hooks) = get_contract_instance().await;
@@ -165,6 +167,7 @@ async fn initialize() {
     );
 }
 
+// ============ Setters ============
 #[tokio::test]
 async fn setters() {
     let (fallback_routing_hook, owner, hooks) = get_contract_instance().await;
@@ -217,6 +220,7 @@ async fn setters() {
     assert!(set_res.is_ok());
 }
 
+// ============ Routing and Quoting ============
 #[tokio::test]
 async fn routing_and_quoting() {
     let (fallback_routing_hook, owner, hooks) = get_contract_instance().await;
@@ -312,6 +316,7 @@ async fn routing_and_quoting() {
     assert!(!hook_called);
 }
 
+// ============ Fallback Routing ============
 #[tokio::test]
 async fn fallback() {
     let (fallback_routing_hook, owner, _) = get_contract_instance().await;

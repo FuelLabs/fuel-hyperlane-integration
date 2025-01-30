@@ -103,6 +103,7 @@ async fn get_contract_instance() -> (
     (domain_routing_ism, isms)
 }
 
+// ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
     let (ism, _) = get_contract_instance().await;
@@ -110,6 +111,7 @@ async fn module_type() {
     assert_eq!(module_type, ModuleType::ROUTING);
 }
 
+// ============ Getters and Setters ============
 #[tokio::test]
 async fn getters_and_setters() {
     let (domain_routing_ism, test_isms) = get_contract_instance().await;
@@ -195,6 +197,7 @@ async fn getters_and_setters() {
     );
 }
 
+// ============ Routing ============
 #[tokio::test]
 async fn routing() {
     let (domain_routing_ism, test_isms) = get_contract_instance().await;
@@ -231,6 +234,7 @@ async fn routing() {
     }
 }
 
+// ============ Routing Not Set Domain ============
 #[tokio::test]
 async fn routing_not_set_domain() {
     let (domain_routing_ism, _) = get_contract_instance().await;
@@ -259,6 +263,7 @@ async fn routing_not_set_domain() {
     }
 }
 
+// ============ Verify Success ============
 #[tokio::test]
 async fn route_verify_success() {
     let (domain_routing_ism, test_isms) = get_contract_instance().await;
@@ -296,6 +301,7 @@ async fn route_verify_success() {
     }
 }
 
+// ============ Verify Fail ============
 #[tokio::test]
 async fn route_verify_fail() {
     let (domain_routing_ism, test_isms) = get_contract_instance().await;
