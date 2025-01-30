@@ -69,8 +69,6 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
         .unwrap()
         .value;
 
-    println!("protocol_fee_quote: {:?}", protocol_fee_quote);
-
     fuel_mailbox_instance
         .methods()
         .set_required_hook(protocol_fee_hook_id)
@@ -99,8 +97,6 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
         .call()
         .await
         .unwrap();
-
-    println!("quote: {:?}", quote.value);
 
     let send_message_response = fuel_mailbox_instance
         .methods()

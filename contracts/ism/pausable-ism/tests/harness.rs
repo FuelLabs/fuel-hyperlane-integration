@@ -93,7 +93,6 @@ async fn pausable() {
 
     // Pause
     let pause_res = ism.methods().pause().call().await;
-    println!("{:?}", pause_res);
     assert!(pause_res.is_ok());
 
     let is_paused = ism
