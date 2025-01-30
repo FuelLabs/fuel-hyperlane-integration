@@ -3,9 +3,6 @@ library;
 use ::hooks::gas_oracle::RemoteGasData;
 use std::u128::U128;
 
-/// Default to the same number of decimals as the local base asset.
-const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
-
 
 pub enum IgpError {
     InsufficientGasPayment: (),
