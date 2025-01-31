@@ -8,6 +8,7 @@ pub enum MerkleRootMultisigError {
     FailedToRecoverSigner: (),
     InvalidMerkleIndexMetadata: (),
     FailedToRecoverSignature: Bytes,
+    AlreadyInitialized: (),
 }
 
 pub enum MessageIdMultisigError {
@@ -58,20 +59,15 @@ abi MultisigIsm {
 }
 
 // Additional functions added for the fully functional implementation of the Multisig ISM
+// Since Mutltisig ISMs are static and we do not have factories, we get around this to mimic the 
+// way they would be deployed on the EVM
 abi MultisigIsmFunctions {
-    /// Enrolls a validator to the Multisig ISM.
+    /// Initializes the Multisig ISM with the given validators.
+    /// Threshold is excluded since it's a configurable set at deployment.
     ///
     /// ### Arguments
     ///
-    /// * `validator`: [EvmAddress] - The address of the validator to be enrolled.
-    #[storage(write)]
-    fn enroll_validator(validator: EvmAddress);
-
-    /// Sets the threshold for the Multisig ISM.
-    ///
-    /// ### Arguments
-    ///
-    /// * `threshold`: [u8] - The threshold of approval for the Multisig ISM.
-    #[storage(write)]
-    fn set_threshold(threshold: u8);
+    /// * `validators`: [Vec<EvmAddress>] - The list of validators which can approve messages.
+    #[storage(read, write)]
+    fn initialize(validators: Vec<EvmAddress>);
 }

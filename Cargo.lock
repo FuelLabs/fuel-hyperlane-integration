@@ -6449,6 +6449,7 @@ dependencies = [
  "fuels",
  "hex",
  "hyperlane-core",
+ "test-utils",
  "tokio",
 ]
 
