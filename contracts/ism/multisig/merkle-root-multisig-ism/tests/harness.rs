@@ -14,7 +14,11 @@ Contract(
 )
 );
 
-async fn get_contract_instance() -> (MerkeRootMultisigIsm<WalletUnlocked>, ContractId) {
+async fn get_contract_instance() -> (
+    MerkeRootMultisigIsm<WalletUnlocked>,
+    ContractId,
+    WalletUnlocked,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -38,25 +42,26 @@ async fn get_contract_instance() -> (MerkeRootMultisigIsm<WalletUnlocked>, Contr
     .await
     .unwrap();
 
-    let merkle_root_multisig = MerkeRootMultisigIsm::new(merkle_root_multisig_id.clone(), wallet);
+    let merkle_root_multisig =
+        MerkeRootMultisigIsm::new(merkle_root_multisig_id.clone(), wallet.clone());
 
-    (merkle_root_multisig, merkle_root_multisig_id.into())
+    (merkle_root_multisig, merkle_root_multisig_id.into(), wallet)
 }
 
 // ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let module_type = ism.methods().module_type().call().await.unwrap().value;
 
     assert_eq!(module_type, ModuleType::MERKLE_ROOT_MULTISIG);
 }
 
-// ============ Getters and Setters ============
+// ============ Initialization ============
 #[tokio::test]
-async fn getters_and_setters() {
-    let (ism, _) = get_contract_instance().await;
+async fn initialization() {
+    let (ism, _, wallet) = get_contract_instance().await;
 
     let message = Bytes(vec![]);
 
@@ -68,15 +73,44 @@ async fn getters_and_setters() {
         .unwrap()
         .value;
 
+    // Deployed with no threshold, cannot be used to verify
     assert_eq!(validators, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(1).call().await.unwrap();
-    ism.methods()
-        .enroll_validator(Bits256::zeroed().into())
+    let configurables = MerkeRootMultisigIsmConfigurables::default()
+        .with_THRESHOLD(1)
+        .unwrap();
+
+    let id = Contract::load_from(
+        "./out/debug/merkle-root-multisig-ism.bin",
+        LoadConfiguration::default().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    let ism = MerkeRootMultisigIsm::new(id, wallet.clone());
+
+    let (validators, threshold) = ism
+        .methods()
+        .validators_and_threshold(message.clone())
         .call()
         .await
-        .unwrap();
+        .unwrap()
+        .value;
+
+    // Half initialized
+    assert_eq!(validators, vec![]);
+    assert_eq!(threshold, 1);
+
+    // Initialize validators
+    assert!(ism
+        .methods()
+        .initialize(vec![Bits256::zeroed().into()])
+        .call()
+        .await
+        .is_ok());
 
     let (validators, threshold) = ism
         .methods()
@@ -88,4 +122,17 @@ async fn getters_and_setters() {
 
     assert_eq!(validators, vec![Bits256::zeroed().into()]);
     assert_eq!(threshold, 1);
+
+    // Can initialize only once
+    assert!(ism
+        .methods()
+        .initialize(vec![Bits256::zeroed().into()])
+        .call()
+        .await
+        .is_err());
 }
+
+// ============ Note ============
+// Verification logic tests in the demo
+// due to the lack of testing data from
+// Hyperlane

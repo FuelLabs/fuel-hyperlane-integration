@@ -39,7 +39,7 @@ dependencies = [
 
 [[package]]
 name = "core"
-source = "path+from-root-6A8836696D55BC6E"
+source = "path+from-root-F64B6E1A883A7E7B"
 
 [[package]]
 name = "default-fallback-domain-routing-ism"
@@ -291,7 +291,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "std"
-source = "git+https://github.com/fuellabs/sway?tag=v0.66.5#94a066652468b4afa3bd396dacef482ed590976b"
+source = "git+https://github.com/fuellabs/sway?tag=v0.66.4#d7dd104dac4394aa7af56f05b720c975744db853"
 dependencies = ["core"]
 
 [[package]]
@@ -309,7 +309,7 @@ dependencies = ["std"]
 
 [[package]]
 name = "sway_libs"
-source = "git+https://github.com/fuellabs/sway-libs?branch=master#205e0e617cea37649c31b93563393ded79c76493"
+source = "git+https://github.com/fuellabs/sway-libs?branch=master#4cd9e12388414801ef98eb36eb9335b707fe21aa"
 dependencies = [
     "standards git+https://github.com/FuelLabs/sway-standards?tag=v0.6.0#65e09f95ea8b9476b171a66c8a47108f352fa32c",
     "std",

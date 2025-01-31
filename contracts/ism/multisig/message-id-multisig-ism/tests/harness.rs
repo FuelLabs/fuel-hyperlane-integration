@@ -3,9 +3,10 @@ use std::str::FromStr;
 use alloy_signer_local::PrivateKeySigner;
 use fuels::{
     prelude::*,
-    types::{errors::transaction::Reason, Bits256, Bytes32, ContractId, EvmAddress},
+    types::{Bits256, Bytes32, ContractId, EvmAddress},
 };
 use hyperlane_core::{HyperlaneMessage, RawHyperlaneMessage, H256};
+use test_utils::get_revert_reason;
 
 // Load abi from json
 abigen!(Contract(
@@ -108,7 +109,11 @@ fn message_id_test_data() -> (Vec<HyperlaneMessage>, Vec<Bytes>, Vec<H256>, Vec<
     (messages_generated, metadata, expected_digests, signatures)
 }
 
-async fn get_contract_instance() -> (MessageIdMultisigIsm<WalletUnlocked>, ContractId) {
+async fn get_contract_instance() -> (
+    MessageIdMultisigIsm<WalletUnlocked>,
+    ContractId,
+    WalletUnlocked,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -133,25 +138,29 @@ async fn get_contract_instance() -> (MessageIdMultisigIsm<WalletUnlocked>, Contr
     .unwrap();
 
     let message_id_multisig_ism =
-        MessageIdMultisigIsm::new(message_id_multisig_ism_id.clone(), wallet);
+        MessageIdMultisigIsm::new(message_id_multisig_ism_id.clone(), wallet.clone());
 
-    (message_id_multisig_ism, message_id_multisig_ism_id.into())
+    (
+        message_id_multisig_ism,
+        message_id_multisig_ism_id.into(),
+        wallet,
+    )
 }
 
 // ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let module_type = ism.methods().module_type().call().await.unwrap().value;
 
     assert_eq!(module_type, ModuleType::MESSAGE_ID_MULTISIG);
 }
 
-// ============ Getters and Setters ============
+// ============ Initialization ============
 #[tokio::test]
-async fn getters_and_setters() {
-    let (ism, _) = get_contract_instance().await;
+async fn initialization() {
+    let (ism, _, wallet) = get_contract_instance().await;
 
     let message = Bytes(vec![]);
 
@@ -163,15 +172,44 @@ async fn getters_and_setters() {
         .unwrap()
         .value;
 
+    // Deployed with no threshold, cannot be used to verify
     assert_eq!(validators, vec![]);
     assert_eq!(threshold, 0);
 
-    ism.methods().set_threshold(1).call().await.unwrap();
-    ism.methods()
-        .enroll_validator(Bits256::zeroed().into())
+    let configurables = MessageIdMultisigIsmConfigurables::default()
+        .with_THRESHOLD(1)
+        .unwrap();
+
+    let id = Contract::load_from(
+        "./out/debug/message-id-multisig-ism.bin",
+        LoadConfiguration::default().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    let ism = MessageIdMultisigIsm::new(id, wallet.clone());
+
+    let (validators, threshold) = ism
+        .methods()
+        .validators_and_threshold(message.clone())
         .call()
         .await
-        .unwrap();
+        .unwrap()
+        .value;
+
+    // Half initialized
+    assert_eq!(validators, vec![]);
+    assert_eq!(threshold, 1);
+
+    // Initialize validators
+    assert!(ism
+        .methods()
+        .initialize(vec![Bits256::zeroed().into()])
+        .call()
+        .await
+        .is_ok());
 
     let (validators, threshold) = ism
         .methods()
@@ -183,12 +221,20 @@ async fn getters_and_setters() {
 
     assert_eq!(validators, vec![Bits256::zeroed().into()]);
     assert_eq!(threshold, 1);
+
+    // Can initialize only once
+    assert!(ism
+        .methods()
+        .initialize(vec![Bits256::zeroed().into()])
+        .call()
+        .await
+        .is_err());
 }
 
 // ============ Digest ============
 #[tokio::test]
 async fn digest() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let (message, metadata, expected_digests, _) = message_id_test_data();
 
@@ -214,7 +260,7 @@ async fn digest() {
 // ============ Signature At ============
 #[tokio::test]
 async fn signature_at() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let (_, metadata, _, signatures) = message_id_test_data();
 
@@ -242,8 +288,8 @@ async fn signature_at() {
 
 // ============ Verify No Threshold ============
 #[tokio::test]
-async fn verify_no_threshold() {
-    let (ism, _) = get_contract_instance().await;
+async fn verify_no_threshold_set() {
+    let (ism, _, _) = get_contract_instance().await;
 
     let (messages, _, _, _) = message_id_test_data();
 
@@ -253,7 +299,7 @@ async fn verify_no_threshold() {
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address)
+        .initialize(vec![address])
         .call()
         .await
         .unwrap();
@@ -268,17 +314,14 @@ async fn verify_no_threshold() {
         .await
         .unwrap_err();
 
-    if let Error::Transaction(Reason::Reverted { reason, .. }) = error {
-        assert_eq!(reason, "NoMultisigThreshold");
-    } else {
-        panic!("Expected NoMultisigThreshold error");
-    }
+    // No threshold set during deployment
+    assert_eq!(get_revert_reason(error), "NoMultisigThreshold");
 }
 
 // ============ Verify Invalid Metadata Len ============
 #[tokio::test]
 async fn verify_invalid_metadata_len() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let (messages, _, _, _) = message_id_test_data();
 
@@ -287,7 +330,7 @@ async fn verify_invalid_metadata_len() {
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address)
+        .initialize(vec![address])
         .call()
         .await
         .unwrap();
@@ -302,17 +345,14 @@ async fn verify_invalid_metadata_len() {
         .await
         .unwrap_err();
 
-    if let Error::Transaction(Reason::Reverted { reason, .. }) = error {
-        assert_eq!(reason, "assertion failed");
-    } else {
-        panic!("Expected InvalidMetadata error");
-    }
+    // Assertion failed when trying to decode metadata
+    assert_eq!(get_revert_reason(error), "assertion failed");
 }
 
 // ============ Verify Invalid Metadata ============
 #[tokio::test]
 async fn verify_invalid_metadata() {
-    let (ism, _) = get_contract_instance().await;
+    let (ism, _, _) = get_contract_instance().await;
 
     let (messages, _, _, _) = message_id_test_data();
 
@@ -322,7 +362,7 @@ async fn verify_invalid_metadata() {
 
     let address = EvmAddress::from(Bits256(signer.address().into_word().0));
     ism.methods()
-        .enroll_validator(address)
+        .initialize(vec![address])
         .call()
         .await
         .unwrap();
@@ -342,9 +382,11 @@ async fn verify_invalid_metadata() {
         .await
         .unwrap_err();
 
-    if let Error::Transaction(Reason::Reverted { reason, .. }) = error {
-        assert_eq!(reason, "assertion failed");
-    } else {
-        panic!("Expected InvalidMetadata error");
-    }
+    // Invalid metadata
+    assert_eq!(get_revert_reason(error), "assertion failed");
 }
+
+// ============ Note ============
+// Verification logic tests in the demo
+// due to the lack of testing data from
+// Hyperlane
