@@ -13,6 +13,7 @@ pub enum WarpRouteError {
     RemoteDecimalsNotSet: (),
     AmountNotConvertible: (),
     SenderNotMailbox: (),
+    AssetNotReceivedForTransfer: (),
 }
 
 /// The mode of the WarpRoute contract
@@ -174,7 +175,7 @@ abi WarpRoute {
     /// ### Arguments
     ///
     /// * `asset`: Option<[AssetId]> - The asset to claim. If None, the base asset is used.
-    #[storage(read)]
+    #[storage(read, write)]
     fn claim(asset: Option<AssetId>);
 }
 

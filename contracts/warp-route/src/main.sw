@@ -89,6 +89,8 @@ storage {
     decimals: StorageMap<AssetId, u8> = StorageMap {},
     /// The total number of coins ever minted for an asset.
     cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
+    /// The contract balance of the asset
+    contract_balance: u64 = 0,
 }
 
 configurable {
@@ -189,6 +191,7 @@ impl WarpRoute for Contract {
                 let total_supply = collateral_asset_contract.total_supply(asset_id).unwrap();
 
                 save_token_details_to_state(asset_id, name, symbol, decimals, total_supply);
+                storage.contract_balance.write(0);
             }
         };
     }
@@ -253,6 +256,18 @@ impl WarpRoute for Contract {
             WarpRouteTokenMode::NATIVE => amount + quote,
         };
 
+        //Check if the asset is sent to the contract before transferring
+        let stored_balance = storage.contract_balance.read();
+        let current_contract_balance = this_balance(asset);
+
+        //Calculate the required contract balance - Native is sent with the gas quote not beforehand
+        let required_contract_balance = stored_balance + amount;
+
+        require(
+            current_contract_balance >= required_contract_balance,
+            WarpRouteError::AssetNotReceivedForTransfer,
+        );
+
         require(
             msg_amount() == required_payment,
             WarpRouteError::PaymentNotEqualToRequired,
@@ -271,6 +286,7 @@ impl WarpRoute for Contract {
             WarpRouteTokenMode::NATIVE | WarpRouteTokenMode::COLLATERAL => {
                 //Locked in the contract
                 transfer(Identity::ContractId(ContractId::this()), asset, amount);
+                storage.contract_balance.write(current_contract_balance);
             },
         }
 
@@ -431,18 +447,17 @@ impl WarpRoute for Contract {
     fn set_beneficiary(beneficiary: Identity) {
         only_owner();
         storage.beneficiary.write(beneficiary);
-        log(BeneficiarySetEvent {
-            beneficiary,
-        });
+        log(BeneficiarySetEvent { beneficiary });
     }
 
-    #[storage(read)]
+    #[storage(read, write)]
     fn claim(asset: Option<AssetId>) {
         let beneficiary = storage.beneficiary.read();
         let asset = asset.unwrap_or(storage.asset_id.read());
         let balance = this_balance(asset);
 
         transfer(beneficiary, asset, balance);
+        storage.contract_balance.write(0);
 
         log(ClaimEvent {
             beneficiary,
@@ -647,6 +662,7 @@ impl MessageRecipient for Contract {
             }
             WarpRouteTokenMode::NATIVE | WarpRouteTokenMode::COLLATERAL => {
                 transfer(recipient_identity, asset, adjusted_amount);
+                storage.contract_balance.write(this_balance(asset));
             }
         }
 
