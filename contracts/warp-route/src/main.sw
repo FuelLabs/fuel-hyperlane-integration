@@ -191,7 +191,6 @@ impl WarpRoute for Contract {
                 let total_supply = collateral_asset_contract.total_supply(asset_id).unwrap();
 
                 save_token_details_to_state(asset_id, name, symbol, decimals, total_supply);
-                storage.contract_balance.write(0);
             }
         };
     }
