@@ -29,10 +29,14 @@ pub struct YamlConfig {
     domain_routing_ism: String,
     #[serde(rename = "fallbackDomainRoutingISM")]
     fallback_domain_routing_ism: String,
-    #[serde(rename = "messageIdMultisigISM")]
-    message_id_multisig_ism: String,
-    #[serde(rename = "merkleRootMultisigISM")]
-    merkle_root_multisig_ism: String,
+    #[serde(rename = "messageIdMultisigISM1")]
+    message_id_multisig_ism_1: String,
+    #[serde(rename = "merkleRootMultisigISM1")]
+    merkle_root_multisig_ism_1: String,
+    #[serde(rename = "messageIdMultisigISM3")]
+    message_id_multisig_ism_3: String,
+    #[serde(rename = "merkleRootMultisigISM3")]
+    merkle_root_multisig_ism_3: String,
     #[serde(rename = "interchainSecurityModule")]
     test_ism: String,
 }
@@ -42,8 +46,10 @@ pub struct ParsedYamlConfig {
     pub aggregation_ism: ContractId,
     pub domain_routing_ism: ContractId,
     pub fallback_domain_routing_ism: ContractId,
-    pub message_id_multisig_ism: ContractId,
-    pub merkle_root_multisig_ism: ContractId,
+    pub message_id_multisig_ism_1: ContractId,
+    pub merkle_root_multisig_ism_1: ContractId,
+    pub message_id_multisig_ism_3: ContractId,
+    pub merkle_root_multisig_ism_3: ContractId,
     pub test_ism: ContractId,
 }
 
@@ -76,17 +82,33 @@ impl From<YamlConfig> for ParsedYamlConfig {
                     .unwrap(),
             )
             .unwrap(),
-            message_id_multisig_ism: ContractId::from_str(
+            message_id_multisig_ism_1: ContractId::from_str(
                 config
-                    .message_id_multisig_ism
+                    .message_id_multisig_ism_1
                     .as_str()
                     .strip_prefix("0x")
                     .unwrap(),
             )
             .unwrap(),
-            merkle_root_multisig_ism: ContractId::from_str(
+            merkle_root_multisig_ism_1: ContractId::from_str(
                 config
-                    .merkle_root_multisig_ism
+                    .merkle_root_multisig_ism_1
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+            message_id_multisig_ism_3: ContractId::from_str(
+                config
+                    .message_id_multisig_ism_3
+                    .as_str()
+                    .strip_prefix("0x")
+                    .unwrap(),
+            )
+            .unwrap(),
+            merkle_root_multisig_ism_3: ContractId::from_str(
+                config
+                    .merkle_root_multisig_ism_3
                     .as_str()
                     .strip_prefix("0x")
                     .unwrap(),

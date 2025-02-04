@@ -1315,7 +1315,10 @@ mod warp_route {
                 .await;
 
             assert!(call.is_err());
-            assert_eq!(get_revert_reason(call.unwrap_err()), "NotEnoughCoins");
+            assert_eq!(
+                get_revert_reason(call.unwrap_err()),
+                "AssetNotReceivedForTransfer"
+            );
         }
 
         /// ============ max_supply_enforcement_handle_message ============

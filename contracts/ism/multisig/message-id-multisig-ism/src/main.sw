@@ -16,11 +16,18 @@ use message_id_multisig_ism_metadata::MessageIdMultisigIsmMetadata;
 use message::EncodedMessage;
 use std_lib_extended::bytes::*;
 
+configurable {
+    /// Since the Multisig ISM is a static ISM, we can store the threshold as a configurable.
+    /// This allows us to avoid storage reads when accessing it.
+    /// We cannot store the validators as a configurable since we do not know the size of the array.
+    ///
+    /// The threshold of approval for the Multisig ISM.
+    THRESHOLD: u8 = 0,
+}
+
 storage {
     /// The list of validators that can approve messages.
     validators: StorageVec<EvmAddress> = StorageVec {},
-    /// The threshold of approval for the Multisig ISM.
-    threshold: u8 = 0,
 }
 
 impl InterchainSecurityModule for Contract {
@@ -144,24 +151,22 @@ impl MultisigIsm for Contract {
 }
 
 impl MultisigIsmFunctions for Contract {
-    /// Enrolls a validator to the Multisig ISM.
+    /// Initializes the contract.
     ///
     /// ### Arguments
     ///
-    /// * `validator`: [EvmAddress] - The address of the validator to be enrolled.
-    #[storage(write)]
-    fn enroll_validator(validator: EvmAddress) {
-        storage.validators.push(validator);
-    }
-
-    /// Sets the threshold for the Multisig ISM.
+    /// * `validators`: [Vec<EvmAddress>] - The list of validators which can approve messages.
     ///
-    /// ### Arguments
+    /// ### Reverts
     ///
-    /// * `threshold`: [u8] - The threshold of approval for the Multisig ISM.
-    #[storage(write)]
-    fn set_threshold(threshold: u8) {
-        storage.threshold.write(threshold);
+    /// * If the contract is already initialized.
+    #[storage(read, write)]
+    fn initialize(validators: Vec<EvmAddress>) {
+        require(
+            storage.validators.is_empty(),
+            MerkleRootMultisigError::AlreadyInitialized,
+        );
+        storage.validators.store_vec(validators);
     }
 }
 
@@ -187,8 +192,7 @@ fn _digest(metadata: Bytes, message: Bytes) -> Bytes {
 #[storage(read)]
 fn _validators_and_threshold(_message: Bytes) -> (Vec<EvmAddress>, u8) {
     let validators = storage.validators.load_vec();
-    let threshold = storage.threshold.read();
-    (validators, threshold)
+    (validators, THRESHOLD)
 }
 
 fn _signature_at(metadata: Bytes, index: u32) -> Bytes {

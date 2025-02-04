@@ -127,10 +127,14 @@ struct ContractAddresses {
     domain_routing_ism: String,
     #[serde(rename = "fallbackDomainRoutingISM")]
     fallback_domain_routing_ism: String,
-    #[serde(rename = "messageIdMultisigISM")]
-    message_id_multisig_ism: String,
-    #[serde(rename = "merkleRootMultisigISM")]
-    merkle_root_multisig_ism: String,
+    #[serde(rename = "messageIdMultisigISM1")]
+    message_id_multisig_ism_1: String,
+    #[serde(rename = "merkleRootMultisigISM1")]
+    merkle_root_multisig_ism_1: String,
+    #[serde(rename = "messageIdMultisigISM3")]
+    message_id_multisig_ism_3: String,
+    #[serde(rename = "merkleRootMultisigISM3")]
+    merkle_root_multisig_ism_3: String,
     #[serde(rename = "warpRouteNative")]
     warp_route_native: String,
     #[serde(rename = "warpRouteSynthetic")]
@@ -163,8 +167,10 @@ impl ContractAddresses {
         aggregation_ism: ContractId,
         domain_routing_ism: ContractId,
         fallback_domain_routing_ism: ContractId,
-        message_id_multisig_ism: ContractId,
-        merkle_root_multisig_ism: ContractId,
+        message_id_multisig_ism_1: ContractId,
+        merkle_root_multisig_ism_1: ContractId,
+        message_id_multisig_ism_3: ContractId,
+        merkle_root_multisig_ism_3: ContractId,
         warp_route_native: ContractId,
         warp_route_synthetic: ContractId,
         warp_route_collateral: ContractId,
@@ -186,8 +192,10 @@ impl ContractAddresses {
             aggregation_ism: format!("0x{}", aggregation_ism),
             domain_routing_ism: format!("0x{}", domain_routing_ism),
             fallback_domain_routing_ism: format!("0x{}", fallback_domain_routing_ism),
-            message_id_multisig_ism: format!("0x{}", message_id_multisig_ism),
-            merkle_root_multisig_ism: format!("0x{}", merkle_root_multisig_ism),
+            message_id_multisig_ism_1: format!("0x{}", message_id_multisig_ism_1),
+            merkle_root_multisig_ism_1: format!("0x{}", merkle_root_multisig_ism_1),
+            message_id_multisig_ism_3: format!("0x{}", message_id_multisig_ism_3),
+            merkle_root_multisig_ism_3: format!("0x{}", merkle_root_multisig_ism_3),
             warp_route_native: format!("0x{}", warp_route_native),
             warp_route_synthetic: format!("0x{}", warp_route_synthetic),
             warp_route_collateral: format!("0x{}", warp_route_collateral),
@@ -369,9 +377,13 @@ async fn main() {
         ContractId::from(fallback_domain_routing_ism_id.clone())
     );
 
-    let message_id_multisig_ism_id = Contract::load_from(
+    let configurables = MessageIdMultisigISMConfigurables::default()
+        .with_THRESHOLD(1)
+        .unwrap();
+
+    let message_id_multisig_ism_id_1 = Contract::load_from(
         "../contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -379,13 +391,17 @@ async fn main() {
     .unwrap();
 
     println!(
-        "MessageIdMultisigISM: 0x{}",
-        ContractId::from(message_id_multisig_ism_id.clone())
+        "MessageIdMultisigISM 1/x: 0x{}",
+        ContractId::from(message_id_multisig_ism_id_1.clone())
     );
 
-    let merkle_root_multisig_ism_id = Contract::load_from(
-        "../contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism.bin",
-        config.clone(),
+    let configurables = MessageIdMultisigISMConfigurables::default()
+        .with_THRESHOLD(3)
+        .unwrap();
+
+    let message_id_multisig_ism_id_3 = Contract::load_from(
+        "../contracts/ism/multisig/message-id-multisig-ism/out/debug/message-id-multisig-ism.bin",
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -393,8 +409,44 @@ async fn main() {
     .unwrap();
 
     println!(
-        "MerkleRootMultisigISM: 0x{}",
-        ContractId::from(merkle_root_multisig_ism_id.clone())
+        "MessageIdMultisigISM 3/x: 0x{}",
+        ContractId::from(message_id_multisig_ism_id_3.clone())
+    );
+
+    let configurables = MerkleRootMultisigISMConfigurables::default()
+        .with_THRESHOLD(1)
+        .unwrap();
+
+    let merkle_root_multisig_ism_id_1 = Contract::load_from(
+        "../contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism.bin",
+        config.clone().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "MerkleRootMultisigISM 1/x: 0x{}",
+        ContractId::from(merkle_root_multisig_ism_id_1.clone())
+    );
+
+    let configurables = MerkleRootMultisigISMConfigurables::default()
+        .with_THRESHOLD(3)
+        .unwrap();
+
+    let merkle_root_multisig_ism_id_3 = Contract::load_from(
+        "../contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism.bin",
+        config.clone().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&fuel_wallet, TxPolicies::default())
+    .await
+    .unwrap();
+
+    println!(
+        "MerkleRootMultisigISM 3/x: 0x{}",
+        ContractId::from(merkle_root_multisig_ism_id_3.clone())
     );
 
     /////////////////////////////////
@@ -621,10 +673,14 @@ async fn main() {
         DomainRoutingISM::new(domain_routing_ism_id.clone(), fuel_wallet.clone());
     let fallback_domain_routing_ism =
         FallbackDomainRoutingISM::new(fallback_domain_routing_ism_id.clone(), fuel_wallet.clone());
-    let message_id_multisig_ism =
-        MessageIdMultisigISM::new(message_id_multisig_ism_id.clone(), fuel_wallet.clone());
-    let merkle_root_multisig_ism =
-        MerkleRootMultisigISM::new(merkle_root_multisig_ism_id.clone(), fuel_wallet.clone());
+    let message_id_multisig_ism_1 =
+        MessageIdMultisigISM::new(message_id_multisig_ism_id_1.clone(), fuel_wallet.clone());
+    let merkle_root_multisig_ism_1 =
+        MerkleRootMultisigISM::new(merkle_root_multisig_ism_id_1.clone(), fuel_wallet.clone());
+    let message_id_multisig_ism_3 =
+        MessageIdMultisigISM::new(message_id_multisig_ism_id_3.clone(), fuel_wallet.clone());
+    let merkle_root_multisig_ism_3 =
+        MerkleRootMultisigISM::new(merkle_root_multisig_ism_id_3.clone(), fuel_wallet.clone());
     let warp_route_native = WarpRoute::new(warp_route_native_id.clone(), fuel_wallet.clone());
     let warp_route_synthetic = WarpRoute::new(warp_route_synthetic_id.clone(), fuel_wallet.clone());
     let warp_route_collateral =
@@ -681,7 +737,8 @@ async fn main() {
         "Failed to initialize Fallback Domain Routing ISM."
     );
 
-    // Multisig ISMs
+    // Multisig ISMs validator setup
+    // (Threshold is set during contract deployment)
 
     let evm_pk_vars = vec![
         "SEPOLIA_PRIVATE_KEY_1",
@@ -689,53 +746,63 @@ async fn main() {
         "SEPOLIA_PRIVATE_KEY_3",
     ];
 
-    // Set validators
-    for pk in evm_pk_vars {
-        let secret_key = SepoliaPrivateKey::from_slice(
-            &hex::decode(env::var(pk).unwrap_or_else(|_| panic!("{:?} must be set", pk))).unwrap(),
-        )
-        .unwrap();
-        let signing_key = SigningKey::from(secret_key);
-        let signer = PrivateKeySigner::from_signing_key(signing_key);
-        let validator_address = EvmAddress::from(Bits256(signer.address().into_word().0));
+    let validators_to_enroll = evm_pk_vars
+        .iter()
+        .map(|pk| {
+            let secret_key = SepoliaPrivateKey::from_slice(
+                &hex::decode(env::var(pk).unwrap_or_else(|_| panic!("{:?} must be set", pk)))
+                    .unwrap(),
+            )
+            .unwrap();
+            let signing_key = SigningKey::from(secret_key);
+            let signer = PrivateKeySigner::from_signing_key(signing_key);
+            EvmAddress::from(Bits256(signer.address().into_word().0))
+        })
+        .collect::<Vec<_>>();
 
-        // Message ID Multisig ISM
-        let set_res = message_id_multisig_ism
-            .methods()
-            .enroll_validator(validator_address)
-            .call()
-            .await;
-        assert!(set_res.is_ok(), "Failed to enroll validator.");
-
-        // Merkle Root Multisig ISM
-        let set_res = merkle_root_multisig_ism
-            .methods()
-            .enroll_validator(validator_address)
-            .call()
-            .await;
-        assert!(set_res.is_ok(), "Failed to enroll validator.");
-
-        let parsed_address = hex::encode(validator_address.value().0);
-        println!("Validator enrolled: {:?}", parsed_address);
-    }
-
-    // Set thresholds
-
-    // Message ID Multisig ISM
-    let set_res = message_id_multisig_ism
+    // Message ID Multisig ISM, threshold 1
+    let init_res = message_id_multisig_ism_1
         .methods()
-        .set_threshold(1)
+        .initialize(validators_to_enroll.clone())
         .call()
         .await;
-    assert!(set_res.is_ok(), "Failed to set threshold.");
+    assert!(
+        init_res.is_ok(),
+        "Failed to initailize Message ID Multisig ISM, threshold 1."
+    );
 
-    // Merkle Root Multisig ISM
-    let set_res = merkle_root_multisig_ism
+    // Message ID Multisig ISM, threshold 3
+    let init_res = message_id_multisig_ism_3
         .methods()
-        .set_threshold(1)
+        .initialize(validators_to_enroll.clone())
         .call()
         .await;
-    assert!(set_res.is_ok(), "Failed to set threshold.");
+    assert!(
+        init_res.is_ok(),
+        "Failed to initailize Message ID Multisig ISM, threshold 3."
+    );
+
+    // Merkle Root Multisig ISM, threshold 1
+    let init_res = merkle_root_multisig_ism_1
+        .methods()
+        .initialize(validators_to_enroll.clone())
+        .call()
+        .await;
+    assert!(
+        init_res.is_ok(),
+        "Failed to initailize Merkle Root Multisig ISM, threshold 1."
+    );
+
+    // Merkle Root Multisig ISM, threshold 3
+    let init_res = merkle_root_multisig_ism_3
+        .methods()
+        .initialize(validators_to_enroll.clone())
+        .call()
+        .await;
+    assert!(
+        init_res.is_ok(),
+        "Failed to initailize Merkle Root Multisig ISM, threshold 3."
+    );
 
     /////////////////////////
     // Test Recipiet Setup //
@@ -988,8 +1055,10 @@ async fn main() {
         aggregation_ism_id.into(),
         domain_routing_ism_id.into(),
         fallback_domain_routing_ism_id.into(),
-        message_id_multisig_ism_id.into(),
-        merkle_root_multisig_ism_id.into(),
+        message_id_multisig_ism_id_1.into(),
+        merkle_root_multisig_ism_id_1.into(),
+        message_id_multisig_ism_id_3.into(),
+        merkle_root_multisig_ism_id_3.into(),
         warp_route_native_id.into(),
         warp_route_synthetic_id.into(),
         warp_route_collateral_id.into(),
