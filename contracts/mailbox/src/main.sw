@@ -266,7 +266,7 @@ impl Mailbox for Contract {
 
         let hook = abi(PostDispatchHook, b256::from(hook));
         let required_hook = abi(PostDispatchHook, b256::from(storage.required_hook.read()));
-        let mut required_value = required_hook.quote_dispatch(metadata, message_body);
+        let mut required_value = required_hook.quote_dispatch(metadata, message.message_clean().bytes);
         if (msg_amount() < required_value) {
             required_value = msg_amount()
         }
