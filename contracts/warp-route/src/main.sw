@@ -451,12 +451,16 @@ impl WarpRoute for Contract {
 
     #[storage(read, write)]
     fn claim(asset: Option<AssetId>) {
+        only_owner();
         let beneficiary = storage.beneficiary.read();
-        let asset = asset.unwrap_or(storage.asset_id.read());
+        let stored_asset = storage.asset_id.read();
+        let asset = asset.unwrap_or(stored_asset);
         let balance = this_balance(asset);
 
         transfer(beneficiary, asset, balance);
-        storage.contract_balance.write(0);
+        if stored_asset == asset {
+            storage.contract_balance.write(0);
+        }
 
         log(ClaimEvent {
             beneficiary,
