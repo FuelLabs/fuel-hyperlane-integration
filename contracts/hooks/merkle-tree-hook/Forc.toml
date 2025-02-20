@@ -8,3 +8,4 @@ name = "merkle-tree-hook"
 interfaces = { path = "../../interfaces" }
 merkle = { path = "../../libs/merkle" }
 message = { path = "../../libs/message" }
+std_hook_metadata = { path = "../../libs/std-hook-metadata" }
