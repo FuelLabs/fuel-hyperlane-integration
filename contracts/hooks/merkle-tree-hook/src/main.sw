@@ -9,6 +9,7 @@ use interfaces::{mailbox::mailbox::*, hooks::{merkle_tree_hook::*, post_dispatch
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     mailbox: ContractId = ContractId::zero(),
+    latest_insertion_block: u32 = 0,
 }
 
 impl MerkleTreeHook for Contract {
@@ -49,7 +50,8 @@ impl MerkleTreeHook for Contract {
     /// * [(u32, u32)] - The count and the current block number.
     #[storage(read)]
     fn count_and_block() -> (u32, u32) {
-        (_count(), height())
+        let height = storage.latest_insertion_block.read();
+        (_count(), height)
     }
 
     /// Returns the root from the MerkleTree.
@@ -137,6 +139,7 @@ impl PostDispatchHook for Contract {
 
         let index = _count();
         storage.merkle_tree.insert(id);
+        storage.latest_insertion_block.write(height());
         log(InsertedIntoTreeEvent {
             message_id: id,
             index,
