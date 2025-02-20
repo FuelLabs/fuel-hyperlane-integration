@@ -88,7 +88,7 @@ impl InterchainSecurityModule for Contract {
             let signer = address_recover_result.unwrap();
 
             // Loop through remaining validators until we find a match
-            while u64::from(validator_index) < validator_count && signer != storage.validators.get(validator_index).unwrap().read() {
+            while validator_index < validator_count && signer != storage.validators.get(validator_index).unwrap().read() {
                 validator_index += 1;
             }
 
