@@ -595,6 +595,7 @@ impl TokenRouter for Contract {
     /// * `decimals`: [u8] - The decimals to set
     #[storage(write)]
     fn set_remote_router_decimals(router: b256, decimals: u8) {
+        only_owner();
         storage.remote_router_decimals.insert(router, decimals);
     }
 }
