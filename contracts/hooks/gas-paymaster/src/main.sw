@@ -469,7 +469,9 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
     let destination_gas_cost = u256::from(total_gas_amount) * u256::from(gas_price);
 
     // Convert to the local native token.
-    let origin_cost = (destination_gas_cost * u256::from(token_exchange_rate)) / u256::from(TOKEN_EXCHANGE_RATE_SCALE);
+    let numerator = destination_gas_cost * u256::from(token_exchange_rate);
+    let origin_cost = (numerator + u256::from(TOKEN_EXCHANGE_RATE_SCALE) - 1) 
+                      / u256::from(TOKEN_EXCHANGE_RATE_SCALE);
 
     // Convert from the remote token's decimals to the local token's decimals.
     let origin_cost = convert_decimals(origin_cost, token_decimals, BASE_ASSET_DECIMALS);
@@ -489,7 +491,7 @@ fn convert_decimals(num: u256, from_decimals: u8, to_decimals: u8) -> u256 {
         let divisor = 10u64.pow(diff_u32).as_u256();
 
         require(divisor != 0, "Divisor cannot be zero");
-        num / divisor
+        (num + divisor - 1) / divisor
     } else {
         let diff: u64 = (to_decimals - from_decimals).as_u64();
         let diff_u32 = diff.try_as_u32().expect("Conversion to u32 failed");
