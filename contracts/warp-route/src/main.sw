@@ -236,7 +236,7 @@ impl WarpRoute for Contract {
         let default_hook = storage.default_hook.read();
         let hook_contract = hook.unwrap_or(default_hook);
 
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let local_decimals = _decimals(storage.decimals, asset).unwrap();
         let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
@@ -632,7 +632,7 @@ impl MessageRecipient for Contract {
         let remote_decimals = _get_remote_router_decimals(sender);
         require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
 
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let local_decimals = _decimals(storage.decimals, asset).unwrap();
         let adjusted_amount = _adjust_decimals(amount, remote_decimals, local_decimals);
         let asset = storage.asset_id.read();
 
@@ -733,7 +733,7 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
     TokenMetadata {
         name: _name(storage.name, asset).unwrap_or(String::new()),
         symbol: _symbol(storage.symbol, asset).unwrap_or(String::new()),
-        decimals: _decimals(storage.decimals, asset).unwrap_or(0),
+        decimals: _decimals(storage.decimals, asset).unwrap(),
         total_supply: storage.total_supply.get(asset).try_read().unwrap_or(0),
         asset_id: storage.asset_id.read(),
         sub_id: storage.sub_id.read(),
