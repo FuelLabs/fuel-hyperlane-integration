@@ -208,9 +208,13 @@ mod warp_route {
                 .await
                 .unwrap();
 
+        let configurables = MailboxConfigurables::default()
+            .with_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN)
+            .unwrap();
+
         let mailbox_id = Contract::load_from(
             "../mailbox/out/debug/mailbox.bin",
-            LoadConfiguration::default(),
+            LoadConfiguration::default().with_configurables(configurables),
         )
         .unwrap()
         .deploy(&wallet, TxPolicies::default())

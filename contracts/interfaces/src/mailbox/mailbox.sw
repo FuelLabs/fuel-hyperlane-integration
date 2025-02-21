@@ -7,7 +7,7 @@ pub enum MailboxError {
     InvalidISMAddress: (),
     InvalidHookAddress: (),
     InvalidProtocolVersion: u8,
-    InvalidMessageOrigin: u32,
+    UnexpectedDestination: u32,
     MessageAlreadyDelivered: (),
     MessageVerificationFailed: (),
     MessageTooLarge: u64,
