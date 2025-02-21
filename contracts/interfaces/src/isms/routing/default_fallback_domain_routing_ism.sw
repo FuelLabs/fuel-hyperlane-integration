@@ -2,6 +2,7 @@ library;
 
 pub enum DefaultFallbackDomainRoutingIsmError {
     DomainModuleLengthMismatch:(u64, u64),
+    DomainNotSet: u32,
 }
 
 abi DefaultFallbackDomainRoutingIsm {
