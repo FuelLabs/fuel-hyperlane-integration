@@ -3,7 +3,7 @@ contract;
 use sway_libs::ownership::*;
 use standards::src5::State;
 
-use interfaces::{hooks::{igp::*, gas_oracle::*, post_dispatch_hook::*}, ownable::Ownable };
+use interfaces::{hooks::{igp::*, gas_oracle::*, post_dispatch_hook::*}, ownable::*};
 use message::{EncodedMessage, Message};
 use std_hook_metadata::*;
 
@@ -28,6 +28,7 @@ configurable {
     BASE_ASSET_DECIMALS: u8 = 9,
     TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000,
     DEFAULT_GAS_AMOUNT: u64 = 500,
+    EXPECTED_OWNER: b256 = b256::zero(),
 }
 
 storage {
@@ -296,6 +297,7 @@ impl Ownable for Contract {
     }
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
     #[storage(read, write)]
@@ -500,6 +502,15 @@ fn convert_decimals(num: u256, from_decimals: u8, to_decimals: u8) -> u256 {
     }
 }
 
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    let raw_owner: b256 = match owner {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
+}
+
 #[test()]
 fn test_convert_decimals() {
     let num = u256::from((0, 0, 0, 1000000));
@@ -534,3 +545,4 @@ fn test_convert_decimals() {
     let result = convert_decimals(num, from_decimals, to_decimals);
     assert(result == u256::from((0, 0, 0, 0)));
 }
+

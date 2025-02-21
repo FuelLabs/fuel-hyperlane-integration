@@ -107,23 +107,34 @@ async fn get_contract_instances() -> (
     .unwrap();
 
     let wallet = wallets.pop().unwrap();
+    let expected_owner = Bits256(wallet.address().hash().into());
+
+    let configurables = GasPaymasterConfigurables::default()
+        .with_EXPECTED_OWNER(expected_owner)
+        .unwrap();
 
     let igp_id = Contract::load_from(
         "../gas-paymaster/out/debug/gas-paymaster.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())
     .await
     .unwrap();
 
+    let configurables = AggregationHookConfigurables::default()
+        .with_EXPECTED_INITIALIZER(expected_owner)
+        .unwrap();
+
     // Deploy aggregation hook
-    let aggregation_id =
-        Contract::load_from("./out/debug/aggregation.bin", LoadConfiguration::default())
-            .unwrap()
-            .deploy(&wallet, TxPolicies::default())
-            .await
-            .unwrap();
+    let aggregation_id = Contract::load_from(
+        "./out/debug/aggregation.bin",
+        LoadConfiguration::default().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
 
     // Deploy two mock hooks for testing
     let mock_hook1_id = Contract::load_from(
@@ -146,9 +157,13 @@ async fn get_contract_instances() -> (
     .await
     .unwrap();
 
+    let configurables = GasOracleConfigurables::default()
+        .with_EXPECTED_OWNER(expected_owner)
+        .unwrap();
+
     let storage_gas_oracle_id = Contract::load_from(
         "../../gas-oracle/out/debug/gas-oracle.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

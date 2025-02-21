@@ -6,6 +6,10 @@ use std::storage::storage_vec::*;
 use std::{block::height, bytes::Bytes, context::msg_amount};
 use interfaces::{mailbox::mailbox::*, hooks::{merkle_tree_hook::*, post_dispatch_hook::*}};
 
+configurable {
+    EXPECTED_INITIALIZER: b256 = b256::zero(),
+}
+
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     mailbox: ContractId = ContractId::zero(),
@@ -23,6 +27,7 @@ impl MerkleTreeHook for Contract {
     /// * If the contract is already initialized.
     #[storage(write)]
     fn initialize(mailbox: ContractId) {
+        _is_expected_caller();
         require(
             !_is_initialized(),
             MerkleTreeHookError::ContractAlreadyInitialized,
@@ -185,4 +190,13 @@ fn _checkpoint() -> (b256, u32) {
 #[storage(read)]
 fn _is_initialized() -> bool {
     storage.mailbox.read() != ContractId::zero()
+}
+
+// Front-run guard
+fn _is_expected_caller() {
+    let sender: b256 = match msg_sender().unwrap() {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(sender == EXPECTED_INITIALIZER, MerkleTreeHookError::UnexpectedInitAddress);
 }

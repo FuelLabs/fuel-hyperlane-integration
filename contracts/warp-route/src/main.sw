@@ -46,7 +46,7 @@ use std::{
 use interfaces::{
     mailbox::mailbox::*,
     message_recipient::MessageRecipient,
-    ownable::Ownable,
+    ownable::*,
     token_router::*,
     warp_route::*,
 };
@@ -98,6 +98,8 @@ configurable {
     MAX_SUPPLY: u64 = 100_000_000_000_000,
     /// The default number of decimals for the base asset
     DEFAULT_DECIMALS: u8 = 9,
+
+    EXPECTED_OWNER: b256 = b256::zero(),
 }
 
 impl WarpRoute for Contract {
@@ -715,6 +717,7 @@ impl Ownable for Contract {
 
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
 
@@ -827,4 +830,13 @@ fn save_token_details_to_state(
     _set_symbol(storage.symbol, asset_id, symbol);
     _set_decimals(storage.decimals, asset_id, decimals);
     storage.total_supply.insert(asset_id, total_supply);
+}
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    let raw_owner: b256 = match owner {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

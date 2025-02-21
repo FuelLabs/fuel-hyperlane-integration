@@ -1,4 +1,7 @@
-use fuels::{prelude::*, types::Identity};
+use fuels::{
+    prelude::*,
+    types::{Bits256, Identity},
+};
 use rand::{thread_rng, Rng};
 use test_utils::get_revert_reason;
 
@@ -31,13 +34,21 @@ async fn get_contract_instance() -> (PausableIsm<WalletUnlocked>, WalletUnlocked
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
     let second_wallet = wallets.pop().unwrap();
 
-    let ism_id = Contract::load_from("./out/debug/pausable-ism.bin", get_deployment_config())
-        .unwrap()
-        .deploy(&wallet, TxPolicies::default())
-        .await
+    let configurables = PausableIsmConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
+
+    let ism_id = Contract::load_from(
+        "./out/debug/pausable-ism.bin",
+        get_deployment_config().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
     let ism = PausableIsm::new(ism_id.clone(), wallet.clone());
 
     ism.methods()

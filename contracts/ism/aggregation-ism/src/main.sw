@@ -6,6 +6,10 @@ use aggregation_ism_metadata::*;
 use standards::src5::State;
 use sway_libs::ownership::*;
 
+configurable {
+    EXPECTED_INITIALIZER: b256 = b256::zero(),
+}
+
 storage {
     /// The list of modules to be used for message verification.
     modules: StorageVec<ContractId> = StorageVec {},
@@ -103,6 +107,7 @@ impl AggregationIsmFunctions for Contract {
     /// * If the contract is already initialized.
     #[storage(read, write)]
     fn initialize(owner: Identity, modules: Vec<ContractId>, threshold: u8) {
+        _is_expected_caller();
         initialize_ownership(owner);
         storage.modules.store_vec(modules);
         storage.threshold.write(threshold);
@@ -141,4 +146,13 @@ fn _modules_and_threshold(_message: Bytes) -> (Vec<ContractId>, u8) {
     let modules = storage.modules.load_vec();
     let threshold = storage.threshold.read();
     (modules, threshold)
+}
+
+// Front-run guard
+fn _is_expected_caller() {
+    let sender: b256 = match msg_sender().unwrap() {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(sender == EXPECTED_INITIALIZER, AggregationIsmError::UnexpectedInitAddress);
 }

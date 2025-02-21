@@ -73,19 +73,28 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
+
+    let configurables = DefaultFallbackRoutingIsmConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
 
     let fallback_routing_ism_id = Contract::load_from(
         "./out/debug/default-fallback-domain-routing-ism.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())
     .await
     .unwrap();
 
+    let configurables = MailboxConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
+
     let mailbox_id = Contract::load_from(
         "../../../mailbox/out/debug/mailbox.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

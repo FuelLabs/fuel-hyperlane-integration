@@ -23,6 +23,7 @@ configurable {
     ///
     /// The threshold of approval for the Multisig ISM.
     THRESHOLD: u8 = 0,
+    EXPECTED_INITIALIZER: b256 = b256::zero(),
 }
 
 storage {
@@ -167,6 +168,7 @@ impl MultisigIsmFunctions for Contract {
     /// * If the contract is already initialized.
     #[storage(read, write)]
     fn initialize(validators: Vec<EvmAddress>) {
+        _is_expected_caller();
         require(
             storage.validators.is_empty(),
             MerkleRootMultisigError::AlreadyInitialized,
@@ -217,4 +219,13 @@ fn _validators_and_threshold(_message: Bytes) -> (Vec<EvmAddress>, u8) {
 
 fn _signature_at(metadata: Bytes, index: u32) -> Bytes {
     MerkleRootMultisigIsmMetadata::new(metadata).signature_at(index)
+}
+
+// Front-run guard
+fn _is_expected_caller() {
+    let sender: b256 = match msg_sender().unwrap() {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(sender == EXPECTED_INITIALIZER, MerkleRootMultisigError::UnexpectedInitAddress);
 }

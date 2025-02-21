@@ -13,6 +13,11 @@ use standards::src5::State;
 use std_hook_metadata::*;
 use interfaces::{hooks::{aggregation_hook::*, post_dispatch_hook::*,}, ownable::Ownable,};
 
+configurable {
+    EXPECTED_INITIALIZER: b256 = b256::zero(),
+}
+
+
 storage {
     /// The list of hooks to aggregate
     hooks: StorageVec<ContractId> = StorageVec {},
@@ -31,6 +36,7 @@ impl AggregationHook for Contract {
     /// * If the contract is already initialized.
     #[storage(write)]
     fn initialize(owner: Identity, hooks: Vec<ContractId>) {
+        _is_expected_caller();
         initialize_ownership(owner);
         let mut i = 0;
         while i < hooks.len() {
@@ -134,4 +140,13 @@ impl PostDispatchHook for Contract {
 fn _hook_quote_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u64 {
     let hook_contract = abi(PostDispatchHook, hook.bits());
     hook_contract.quote_dispatch(metadata.clone(), message.clone())
+}
+
+// Front-run guard
+fn _is_expected_caller() {
+    let sender: b256 = match msg_sender().unwrap() {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(sender == EXPECTED_INITIALIZER, AggregationHookError::UnexpectedInitAddress);
 }

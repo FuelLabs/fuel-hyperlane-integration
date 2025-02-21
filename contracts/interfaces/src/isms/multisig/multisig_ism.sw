@@ -9,6 +9,7 @@ pub enum MerkleRootMultisigError {
     InvalidMerkleIndexMetadata: (),
     FailedToRecoverSignature: Bytes,
     AlreadyInitialized: (),
+    UnexpectedInitAddress: (),
 }
 
 pub enum MessageIdMultisigError {
@@ -16,6 +17,7 @@ pub enum MessageIdMultisigError {
     NoValidatorMatch: (),
     FailedToRecoverSigner: (),
     FailedToRecoverSignature: Bytes,
+    UnexpectedInitAddress: (),
 }
 
 // Official Multisig ISM interface for Hyperlane V3

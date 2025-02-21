@@ -85,10 +85,15 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let deployer = wallets.pop().unwrap();
+    let owner = Bits256(deployer.address().hash().into());
+
+    let configurables = FallbackDomainRoutingHookConfigurables::default()
+        .with_EXPECTED_OWNER(owner)
+        .unwrap();
 
     let fallback_domain_routing_hook = Contract::load_from(
         "./out/debug/fallback-domain-routing-hook.bin",
-        get_deployment_config(),
+        get_deployment_config().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&deployer, TxPolicies::default())

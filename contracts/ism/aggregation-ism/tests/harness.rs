@@ -1,6 +1,6 @@
 use fuels::{
     prelude::*,
-    types::{ContractId, Identity},
+    types::{Bits256, ContractId, Identity},
 };
 use futures::future::join_all;
 use rand::{thread_rng, Rng};
@@ -82,10 +82,15 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
+
+    let configurables = AggregationIsmConfigurables::default()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
+        .unwrap();
 
     let aggregation_ism_id = Contract::load_from(
         "./out/debug/aggregation-ism.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

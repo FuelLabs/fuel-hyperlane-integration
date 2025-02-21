@@ -7,6 +7,10 @@ use interfaces::{isms::{ism::*, routing::{domain_routing_ism::*, routing_ism::*}
 use message::{EncodedMessage, Message};
 
 
+configurable {
+    EXPECTED_OWNER: b256 = b256::zero(),
+}
+
 storage {
     /// Mapping of modules which are used for specific domains.
     domain_modules: StorageMap<u32, b256> = StorageMap {},
@@ -194,6 +198,7 @@ impl Ownable for Contract {
 
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
 
@@ -249,4 +254,13 @@ fn _set(domain: u32, module: b256) {
         storage.domains.push(domain);
     }
     storage.domain_modules.insert(domain, module);
+}
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    let raw_owner: b256 = match owner {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

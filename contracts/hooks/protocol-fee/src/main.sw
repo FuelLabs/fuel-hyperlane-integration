@@ -20,6 +20,7 @@ use interfaces::{hooks::{post_dispatch_hook::*, protocol_fee::*}, ownable::*,};
 
 configurable {
     MAX_PROTOCOL_FEE: u64 = 0,
+    EXPECTED_OWNER: b256 = b256::zero(),
 }
 
 storage {
@@ -204,6 +205,7 @@ impl Ownable for Contract {
     }
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
     #[storage(read, write)]
@@ -262,4 +264,13 @@ fn _set_beneficiary(beneficiary: Identity) {
     log(BeneficiarySetEvent {
         beneficiary: beneficiary,
     });
+}
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    let raw_owner: b256 = match owner {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

@@ -11,7 +11,7 @@ use interfaces::{
         mailbox::*,
     },
     message_recipient::MessageRecipient,
-    ownable::Ownable,
+    ownable::*,
 };
 use std::{
     bytes::Bytes,
@@ -35,6 +35,7 @@ configurable {
     /// The domain of the local chain.
     /// Defaults to `fuel` (0x6675656c).
     LOCAL_DOMAIN: u32 = 0x6675656cu32,
+    EXPECTED_OWNER: b256 = b256::zero(),
 }
 
 storage {
@@ -487,6 +488,7 @@ impl Ownable for Contract {
 
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
 
@@ -494,4 +496,13 @@ impl Ownable for Contract {
     fn renounce_ownership() {
         renounce_ownership();
     }
+}
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    let raw_owner: b256 = match owner {
+        Identity::Address(address) => address.bits(),
+        Identity::ContractId(contract_id) => contract_id.bits(),
+    };
+    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

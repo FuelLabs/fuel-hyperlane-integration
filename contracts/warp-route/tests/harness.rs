@@ -200,17 +200,28 @@ mod warp_route {
         .unwrap();
 
         let wallet = wallets.pop().unwrap();
+        let wallet_bits = Bits256(wallet.address().hash().into());
 
-        let warp_route_id =
-            Contract::load_from("./out/debug/warp-route.bin", LoadConfiguration::default())
-                .unwrap()
-                .deploy(&wallet, TxPolicies::default())
-                .await
-                .unwrap();
+        let configurables = WarpRouteConfigurables::default()
+            .with_EXPECTED_OWNER(wallet_bits)
+            .unwrap();
+
+        let warp_route_id = Contract::load_from(
+            "./out/debug/warp-route.bin",
+            LoadConfiguration::default().with_configurables(configurables),
+        )
+        .unwrap()
+        .deploy(&wallet, TxPolicies::default())
+        .await
+        .unwrap();
+
+        let configurables = MailboxConfigurables::default()
+            .with_EXPECTED_OWNER(wallet_bits)
+            .unwrap();
 
         let mailbox_id = Contract::load_from(
             "../mailbox/out/debug/mailbox.bin",
-            LoadConfiguration::default(),
+            LoadConfiguration::default().with_configurables(configurables),
         )
         .unwrap()
         .deploy(&wallet, TxPolicies::default())
