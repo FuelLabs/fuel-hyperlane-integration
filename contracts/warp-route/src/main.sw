@@ -415,8 +415,13 @@ impl WarpRoute for Contract {
     /// ### Arguments
     ///
     /// * `module`: [ContractId] - The ISM contract ID
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn set_ism(module: ContractId) {
+        only_owner();
         storage.default_ism.write(module)
     }
 
