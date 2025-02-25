@@ -92,8 +92,6 @@ storage {
 }
 
 configurable {
-    /// The maximum supply allowed for any single asset.
-    MAX_SUPPLY: u64 = 100_000_000_000_000,
     /// The default number of decimals for the base asset
     DEFAULT_DECIMALS: u8 = 9,
 }
