@@ -332,5 +332,5 @@ async fn one_ism_rejects() {
         .await
         .unwrap_err();
 
-    assert_eq!(get_revert_reason(error), "DidNotMeetThreshold");
+    assert_eq!(get_revert_reason(error), "FailedToVerify");
 }
