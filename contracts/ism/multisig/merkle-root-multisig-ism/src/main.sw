@@ -183,7 +183,7 @@ fn _digest(metadata: Bytes, message: Bytes) -> Bytes {
 
     require(
         metadata
-            .message_index() == metadata
+            .message_index()  <= metadata
             .signed_index(),
         MerkleRootMultisigError::InvalidMerkleIndexMetadata,
     );
