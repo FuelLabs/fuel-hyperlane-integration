@@ -49,6 +49,7 @@ use interfaces::{
     ownable::Ownable,
     token_router::*,
     warp_route::*,
+    gas_router::*,
 };
 use standards::{src20::SRC20, src5::State};
 use message::{EncodedMessage, Message};
@@ -89,6 +90,8 @@ storage {
     decimals: StorageMap<AssetId, u8> = StorageMap {},
     /// The contract balance of the asset
     contract_balance: u64 = 0,
+    /// Gas for domains
+    destination_gas: StorageMap<u32, u64> = StorageMap {},
 }
 
 configurable {
@@ -252,6 +255,7 @@ impl WarpRoute for Contract {
             destination_domain,
             remote_domain_router,
             message_body,
+            metadata,
             hook_contract,
         );
 
@@ -297,15 +301,7 @@ impl WarpRoute for Contract {
 
         let metadata = match metadata {
             Some(metadata) => metadata,
-            None => {
-                let gas_limit = _get_quote_for_gas_payment(
-                    destination_domain,
-                    remote_domain_router,
-                    message_body,
-                    hook_contract,
-                );
-                StandardHookMetadata::override_gas_limit(gas_limit.as_u256())
-            },
+            None => _gas_router_hook_metadata(destination_domain),
         };
 
         //Dispatch the message to the destination domain
@@ -431,6 +427,7 @@ impl WarpRoute for Contract {
             destination_domain,
             b256::zero(),
             Bytes::new(),
+            None,
             storage
                 .default_hook
                 .read(),
@@ -620,6 +617,62 @@ impl TokenRouter for Contract {
     }
 }
 
+impl GasRouter for Contract {
+    /// Sets the gas amount dispatched for each configured domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `gasConfigs`: [Vec<GasRouterConfig>] - The array of GasRouterConfig structs
+    #[storage(write)]
+    fn set_destination_gas_configs(gas_configs: Vec<GasRouterConfig>) {
+        let mut i = 0;
+        while i < gas_configs.len() {
+            let config = gas_configs.get(i).unwrap();
+            _set_destination_gas(config.domain, config.gas);
+            i += 1;
+        }
+    }
+
+    /// Sets the gas amount dispatched for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The destination domain ID
+    /// * `gas`: [u64] - The gas limit
+    #[storage(write)]
+    fn set_destination_gas(domain: u32, gas: u64) {
+        _set_destination_gas(domain, gas);
+    }
+
+    /// Gets the metadata for the GasRouter hook
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination`: [u32] - The destination domain ID
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - The metadata for the GasRouter hook
+    #[storage(read)]
+    fn gas_router_hook_metadata(destination: u32) -> Bytes {
+        _gas_router_hook_metadata(destination)
+    }
+
+    /// Gets the gas amount dispatched for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The destination domain ID
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The gas limit
+    #[storage(read)]
+    fn destination_gas(domain: u32) -> u64 {
+        _get_destination_gas(domain)
+    }
+}
+
 impl MessageRecipient for Contract {
     /// Handles a transfer from a remote domain
     ///
@@ -777,6 +830,22 @@ fn _get_router(domain: u32) -> b256 {
     storage.routers.get(domain).try_read().unwrap_or(b256::zero())
 }
 
+#[storage(write)]
+fn _set_destination_gas(domain: u32, gas: u64) {
+    storage.destination_gas.insert(domain, gas);
+}
+
+#[storage(read)]
+fn _get_destination_gas(domain: u32) -> u64 {
+    storage.destination_gas.get(domain).try_read().unwrap_or(0)
+}
+
+#[storage(read)]
+fn _gas_router_hook_metadata(destination: u32) -> Bytes {
+    let gas_limit = _get_destination_gas(destination);
+    StandardHookMetadata::override_gas_limit(gas_limit.into())
+}
+
 #[storage(read, write)]
 fn _insert_route_to_state(domain: u32, router: b256) {
     storage.routers.insert(domain, router);
@@ -814,6 +883,7 @@ fn _get_quote_for_gas_payment(
     destination_domain: u32,
     recipient: b256,
     message_body: Bytes,
+    metadata: Option<Bytes>,
     hook: ContractId,
 ) -> u64 {
     let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
@@ -821,7 +891,7 @@ fn _get_quote_for_gas_payment(
         destination_domain,
         recipient,
         message_body,
-        Bytes::new(),
+        metadata.unwrap_or(_gas_router_hook_metadata(destination_domain)),
         hook,
     )
 }
