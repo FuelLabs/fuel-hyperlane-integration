@@ -135,10 +135,11 @@ impl DomainRoutingIsm for Contract {
     #[storage(write, read)]
     fn remove(domain: u32) {
         only_owner();
-        let success = storage.domain_modules.remove(domain);
-        if success {
-            _remove_domain(domain);
-        }
+        require(
+            storage.domain_modules.remove(domain),
+            DomainRoutingIsmError::DomainNotSet(domain),
+        );
+        _remove_domain(domain);
     }
 
     /// Returns the domains that have been set
