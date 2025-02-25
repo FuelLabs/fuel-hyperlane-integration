@@ -1,4 +1,7 @@
-use fuels::{prelude::*, types::Identity};
+use fuels::{
+    prelude::*,
+    types::{Bits256, Identity},
+};
 use rand::{thread_rng, Rng};
 use test_utils::get_revert_reason;
 
@@ -31,13 +34,21 @@ async fn get_contract_instance() -> (PausableHook<WalletUnlocked>, WalletUnlocke
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let owner = Bits256(wallet.address().hash().into());
     let second_wallet = wallets.pop().unwrap();
 
-    let hook_id = Contract::load_from("./out/debug/pausable-hook.bin", get_deployment_config())
-        .unwrap()
-        .deploy(&wallet, TxPolicies::default())
-        .await
+    let configurables = PausableHookConfigurables::default()
+        .with_EXPECTED_OWNER(owner)
         .unwrap();
+
+    let hook_id = Contract::load_from(
+        "./out/debug/pausable-hook.bin",
+        get_deployment_config().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
 
     let hook = PausableHook::new(hook_id.clone(), wallet.clone());
 

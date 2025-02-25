@@ -1,4 +1,7 @@
-use fuels::{prelude::*, types::Identity};
+use fuels::{
+    prelude::*,
+    types::{Bits256, Identity},
+};
 
 use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
@@ -25,12 +28,21 @@ async fn get_contract_instance() -> (GasOracle<WalletUnlocked>, ContractId) {
     .unwrap();
 
     let wallet = wallets.pop().unwrap();
+    // Bits256(storage_gas_oracle_id.hash().into()),
 
-    let id = Contract::load_from("./out/debug/gas-oracle.bin", LoadConfiguration::default())
-        .unwrap()
-        .deploy(&wallet, TxPolicies::default())
-        .await
+    let expected_owner = Bits256(wallet.address().hash().into());
+    let configurables = GasOracleConfigurables::default()
+        .with_EXPECTED_OWNER(expected_owner)
         .unwrap();
+
+    let id = Contract::load_from(
+        "./out/debug/gas-oracle.bin",
+        LoadConfiguration::default().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
 
     let owner_identity = Identity::Address(wallet.address().into());
 

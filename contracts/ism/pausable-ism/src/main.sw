@@ -1,12 +1,16 @@
 contract;
 
 use interfaces::{
-    ownable::Ownable,
+    ownable::*,
     isms::ism::*
 };
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::{bytes::Bytes};
+
+configurable {
+    EXPECTED_OWNER: b256 = b256::zero(),
+}
 
 impl InterchainSecurityModule for Contract {
     /// Returns an enum that represents the type of security model
@@ -80,6 +84,7 @@ impl Ownable for Contract {
 
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
 
@@ -91,3 +96,7 @@ impl Ownable for Contract {
 
 
 
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    require(owner.bits() == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
+}

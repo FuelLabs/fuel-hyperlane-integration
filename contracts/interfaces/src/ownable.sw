@@ -36,3 +36,8 @@ abi Ownable {
     #[storage(read, write)]
     fn renounce_ownership();
 }
+
+
+pub enum OwnableError {
+    UnexpectedOwner: (),
+}

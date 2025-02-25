@@ -40,6 +40,7 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
 
     let mailbox_id = Contract::load_from(
         "../../test/mailbox-test/out/debug/mailbox-test.bin",
@@ -50,9 +51,13 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
 
+    let configurables = MerkleTreeHookConfigurables::default()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
+        .unwrap();
+
     let hook_id = Contract::load_from(
         "./out/debug/merkle-tree-hook.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

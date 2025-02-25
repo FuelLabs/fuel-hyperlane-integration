@@ -77,8 +77,11 @@ async fn initialization() {
     assert_eq!(validators, vec![]);
     assert_eq!(threshold, 0);
 
+    let wallet_bits = Bits256(wallet.address().hash().into());
     let configurables = MerkeRootMultisigIsmConfigurables::default()
         .with_THRESHOLD(1)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let id = Contract::load_from(

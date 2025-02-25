@@ -6,6 +6,9 @@ use sway_libs::{ownership::*};
 use interfaces::{mailbox::mailbox::Mailbox, isms::{ism::*, routing::{default_fallback_domain_routing_ism::*, routing_ism::*}}, ownable::*};
 use message::{EncodedMessage, Message};
 
+configurable {
+    EXPECTED_OWNER: b256 = b256::zero(),
+}
 
 storage {
     /// Mapping of modules which are used for specific domains.
@@ -220,6 +223,7 @@ impl Ownable for Contract {
 
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
 
@@ -276,4 +280,9 @@ fn _set(domain: u32, module: b256) {
         storage.domains.push(domain);
     }
     storage.domain_modules.insert(domain, module);
+}
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    require(owner.bits() == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

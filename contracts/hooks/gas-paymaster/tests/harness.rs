@@ -99,10 +99,15 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
     .unwrap();
 
     let wallet = wallets.pop().unwrap();
+    let owner = Bits256(wallet.address().hash().into());
+
+    let configurables = GasPaymasterConfigurables::default()
+        .with_EXPECTED_OWNER(owner)
+        .unwrap();
 
     let igp_id = Contract::load_from(
         "./out/debug/gas-paymaster.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())
@@ -119,9 +124,13 @@ async fn get_contract_instances() -> (GasPaymaster<WalletUnlocked>, GasOracle<Wa
         .await
         .unwrap();
 
+    let configurables = GasOracleConfigurables::default()
+        .with_EXPECTED_OWNER(owner)
+        .unwrap();
+
     let storage_gas_oracle_id = Contract::load_from(
         "../../gas-oracle/out/debug/gas-oracle.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

@@ -73,10 +73,15 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
+
+    let configurables = DomainRoutingIsmConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
 
     let id = Contract::load_from(
         "./out/debug/domain-routing-ism.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())

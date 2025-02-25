@@ -127,10 +127,15 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let walet_bits = Bits256(wallet.address().hash().into());
+
+    let configurables = MessageIdMultisigIsmConfigurables::default()
+        .with_EXPECTED_INITIALIZER(walet_bits)
+        .unwrap();
 
     let message_id_multisig_ism_id = Contract::load_from(
         "./out/debug/message-id-multisig-ism.bin",
-        LoadConfiguration::default(),
+        LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxPolicies::default())
@@ -176,8 +181,12 @@ async fn initialization() {
     assert_eq!(validators, vec![]);
     assert_eq!(threshold, 0);
 
+    let wallet_bits = Bits256(wallet.address().hash().into());
+
     let configurables = MessageIdMultisigIsmConfigurables::default()
         .with_THRESHOLD(1)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let id = Contract::load_from(

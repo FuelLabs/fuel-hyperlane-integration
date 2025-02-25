@@ -26,3 +26,7 @@ abi AggregationHook {
     #[storage(read)]
     fn get_hooks() -> Vec<ContractId>;
 }
+
+pub enum AggregationHookError {
+    UnexpectedInitAddress: (),
+}

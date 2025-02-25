@@ -5,13 +5,17 @@ use interfaces::{
         fallback_domain_routing_hook::*,
         post_dispatch_hook::*,
     },
-    ownable::Ownable,
+    ownable::*,
 };
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::bytes::Bytes;
 use std::{constants::ZERO_B256, context::msg_amount, hash::*, storage::storage_map::*};
 use message::*;
+
+configurable {
+    EXPECTED_OWNER: b256 = b256::zero(),
+}
 
 storage {
     /// The hook to fall back to if no hook is found.
@@ -164,10 +168,17 @@ impl Ownable for Contract {
     }
     #[storage(read, write)]
     fn initialize_ownership(new_owner: Identity) {
+        _is_expected_owner(new_owner);
         initialize_ownership(new_owner);
     }
     #[storage(read, write)]
     fn renounce_ownership() {
         renounce_ownership();
     }
+}
+
+
+// Front-run guard
+fn _is_expected_owner(owner: Identity) {
+    require(owner.bits() == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }

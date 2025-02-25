@@ -260,6 +260,7 @@ async fn main() {
     let fuel_wallet =
         WalletUnlocked::new_from_private_key(env.secret_key, Some(fuel_provider.clone()));
     let block_number = fuel_provider.latest_block_height().await.unwrap();
+    let wallet_bits = Bits256(fuel_wallet.address().hash().into());
     println!("Deployer: {}", Address::from(fuel_wallet.address()));
     println!("Config sync block: {}", block_number);
 
@@ -271,6 +272,8 @@ async fn main() {
     let config = get_deployment_config();
     let configurables = MailboxConfigurables::default()
         .with_LOCAL_DOMAIN(env.domain)
+        .unwrap()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
     let mailbox_contract_id = Contract::load_from(
         binary_filepath,
@@ -335,9 +338,13 @@ async fn main() {
         ContractId::from(test_ism_id.clone())
     );
 
+    let configurables = AggregationISMConfigurables::default()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
+        .unwrap();
+
     let aggregation_ism_id = Contract::load_from(
         "../contracts/ism/aggregation-ism/out/debug/aggregation-ism.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -349,9 +356,13 @@ async fn main() {
         ContractId::from(aggregation_ism_id.clone())
     );
 
+    let configurables = DomainRoutingISMConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
+
     let domain_routing_ism_id = Contract::load_from(
         "../contracts/ism/routing/domain-routing-ism/out/debug/domain-routing-ism.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -363,9 +374,13 @@ async fn main() {
         ContractId::from(domain_routing_ism_id.clone())
     );
 
+    let configurables = FallbackDomainRoutingISMConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
+
     let fallback_domain_routing_ism_id = Contract::load_from(
         "../contracts/ism/routing/default-fallback-domain-routing-ism/out/debug/default-fallback-domain-routing-ism.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -379,6 +394,8 @@ async fn main() {
 
     let configurables = MessageIdMultisigISMConfigurables::default()
         .with_THRESHOLD(1)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let message_id_multisig_ism_id_1 = Contract::load_from(
@@ -397,6 +414,8 @@ async fn main() {
 
     let configurables = MessageIdMultisigISMConfigurables::default()
         .with_THRESHOLD(3)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let message_id_multisig_ism_id_3 = Contract::load_from(
@@ -415,6 +434,8 @@ async fn main() {
 
     let configurables = MerkleRootMultisigISMConfigurables::default()
         .with_THRESHOLD(1)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let merkle_root_multisig_ism_id_1 = Contract::load_from(
@@ -433,6 +454,8 @@ async fn main() {
 
     let configurables = MerkleRootMultisigISMConfigurables::default()
         .with_THRESHOLD(3)
+        .unwrap()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
         .unwrap();
 
     let merkle_root_multisig_ism_id_3 = Contract::load_from(
@@ -453,9 +476,13 @@ async fn main() {
     // Merkle Tree hook deployment //
     /////////////////////////////////
 
+    let configurables = MerkleTreeHookConfigurables::default()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
+        .unwrap();
+
     let merkle_tree_id = Contract::load_from(
         "../contracts/hooks/merkle-tree-hook/out/debug/merkle-tree-hook.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -471,9 +498,13 @@ async fn main() {
     // Aggregation Hook Deployment //
     /////////////////////////////////
 
+    let configurables = AggregationHookConfigurables::default()
+        .with_EXPECTED_INITIALIZER(wallet_bits)
+        .unwrap();
+
     let aggregation_hook_id = Contract::load_from(
         "../contracts/hooks/aggregation/out/debug/aggregation.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -489,9 +520,13 @@ async fn main() {
     // Pausable Hook Deployment //
     //////////////////////////////
 
+    let configurables = PausableHookConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
+
     let pausable_hook_id = Contract::load_from(
         "../contracts/hooks/pausable-hook/out/debug/pausable-hook.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -511,6 +546,8 @@ async fn main() {
 
     let protocol_fee_configurables = ProtocolFeeConfigurables::default()
         .with_MAX_PROTOCOL_FEE(MAX_PROTOCOL_FEE)
+        .unwrap()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
 
     let protocol_fee_hook_id = Contract::load_from(
@@ -533,10 +570,14 @@ async fn main() {
     // Gas Paymaster Components Deployment //
     /////////////////////////////////////////
 
+    let configurables = GasOracleConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
+
     // Gas Oracle deployment
     let gas_oracle_id = Contract::load_from(
         "../contracts/gas-oracle/out/debug/gas-oracle.bin",
-        config.clone(),
+        config.clone().with_configurables(configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -552,6 +593,8 @@ async fn main() {
         .with_TOKEN_EXCHANGE_RATE_SCALE(15_000_000_000_000)
         .unwrap()
         .with_DEFAULT_GAS_AMOUNT(5000)
+        .unwrap()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
 
     // IGP deployment
@@ -608,10 +651,16 @@ async fn main() {
     println!("collateralAssetId: 0x{}", collateral_asset_id.clone());
 
     //Collateral WR
+    let wr_configurables = WarpRouteConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
+        .unwrap();
     let collateral_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
     let warp_route_collateral_id = Contract::load_from(
         "../contracts/warp-route/out/debug/warp-route.bin",
-        config.clone().with_salt(collateral_salt),
+        config
+            .clone()
+            .with_salt(collateral_salt)
+            .with_configurables(wr_configurables.clone()),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -627,7 +676,10 @@ async fn main() {
     let native_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
     let warp_route_native_id = Contract::load_from(
         "../contracts/warp-route/out/debug/warp-route.bin",
-        config.clone().with_salt(native_salt),
+        config
+            .clone()
+            .with_salt(native_salt)
+            .with_configurables(wr_configurables.clone()),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())
@@ -643,7 +695,10 @@ async fn main() {
     let synthetic_salt = Salt::from(rand::thread_rng().gen::<[u8; 32]>());
     let warp_route_synthetic_id = Contract::load_from(
         "../contracts/warp-route/out/debug/warp-route.bin",
-        config.clone().with_salt(synthetic_salt),
+        config
+            .clone()
+            .with_salt(synthetic_salt)
+            .with_configurables(wr_configurables),
     )
     .unwrap()
     .deploy(&fuel_wallet, TxPolicies::default())

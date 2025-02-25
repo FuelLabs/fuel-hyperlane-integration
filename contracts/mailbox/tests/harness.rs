@@ -57,12 +57,20 @@ async fn get_contract_instance() -> (
     .await
     .unwrap();
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
 
-    let mailbox_id = Contract::load_from("./out/debug/mailbox.bin", LoadConfiguration::default())
-        .unwrap()
-        .deploy(&wallet, TxPolicies::default())
-        .await
+    let configurables = MailboxConfigurables::default()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
+
+    let mailbox_id = Contract::load_from(
+        "./out/debug/mailbox.bin",
+        LoadConfiguration::default().with_configurables(configurables),
+    )
+    .unwrap()
+    .deploy(&wallet, TxPolicies::default())
+    .await
+    .unwrap();
 
     let post_dispatch_id = Contract::load_from(
         "../mocks/mock-post-dispatch/out/debug/mock-post-dispatch.bin",

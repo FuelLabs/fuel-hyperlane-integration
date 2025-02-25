@@ -1,4 +1,7 @@
-use fuels::{prelude::*, types::Identity};
+use fuels::{
+    prelude::*,
+    types::{Bits256, Identity},
+};
 use std::str::FromStr;
 use test_utils::get_revert_reason;
 
@@ -41,9 +44,12 @@ async fn get_contract_instance() -> (ProtocolFee<WalletUnlocked>, WalletUnlocked
     .unwrap();
 
     let wallet = wallets.pop().unwrap();
+    let wallet_bits = Bits256(wallet.address().hash().into());
 
     let protocol_fee_configurables = ProtocolFeeConfigurables::default()
         .with_MAX_PROTOCOL_FEE(MAX_PROTOCOL_FEE)
+        .unwrap()
+        .with_EXPECTED_OWNER(wallet_bits)
         .unwrap();
 
     let id = Contract::load_from(
