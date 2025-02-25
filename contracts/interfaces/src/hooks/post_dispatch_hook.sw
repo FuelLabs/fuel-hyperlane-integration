@@ -2,6 +2,10 @@ library;
 
 use std::bytes::Bytes;
 
+pub enum PostDispatchHookError {
+    InvalidMetadata: (),
+}
+
 /// Types of post dispatch hooks.
 pub enum PostDispatchHookType {
     UNUSED: (),

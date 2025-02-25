@@ -86,7 +86,7 @@ async fn post_dispatch_interface() {
         .unwrap()
         .value;
 
-    assert!(!supports_metadata);
+    assert!(supports_metadata);
 
     // Post dispatch
     let post_dispatch = hook

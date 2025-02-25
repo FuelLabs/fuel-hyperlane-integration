@@ -70,7 +70,7 @@ impl PostDispatchHook for Contract {
     ///
     /// * [bool] - Whether the hook supports the metadata.
     fn supports_metadata(metadata: Bytes) -> bool {
-        StandardHookMetadata::is_valid(metadata)
+        _supports_metadata(metadata)
     }
 
     /// Compute the payment required by the postDispatch call
@@ -85,6 +85,7 @@ impl PostDispatchHook for Contract {
     /// * [u64] - The payment required for the postDispatch call.
     #[storage(read)]
     fn quote_dispatch(metadata: Bytes, message: Bytes) -> u64 {
+        require(_supports_metadata(metadata), PostDispatchHookError::InvalidMetadata);
         let hooks = storage.hooks.load_vec();
 
         let mut total = 0;
@@ -106,6 +107,7 @@ impl PostDispatchHook for Contract {
     #[payable]
     #[storage(read, write)]
     fn post_dispatch(metadata: Bytes, message: Bytes) {
+        require(_supports_metadata(metadata), PostDispatchHookError::InvalidMetadata);
         let hooks = storage.hooks.load_vec();
 
         let mut i = 0;
@@ -129,7 +131,9 @@ impl PostDispatchHook for Contract {
 // ------------------ Internal Functions ----------------------
 // ------------------------------------------------------------
 
-
+fn _supports_metadata(metadata: Bytes) -> bool {
+    StandardHookMetadata::is_valid(metadata)
+}
 
 fn _hook_quote_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u64 {
     let hook_contract = abi(PostDispatchHook, hook.bits());
