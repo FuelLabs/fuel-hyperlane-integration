@@ -5,6 +5,7 @@ use std::bytes::Bytes;
 pub enum AggregationIsmError {
     DidNotMeetThreshold: (),
     UnexpectedInitAddress: (),
+    FailedToVerify: (),
 }
 
 

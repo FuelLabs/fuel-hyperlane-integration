@@ -153,10 +153,12 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     #[storage(write, read)]
     fn remove(domain: u32) {
         only_owner();
-        let success = storage.domain_modules.remove(domain);
-        if success {
-            _remove_domain(domain);
-        }
+        require(
+            storage.domain_modules.remove(domain),
+            DefaultFallbackDomainRoutingIsmError::DomainNotSet(domain),
+        );
+        _remove_domain(domain);
+
     }
 
     /// Returns the domains that have been set
@@ -180,7 +182,13 @@ impl DefaultFallbackDomainRoutingIsm for Contract {
     /// * [b256] - The ISM to be used for the specified domain.
     #[storage(read)]
     fn module(domain: u32) -> b256 {
-        storage.domain_modules.get(domain).try_read().unwrap_or(b256::zero())
+        let module = storage.domain_modules.get(domain).try_read();
+        if module.is_some() {
+            return module.unwrap();
+        }
+        let mailbox_id = storage.mailbox.read();
+        let mailbox = abi(Mailbox, mailbox_id);
+        <b256 as From<ContractId>>::from(mailbox.default_ism())
     }
 
     /// Returns the fallback mailbox for the ISM

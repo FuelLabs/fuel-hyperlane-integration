@@ -5,6 +5,7 @@ use message::EncodedMessage;
 use std::storage::storage_vec::*;
 use std::{block::height, bytes::Bytes, context::msg_amount};
 use interfaces::{mailbox::mailbox::*, hooks::{merkle_tree_hook::*, post_dispatch_hook::*}};
+use std_hook_metadata::{StandardHookMetadata};
 
 configurable {
     EXPECTED_INITIALIZER: b256 = b256::zero(),
@@ -31,6 +32,10 @@ impl MerkleTreeHook for Contract {
         require(
             !_is_initialized(),
             MerkleTreeHookError::ContractAlreadyInitialized,
+        );
+        require(
+            mailbox != ContractId::zero(),
+            MerkleTreeHookError::CannotInitializeWithZeroAddress,
         );
         storage.mailbox.write(mailbox);
     }
@@ -103,8 +108,9 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    fn supports_metadata(_metadata: Bytes) -> bool {
-        false
+    fn supports_metadata(metadata: Bytes) -> bool {
+        // We perform the same check as EVM for compatibility
+        StandardHookMetadata::is_valid(metadata)
     }
 
     /// Post action after a message is dispatched via the Mailbox

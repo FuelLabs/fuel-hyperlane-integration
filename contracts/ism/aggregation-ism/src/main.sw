@@ -62,13 +62,15 @@ impl InterchainSecurityModule for Contract {
 
             let ism_id = b256::from(modules.get(u64::from(index)).unwrap());
             let ism = abi(InterchainSecurityModule, ism_id);
-            if ism.verify(
+            require(
+                ism.verify(
                     AggregationIsmMetadata::metadata_at(metadata, index),
                     message,
-                )
-            {
-                threshold -= 1;
-            }
+                ), 
+                AggregationIsmError::FailedToVerify
+            );
+
+            threshold -= 1;
             index += 1;
         }
         require(threshold == 0, AggregationIsmError::DidNotMeetThreshold);

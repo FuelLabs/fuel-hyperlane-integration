@@ -219,6 +219,10 @@ mod warp_route {
             .with_EXPECTED_OWNER(wallet_bits)
             .unwrap();
 
+        let configurables = MailboxConfigurables::default()
+            .with_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN)
+            .unwrap();
+
         let mailbox_id = Contract::load_from(
             "../mailbox/out/debug/mailbox.bin",
             LoadConfiguration::default().with_configurables(configurables),
@@ -311,19 +315,22 @@ mod warp_route {
             asset_contract_id = Some(Bits256(collateral_token_contract_id.hash().into()));
         }
 
-        let mut call_handler = warp_route.methods().initialize(
-            owner,
-            mailbox_address,
-            config.token_mode.clone(),
-            hook_address,
-            default_ism_address,
-            Some(config.token_name.clone().unwrap()),
-            Some(config.token_symbol.clone().unwrap()),
-            Some(config.decimals.unwrap()),
-            Some(config.total_supply.unwrap()),
-            asset_id,
-            asset_contract_id,
-        );
+        let mut call_handler = warp_route
+            .methods()
+            .initialize(
+                owner,
+                mailbox_address,
+                config.token_mode.clone(),
+                hook_address,
+                default_ism_address,
+                Some(config.token_name.clone().unwrap()),
+                Some(config.token_symbol.clone().unwrap()),
+                Some(config.decimals.unwrap()),
+                Some(config.total_supply.unwrap()),
+                asset_id,
+                asset_contract_id,
+            )
+            .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum);
 
         if config.token_mode == WarpRouteTokenMode::COLLATERAL {
             call_handler = call_handler.with_contract_ids(&[collateral_token_contract_id]);
@@ -1125,7 +1132,7 @@ mod warp_route {
                 .await
                 .unwrap();
 
-            assert_eq!(wallet_balance_before_mint, 0);
+            assert_eq!(wallet_balance_before_mint, config.total_supply.unwrap());
 
             // For testing the synthetic asset, we actually need to have the tokens
             // Since the asset is managed by the warp route - we can mock the asset minting with handle call
@@ -1244,67 +1251,6 @@ mod warp_route {
             );
         }
 
-        /// ============ get_cumulative_supply_before_and_after_mint ============
-        #[tokio::test]
-        async fn test_get_cumulative_supply_before_and_after_mint() {
-            let (
-                config,
-                warp_route,
-                contract_id,
-                mailbox,
-                mailbox_id,
-                post_dispatch_id,
-                recipient_id,
-                ism_id,
-            ) = get_synthetic_contract_instance().await;
-            let remote_decimals = REMOTE_DECIMALS as u32;
-            let local_decimals = config.decimals.unwrap() as u32;
-
-            // Assert that the initial cumulative supply is 0
-            let initial_cumulative_supply = warp_route
-                .methods()
-                .get_cumulative_supply()
-                .call()
-                .await
-                .unwrap()
-                .value;
-
-            assert_eq!(initial_cumulative_supply, 0);
-
-            // Mint some tokens and verify the updated cumulative supply
-            let amount = 10_u64.pow(remote_decimals - local_decimals);
-            let remote_decimal_amount = 10_u64.pow(remote_decimals);
-
-            trigger_handle_by_sending_message_from_mailbox(
-                &mailbox,
-                &warp_route,
-                vec![
-                    contract_id.into(),
-                    mailbox_id.into(),
-                    post_dispatch_id.into(),
-                    ism_id.into(),
-                    recipient_id.into(),
-                ],
-                remote_decimal_amount,
-                None,
-            )
-            .await;
-
-            // Fetch the updated cumulative supply after minting
-            let updated_cumulative_supply = warp_route
-                .methods()
-                .get_cumulative_supply()
-                .call()
-                .await
-                .unwrap()
-                .value;
-            assert_eq!(
-                updated_cumulative_supply - initial_cumulative_supply,
-                amount,
-                "Cumulative supply should be updated after minting"
-            );
-        }
-
         /// ============ sending_more_than_minted ============
         #[tokio::test]
         async fn test_sending_more_than_minted() {
@@ -1330,85 +1276,6 @@ mod warp_route {
                 get_revert_reason(call.unwrap_err()),
                 "AssetNotReceivedForTransfer"
             );
-        }
-
-        /// ============ max_supply_enforcement_handle_message ============
-        #[tokio::test]
-        async fn test_max_supply_enforcement_handle_message() {
-            let (
-                config,
-                warp_route,
-                contract_id,
-                mailbox,
-                mailbox_id,
-                post_dispatch_id,
-                ism_id,
-                recipient_id,
-            ) = get_synthetic_contract_instance().await;
-
-            let local_decimals = config.decimals.unwrap() as u32;
-
-            warp_route
-                .methods()
-                .set_remote_router_decimals(
-                    Bits256::from_hex_str(REMOTE_ROUTER_ADDRESS).unwrap(),
-                    local_decimals as u8,
-                )
-                .call()
-                .await
-                .map_err(|e| format!("Error occured while setting decimals: {:?}", e))
-                .unwrap();
-
-            let mint_amount = config.total_supply.unwrap() - 1;
-
-            trigger_handle_by_sending_message_from_mailbox(
-                &mailbox,
-                &warp_route,
-                vec![
-                    contract_id.into(),
-                    mailbox_id.into(),
-                    post_dispatch_id.into(),
-                    ism_id.into(),
-                    recipient_id.into(),
-                ],
-                mint_amount,
-                None,
-            )
-            .await;
-
-            // Assert that the initial cumulative supply is just below the max
-            let initial_cumulative_supply = warp_route
-                .methods()
-                .get_cumulative_supply()
-                .call()
-                .await
-                .unwrap()
-                .value;
-            assert_eq!(initial_cumulative_supply, mint_amount);
-
-            trigger_handle_by_sending_message_from_mailbox(
-                &mailbox,
-                &warp_route,
-                vec![
-                    contract_id.into(),
-                    mailbox_id.into(),
-                    post_dispatch_id.into(),
-                    ism_id.into(),
-                    recipient_id.into(),
-                ],
-                5,
-                None,
-            )
-            .await;
-
-            let cumulative_supply = warp_route
-                .methods()
-                .get_cumulative_supply()
-                .call()
-                .await
-                .unwrap()
-                .value;
-            assert_eq!(cumulative_supply, mint_amount);
         }
     }
     mod native {

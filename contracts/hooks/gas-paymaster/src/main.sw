@@ -471,7 +471,9 @@ fn quote_gas(destination_domain: u32, gas_amount: u64) -> u64 {
     let destination_gas_cost = u256::from(total_gas_amount) * u256::from(gas_price);
 
     // Convert to the local native token.
-    let origin_cost = (destination_gas_cost * u256::from(token_exchange_rate)) / u256::from(TOKEN_EXCHANGE_RATE_SCALE);
+    let numerator = destination_gas_cost * u256::from(token_exchange_rate);
+    let origin_cost = (numerator + u256::from(TOKEN_EXCHANGE_RATE_SCALE) - 1) 
+                      / u256::from(TOKEN_EXCHANGE_RATE_SCALE);
 
     // Convert from the remote token's decimals to the local token's decimals.
     let origin_cost = convert_decimals(origin_cost, token_decimals, BASE_ASSET_DECIMALS);
@@ -488,14 +490,14 @@ fn convert_decimals(num: u256, from_decimals: u8, to_decimals: u8) -> u256 {
     if from_decimals > to_decimals {
         let diff: u64 = (from_decimals - to_decimals).as_u64();
         let diff_u32 = diff.try_as_u32().expect("Conversion to u32 failed");
-        let divisor = 10u64.pow(diff_u32).as_u256();
+        let divisor = u256::from(10u64).pow(diff_u32);
 
         require(divisor != 0, "Divisor cannot be zero");
-        num / divisor
+        (num + divisor - 1) / divisor
     } else {
         let diff: u64 = (to_decimals - from_decimals).as_u64();
         let diff_u32 = diff.try_as_u32().expect("Conversion to u32 failed");
-        let multiplier = 10u64.pow(diff_u32).as_u256();
+        let multiplier = u256::from(10u64).pow(diff_u32);
 
         require(multiplier != 0, "Multiplier cannot be zero");
         num * multiplier
@@ -540,5 +542,39 @@ fn test_convert_decimals() {
     let to_decimals = 4;
     let result = convert_decimals(num, from_decimals, to_decimals);
     assert(result == u256::from((0, 0, 0, 0)));
+
+    // Edge decimal cases
+    let num = u256::from(18u64);
+    let from_decimals = 6;
+    let to_decimals = 24;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(u256_to_u64(result).is_some());
+
+    let num = u256::from(19u64);
+    let from_decimals = 6;
+    let to_decimals = 24;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(u256_to_u64(result).is_none());
+
+    // Expected max `to_decimals`
+    let num = u256::from(18_446_744u64);
+    let from_decimals = 6;
+    let to_decimals = 18;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(u256_to_u64(result).is_some());
+
+    let num = u256::from(18_446_745u64);
+    let from_decimals = 6;
+    let to_decimals = 18;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(u256_to_u64(result).is_none());
+
+    // going from very large numbers to low precision is not problematic
+    // 18_446_744_073_709_551_615_999_999_999_999_999_999
+    let num = u256::from((0u64, 0u64, 0x0DE0B6B3A763FFFFu64, 0xFFFFFFFFFFFFFFFFu64));
+    let from_decimals = 24;
+    let to_decimals = 6;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(u256_to_u64(result).is_some());
 }
 

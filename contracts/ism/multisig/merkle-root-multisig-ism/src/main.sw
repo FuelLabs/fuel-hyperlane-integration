@@ -67,10 +67,10 @@ impl InterchainSecurityModule for Contract {
         require(threshold > 0, MerkleRootMultisigError::NoMultisigThreshold);
 
         let validator_count = validators.len();
-        let mut validator_index: u8 = 0;
-        let mut loop_index: u8 = 0;
-        while loop_index < threshold {
-            let signature_recover_result = _signature_at(metadata, u32::from(loop_index));
+        let mut validator_index: u64 = 0;
+        let mut loop_index: u32 = 0;
+        while loop_index < u32::from(threshold) {
+            let signature_recover_result = _signature_at(metadata, loop_index);
             let sig_transformed = signature_recover_result.to_compact_signature();
             require(
                 sig_transformed
@@ -89,13 +89,13 @@ impl InterchainSecurityModule for Contract {
             let signer = address_recover_result.unwrap();
 
             // Loop through remaining validators until we find a match
-            while u64::from(validator_index) < validator_count && signer != storage.validators.get(u64::from(validator_index)).unwrap().read() {
+            while validator_index < validator_count && signer != storage.validators.get(validator_index).unwrap().read() {
                 validator_index += 1;
             }
 
             // Fail if we never found a match
             require(
-                u64::from(validator_index) < validator_count,
+                validator_index < validator_count,
                 MerkleRootMultisigError::NoValidatorMatch,
             );
 
@@ -185,7 +185,7 @@ fn _digest(metadata: Bytes, message: Bytes) -> Bytes {
 
     require(
         metadata
-            .message_index() == metadata
+            .message_index()  <= metadata
             .signed_index(),
         MerkleRootMultisigError::InvalidMerkleIndexMetadata,
     );

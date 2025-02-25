@@ -63,4 +63,5 @@ pub enum MerkleTreeHookError {
     ContractNotInitialized: (),
     ContractAlreadyInitialized: (),
     UnexpectedInitAddress: (),
+    CannotInitializeWithZeroAddress: (),
 }

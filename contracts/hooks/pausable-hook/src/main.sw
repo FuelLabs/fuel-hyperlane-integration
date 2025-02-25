@@ -6,6 +6,7 @@ use interfaces::{
 };
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
+use std_hook_metadata::{StandardHookMetadata};
 use std::{bytes::Bytes};
 
 configurable {
@@ -32,8 +33,9 @@ impl PostDispatchHook for Contract {
     /// ### Returns
     ///
     /// * [bool] - Whether the hook supports the metadata.
-    fn supports_metadata(_metadata: Bytes) -> bool {
-        false
+    fn supports_metadata(metadata: Bytes) -> bool {
+        // We perform the same check as EVM for compatibility
+        StandardHookMetadata::is_valid(metadata)
     }
 
     /// Post action after a message is dispatched via the Mailbox

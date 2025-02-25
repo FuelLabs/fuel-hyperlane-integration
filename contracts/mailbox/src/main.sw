@@ -354,10 +354,10 @@ impl Mailbox for Contract {
             version == VERSION,
             MailboxError::InvalidProtocolVersion(version),
         );
-        let origin_domain = message.origin();
+        let destination_domain = message.destination();
         require(
-            origin_domain != LOCAL_DOMAIN,
-            MailboxError::InvalidMessageOrigin(origin_domain),
+            destination_domain == LOCAL_DOMAIN,
+            MailboxError::UnexpectedDestination(destination_domain),
         );
         let id = message.id();
         require(!_delivered(id), MailboxError::MessageAlreadyDelivered);
@@ -378,6 +378,7 @@ impl Mailbox for Contract {
             MailboxError::MessageVerificationFailed,
         );
 
+        let origin_domain = message.origin();
         let sender = message.sender();
         msg_recipient.handle(origin_domain, sender, message.body());
 

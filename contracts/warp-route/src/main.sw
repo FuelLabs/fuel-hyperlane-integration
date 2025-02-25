@@ -49,6 +49,7 @@ use interfaces::{
     ownable::*,
     token_router::*,
     warp_route::*,
+    gas_router::*,
 };
 use standards::{src20::SRC20, src5::State};
 use message::{EncodedMessage, Message};
@@ -87,15 +88,13 @@ storage {
     symbol: StorageMap<AssetId, StorageString> = StorageMap {},
     /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
-    /// The total number of coins ever minted for an asset.
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
     /// The contract balance of the asset
     contract_balance: u64 = 0,
+    /// Gas for domains
+    destination_gas: StorageMap<u32, u64> = StorageMap {},
 }
 
 configurable {
-    /// The maximum supply allowed for any single asset.
-    MAX_SUPPLY: u64 = 100_000_000_000_000,
     /// The default number of decimals for the base asset
     DEFAULT_DECIMALS: u8 = 9,
 
@@ -170,10 +169,20 @@ impl WarpRoute for Contract {
                         .unwrap(),
                     decimals
                         .unwrap(),
-                    total_supply
-                        .unwrap(),
+                    0,
                 );
-                storage.cumulative_supply.insert(asset_id, 0);
+                let total_supply = total_supply.unwrap_or(0);
+                if total_supply != 0 {
+                    let _ = _mint(
+                        storage
+                            .total_assets,
+                        storage
+                            .total_supply,
+                        msg_sender().unwrap(),
+                        sub_id,
+                        total_supply,
+                    );
+                }
             }
             WarpRouteTokenMode::COLLATERAL => {
                 // Require asset_id and asset_contract_id as input in collateral mode
@@ -238,7 +247,7 @@ impl WarpRoute for Contract {
         let default_hook = storage.default_hook.read();
         let hook_contract = hook.unwrap_or(default_hook);
 
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let local_decimals = _decimals(storage.decimals, asset).unwrap();
         let adjusted_amount = _adjust_decimals(amount, local_decimals, remote_decimals);
         let message_body = _build_token_metadata_bytes(recipient, adjusted_amount);
 
@@ -248,6 +257,7 @@ impl WarpRoute for Contract {
             destination_domain,
             remote_domain_router,
             message_body,
+            metadata,
             hook_contract,
         );
 
@@ -293,15 +303,7 @@ impl WarpRoute for Contract {
 
         let metadata = match metadata {
             Some(metadata) => metadata,
-            None => {
-                let gas_limit = _get_quote_for_gas_payment(
-                    destination_domain,
-                    remote_domain_router,
-                    message_body,
-                    hook_contract,
-                );
-                StandardHookMetadata::override_gas_limit(gas_limit.as_u256())
-            },
+            None => _gas_router_hook_metadata(destination_domain),
         };
 
         //Dispatch the message to the destination domain
@@ -357,17 +359,6 @@ impl WarpRoute for Contract {
         storage.mailbox.read()
     }
 
-    /// Gets the total number of coins ever minted for an asset.
-    ///
-    /// ### Returns
-    ///
-    /// * [u64] - The total number of coins ever minted for an asset.
-    #[storage(read)]
-    fn get_cumulative_supply() -> u64 {
-        let asset = storage.asset_id.read();
-        storage.cumulative_supply.get(asset).try_read().unwrap_or(0)
-    }
-
     /// Gets the post dispatch hook contract ID that the WarpRoute contract is using
     ///
     /// ### Returns
@@ -417,8 +408,13 @@ impl WarpRoute for Contract {
     /// ### Arguments
     ///
     /// * `module`: [ContractId] - The ISM contract ID
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn set_ism(module: ContractId) {
+        only_owner();
         storage.default_ism.write(module)
     }
 
@@ -433,6 +429,7 @@ impl WarpRoute for Contract {
             destination_domain,
             b256::zero(),
             Bytes::new(),
+            None,
             storage
                 .default_hook
                 .read(),
@@ -453,12 +450,16 @@ impl WarpRoute for Contract {
 
     #[storage(read, write)]
     fn claim(asset: Option<AssetId>) {
+        only_owner();
         let beneficiary = storage.beneficiary.read();
-        let asset = asset.unwrap_or(storage.asset_id.read());
+        let stored_asset = storage.asset_id.read();
+        let asset = asset.unwrap_or(stored_asset);
         let balance = this_balance(asset);
 
         transfer(beneficiary, asset, balance);
-        storage.contract_balance.write(0);
+        if stored_asset == asset {
+            storage.contract_balance.write(0);
+        }
 
         log(ClaimEvent {
             beneficiary,
@@ -516,8 +517,13 @@ impl TokenRouter for Contract {
     /// ### Arguments
     ///
     /// * `domain`: [u32] - The domain to remove the router for
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(write)]
     fn unenroll_remote_router(domain: u32) -> bool {
+        only_owner();
         let removed = storage.routers.remove(domain);
         if removed {
             let count = storage.domains.len();
@@ -541,8 +547,13 @@ impl TokenRouter for Contract {
     ///
     /// * `domain`: [u32] - The domain to enroll
     /// * `router`: [b256] - The router address to enroll
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn enroll_remote_router(domain: u32, router: b256) {
+        only_owner();
         _insert_route_to_state(domain, router);
     }
 
@@ -556,8 +567,10 @@ impl TokenRouter for Contract {
     /// ### Reverts
     ///
     /// * If the lengths of domains and routers arrays don't match
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn enroll_remote_routers(domains: Vec<u32>, routers: Vec<b256>) {
+        only_owner();
         require(
             domains
                 .len() == routers
@@ -595,9 +608,70 @@ impl TokenRouter for Contract {
     ///
     /// * `router`: [b256] - The router to set
     /// * `decimals`: [u8] - The decimals to set
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(write)]
     fn set_remote_router_decimals(router: b256, decimals: u8) {
+        only_owner();
         storage.remote_router_decimals.insert(router, decimals);
+    }
+}
+
+impl GasRouter for Contract {
+    /// Sets the gas amount dispatched for each configured domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `gasConfigs`: [Vec<GasRouterConfig>] - The array of GasRouterConfig structs
+    #[storage(write)]
+    fn set_destination_gas_configs(gas_configs: Vec<GasRouterConfig>) {
+        let mut i = 0;
+        while i < gas_configs.len() {
+            let config = gas_configs.get(i).unwrap();
+            _set_destination_gas(config.domain, config.gas);
+            i += 1;
+        }
+    }
+
+    /// Sets the gas amount dispatched for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The destination domain ID
+    /// * `gas`: [u64] - The gas limit
+    #[storage(write)]
+    fn set_destination_gas(domain: u32, gas: u64) {
+        _set_destination_gas(domain, gas);
+    }
+
+    /// Gets the metadata for the GasRouter hook
+    ///
+    /// ### Arguments
+    ///
+    /// * `destination`: [u32] - The destination domain ID
+    ///
+    /// ### Returns
+    ///
+    /// * [Bytes] - The metadata for the GasRouter hook
+    #[storage(read)]
+    fn gas_router_hook_metadata(destination: u32) -> Bytes {
+        _gas_router_hook_metadata(destination)
+    }
+
+    /// Gets the gas amount dispatched for a specific domain
+    ///
+    /// ### Arguments
+    ///
+    /// * `domain`: [u32] - The destination domain ID
+    ///
+    /// ### Returns
+    ///
+    /// * [u64] - The gas limit
+    #[storage(read)]
+    fn destination_gas(domain: u32) -> u64 {
+        _get_destination_gas(domain)
     }
 }
 
@@ -634,21 +708,12 @@ impl MessageRecipient for Contract {
         let remote_decimals = _get_remote_router_decimals(sender);
         require(remote_decimals != 0, WarpRouteError::RemoteDecimalsNotSet);
 
-        let local_decimals = _decimals(storage.decimals, asset).unwrap_or(0);
+        let local_decimals = _decimals(storage.decimals, asset).unwrap();
         let adjusted_amount = _adjust_decimals(amount, remote_decimals, local_decimals);
         let asset = storage.asset_id.read();
 
         match storage.token_mode.read() {
             WarpRouteTokenMode::SYNTHETIC => {
-                let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-                require(
-                    cumulative_supply + adjusted_amount <= MAX_SUPPLY,
-                    WarpRouteError::MaxMinted,
-                );
-                storage
-                    .cumulative_supply
-                    .insert(asset, cumulative_supply + adjusted_amount);
                 let _ = _mint(
                     storage
                         .total_assets,
@@ -736,7 +801,7 @@ fn _get_metadata_of_asset(asset: AssetId) -> TokenMetadata {
     TokenMetadata {
         name: _name(storage.name, asset).unwrap_or(String::new()),
         symbol: _symbol(storage.symbol, asset).unwrap_or(String::new()),
-        decimals: _decimals(storage.decimals, asset).unwrap_or(0),
+        decimals: _decimals(storage.decimals, asset).unwrap(),
         total_supply: storage.total_supply.get(asset).try_read().unwrap_or(0),
         asset_id: storage.asset_id.read(),
         sub_id: storage.sub_id.read(),
@@ -766,6 +831,22 @@ fn _extract_asset_data_from_body(body: Bytes) -> (b256, u64) {
 #[storage(read)]
 fn _get_router(domain: u32) -> b256 {
     storage.routers.get(domain).try_read().unwrap_or(b256::zero())
+}
+
+#[storage(write)]
+fn _set_destination_gas(domain: u32, gas: u64) {
+    storage.destination_gas.insert(domain, gas);
+}
+
+#[storage(read)]
+fn _get_destination_gas(domain: u32) -> u64 {
+    storage.destination_gas.get(domain).try_read().unwrap_or(0)
+}
+
+#[storage(read)]
+fn _gas_router_hook_metadata(destination: u32) -> Bytes {
+    let gas_limit = _get_destination_gas(destination);
+    StandardHookMetadata::override_gas_limit(gas_limit.into())
 }
 
 #[storage(read, write)]
@@ -805,6 +886,7 @@ fn _get_quote_for_gas_payment(
     destination_domain: u32,
     recipient: b256,
     message_body: Bytes,
+    metadata: Option<Bytes>,
     hook: ContractId,
 ) -> u64 {
     let mailbox = abi(Mailbox, b256::from(storage.mailbox.read()));
@@ -812,7 +894,7 @@ fn _get_quote_for_gas_payment(
         destination_domain,
         recipient,
         message_body,
-        Bytes::new(),
+        metadata.unwrap_or(_gas_router_hook_metadata(destination_domain)),
         hook,
     )
 }
