@@ -523,8 +523,13 @@ impl TokenRouter for Contract {
     /// ### Arguments
     ///
     /// * `domain`: [u32] - The domain to remove the router for
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(write)]
     fn unenroll_remote_router(domain: u32) -> bool {
+        only_owner();
         let removed = storage.routers.remove(domain);
         if removed {
             let count = storage.domains.len();
@@ -548,8 +553,13 @@ impl TokenRouter for Contract {
     ///
     /// * `domain`: [u32] - The domain to enroll
     /// * `router`: [b256] - The router address to enroll
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn enroll_remote_router(domain: u32, router: b256) {
+        only_owner();
         _insert_route_to_state(domain, router);
     }
 
@@ -563,8 +573,10 @@ impl TokenRouter for Contract {
     /// ### Reverts
     ///
     /// * If the lengths of domains and routers arrays don't match
+    /// * If the caller is not the owner
     #[storage(read, write)]
     fn enroll_remote_routers(domains: Vec<u32>, routers: Vec<b256>) {
+        only_owner();
         require(
             domains
                 .len() == routers
@@ -602,6 +614,10 @@ impl TokenRouter for Contract {
     ///
     /// * `router`: [b256] - The router to set
     /// * `decimals`: [u8] - The decimals to set
+    ///
+    /// ### Reverts
+    ///
+    /// * If the caller is not the owner
     #[storage(write)]
     fn set_remote_router_decimals(router: b256, decimals: u8) {
         only_owner();
