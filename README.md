@@ -49,6 +49,7 @@ More detailed information about the contracts can be found in the Hyperlane Prot
 ## Notes
 
 - Due to Fuel not having token approvals, when utilizing WarpRoute contracts, the tokens and the transfer are sent as 2 separate transactions. In order to avoid the risk of being frontrun, a multicall should be used to execute the two transactions atomically.
+- Due to the way decimal conversion is handled on the IGP contract, the biggest precision delta recommened between the two chains is 18 decimals. This is to ensure that the gas price does not overflow in the calculation as it's limited to a `u64`, which is the higest value that is supported by the Fuel SRC20 interface.
 
 ## Setup
 
