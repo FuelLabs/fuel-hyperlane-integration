@@ -150,9 +150,6 @@ fn _modules_and_threshold(_message: Bytes) -> (Vec<ContractId>, u8) {
 
 // Front-run guard
 fn _is_expected_caller() {
-    let sender: b256 = match msg_sender().unwrap() {
-        Identity::Address(address) => address.bits(),
-        Identity::ContractId(contract_id) => contract_id.bits(),
-    };
+    let sender = msg_sender().unwrap().bits();
     require(sender == EXPECTED_INITIALIZER, AggregationIsmError::UnexpectedInitAddress);
 }

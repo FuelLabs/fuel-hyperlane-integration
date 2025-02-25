@@ -223,9 +223,6 @@ fn _signature_at(metadata: Bytes, index: u32) -> Bytes {
 
 // Front-run guard
 fn _is_expected_caller() {
-    let sender: b256 = match msg_sender().unwrap() {
-        Identity::Address(address) => address.bits(),
-        Identity::ContractId(contract_id) => contract_id.bits(),
-    };
+    let sender: b256 = msg_sender().unwrap().bits();
     require(sender == EXPECTED_INITIALIZER, MerkleRootMultisigError::UnexpectedInitAddress);
 }

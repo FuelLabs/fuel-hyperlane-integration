@@ -268,9 +268,5 @@ fn _set_beneficiary(beneficiary: Identity) {
 
 // Front-run guard
 fn _is_expected_owner(owner: Identity) {
-    let raw_owner: b256 = match owner {
-        Identity::Address(address) => address.bits(),
-        Identity::ContractId(contract_id) => contract_id.bits(),
-    };
-    require(raw_owner == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
+    require(owner.bits() == EXPECTED_OWNER, OwnableError::UnexpectedOwner);
 }
