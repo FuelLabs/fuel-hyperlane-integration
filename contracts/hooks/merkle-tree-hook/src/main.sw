@@ -28,6 +28,10 @@ impl MerkleTreeHook for Contract {
             !_is_initialized(),
             MerkleTreeHookError::ContractAlreadyInitialized,
         );
+        require(
+            mailbox != ContractId::zero(),
+            MerkleTreeHookError::CannotInitializeWithZeroAddress,
+        );
         storage.mailbox.write(mailbox);
     }
 
