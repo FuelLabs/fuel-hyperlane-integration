@@ -1,6 +1,6 @@
 use fuels::{
     prelude::*,
-    types::{Bits256, ContractId, Identity},
+    types::{Bits256, ContractId},
 };
 use futures::future::join_all;
 use rand::{thread_rng, Rng};
@@ -64,11 +64,7 @@ fn generate_test_bytes() -> Bytes {
     Bytes(bytes)
 }
 
-async fn get_contract_instance() -> (
-    AggregationIsm<WalletUnlocked>,
-    Vec<TestIsm<WalletUnlocked>>,
-    Identity,
-) {
+async fn get_contract_instance() -> (AggregationIsm<WalletUnlocked>, Vec<TestIsm<WalletUnlocked>>) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -104,15 +100,14 @@ async fn get_contract_instance() -> (
     ];
 
     let aggregation_ism = AggregationIsm::new(aggregation_ism_id.clone(), wallet.clone());
-    let wallet_address = Identity::from(wallet.address());
 
-    (aggregation_ism, test_isms, wallet_address)
+    (aggregation_ism, test_isms)
 }
 
 // ============ Module Type ============
 #[tokio::test]
 async fn module_type() {
-    let (ism, _, _) = get_contract_instance().await;
+    let (ism, _) = get_contract_instance().await;
     let module_type = ism.methods().module_type().call().await.unwrap().value;
     assert_eq!(module_type, ModuleType::AGGREGATION);
 }
@@ -120,7 +115,7 @@ async fn module_type() {
 // ============ Initialize ============
 #[tokio::test]
 async fn aggregation_initialize() {
-    let (ism, _, owner) = get_contract_instance().await;
+    let (ism, _) = get_contract_instance().await;
 
     let bytes = Bytes(vec![0u8]);
 
@@ -143,7 +138,7 @@ async fn aggregation_initialize() {
     let example_threshold = 3;
 
     ism.methods()
-        .initialize(owner, example_modules.clone(), example_threshold)
+        .initialize(example_modules.clone(), example_threshold)
         .call()
         .await
         .unwrap();
@@ -163,7 +158,7 @@ async fn aggregation_initialize() {
 // ============ All ISMs Accept ============
 #[tokio::test]
 async fn all_isms_accept() {
-    let (ism, test_isms, owner) = get_contract_instance().await;
+    let (ism, test_isms) = get_contract_instance().await;
 
     let bytes = generate_test_bytes();
 
@@ -193,7 +188,7 @@ async fn all_isms_accept() {
 
     // Initialize
     ism.methods()
-        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .initialize(test_ism_ids.clone(), expected_threshold)
         .call()
         .await
         .unwrap();
@@ -224,7 +219,7 @@ async fn all_isms_accept() {
 // ============ Invalid Metadata ============
 #[tokio::test]
 async fn invalid_metadata() {
-    let (ism, test_isms, owner) = get_contract_instance().await;
+    let (ism, test_isms) = get_contract_instance().await;
 
     let bytes = Bytes(Vec::new());
 
@@ -254,7 +249,7 @@ async fn invalid_metadata() {
 
     // Initialize
     ism.methods()
-        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .initialize(test_ism_ids.clone(), expected_threshold)
         .call()
         .await
         .unwrap();
@@ -281,7 +276,7 @@ async fn invalid_metadata() {
 // ============ One ISM Rejects ============
 #[tokio::test]
 async fn one_ism_rejects() {
-    let (ism, test_isms, owner) = get_contract_instance().await;
+    let (ism, test_isms) = get_contract_instance().await;
 
     let bytes = generate_test_bytes();
 
@@ -316,7 +311,7 @@ async fn one_ism_rejects() {
 
     // Initialize
     ism.methods()
-        .initialize(owner, test_ism_ids.clone(), expected_threshold)
+        .initialize(test_ism_ids.clone(), expected_threshold)
         .call()
         .await
         .unwrap();

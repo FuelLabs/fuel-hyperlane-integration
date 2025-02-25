@@ -220,7 +220,7 @@ async fn get_contract_instances() -> (
 
     aggregation
         .methods()
-        .initialize(owner_identity, hooks)
+        .initialize(hooks)
         .call()
         .await
         .unwrap();
@@ -232,22 +232,16 @@ async fn get_contract_instances() -> (
 #[tokio::test]
 async fn test_initialization_reverts_if_already_initialized() {
     let (aggregation, mock_hook1, _, _, _) = get_contract_instances().await;
-    let wallet = aggregation.account();
 
     let hooks = vec![mock_hook1.contract_id().into()];
-    let owner_identity = Identity::Address(wallet.address().into());
 
     // Second initialization should fail
-    let result = aggregation
-        .methods()
-        .initialize(owner_identity, hooks)
-        .call()
-        .await;
+    let result = aggregation.methods().initialize(hooks).call().await;
 
     assert!(result.is_err());
     assert_eq!(
         get_revert_reason(result.err().unwrap()),
-        "CannotReinitialized"
+        "AlreadyInitialized"
     );
 }
 

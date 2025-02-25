@@ -21,6 +21,7 @@ configurable {
 storage {
     /// The list of hooks to aggregate
     hooks: StorageVec<ContractId> = StorageVec {},
+    initialized: bool = false,
 }
 
 impl AggregationHook for Contract {
@@ -28,21 +29,22 @@ impl AggregationHook for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [Identity] - The owner of the contract.
     /// * `hooks`: [Vec<ContractId>] - The hooks to initialize with.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
-    #[storage(write)]
-    fn initialize(owner: Identity, hooks: Vec<ContractId>) {
+    /// * If the caller is not the expected initializer.
+    #[storage(read, write)]
+    fn initialize(hooks: Vec<ContractId>) {
+        _not_initialized();
         _is_expected_caller();
-        initialize_ownership(owner);
         let mut i = 0;
         while i < hooks.len() {
             storage.hooks.push(hooks.get(i).unwrap());
             i += 1;
         }
+        storage.initialized.write(true);
     }
 
     /// Returns the hooks.
@@ -150,4 +152,10 @@ fn _hook_quote_dispatch(hook: ContractId, metadata: Bytes, message: Bytes) -> u6
 fn _is_expected_caller() {
     let sender = msg_sender().unwrap().bits();
     require(sender == EXPECTED_INITIALIZER, AggregationHookError::UnexpectedInitAddress);
+}
+
+#[storage(read)]
+fn _not_initialized(){
+    let initialized = storage.initialized.read();
+    require(!initialized, AggregationHookError::AlreadyInitialized);
 }
