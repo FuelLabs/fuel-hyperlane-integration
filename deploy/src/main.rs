@@ -1007,6 +1007,7 @@ async fn main() {
             None,
             None,
         )
+        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
         .call()
         .await;
 

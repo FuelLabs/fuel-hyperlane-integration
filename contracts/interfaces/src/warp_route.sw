@@ -9,7 +9,6 @@ pub enum WarpRouteError {
     PaymentNotEqualToRequired: (),
     InvalidAddress: (),
     AssetIdRequiredForCollateral: (),
-    MaxMinted: (),
     RemoteDecimalsNotSet: (),
     AmountNotConvertible: (),
     SenderNotMailbox: (),
@@ -129,14 +128,6 @@ abi WarpRoute {
     /// * `hook`: [ContractId] - The post dispatch hook contract ID
     #[storage(write)]
     fn set_hook(hook: ContractId);
-
-    /// Gets the total number of coins ever minted for an asset.
-    ///
-    /// ### Returns
-    ///
-    /// * [u64] - The total number of coins ever minted for an asset.
-    #[storage(read)]
-    fn get_cumulative_supply() -> u64;
 
     /// Sets the default ISM
     ///
