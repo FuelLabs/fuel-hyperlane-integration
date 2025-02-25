@@ -87,8 +87,6 @@ storage {
     symbol: StorageMap<AssetId, StorageString> = StorageMap {},
     /// The mapping of asset ID to the number of decimals of the token
     decimals: StorageMap<AssetId, u8> = StorageMap {},
-    /// The total number of coins ever minted for an asset.
-    cumulative_supply: StorageMap<AssetId, u64> = StorageMap {},
     /// The contract balance of the asset
     contract_balance: u64 = 0,
 }
@@ -168,10 +166,20 @@ impl WarpRoute for Contract {
                         .unwrap(),
                     decimals
                         .unwrap(),
-                    total_supply
-                        .unwrap(),
+                    0,
                 );
-                storage.cumulative_supply.insert(asset_id, 0);
+                let total_supply = total_supply.unwrap_or(0);
+                if total_supply != 0 {
+                    let _ = _mint(
+                        storage
+                            .total_assets,
+                        storage
+                            .total_supply,
+                        msg_sender().unwrap(),
+                        sub_id,
+                        total_supply,
+                    );
+                }
             }
             WarpRouteTokenMode::COLLATERAL => {
                 // Require asset_id and asset_contract_id as input in collateral mode
@@ -353,17 +361,6 @@ impl WarpRoute for Contract {
     #[storage(read)]
     fn get_mailbox() -> ContractId {
         storage.mailbox.read()
-    }
-
-    /// Gets the total number of coins ever minted for an asset.
-    ///
-    /// ### Returns
-    ///
-    /// * [u64] - The total number of coins ever minted for an asset.
-    #[storage(read)]
-    fn get_cumulative_supply() -> u64 {
-        let asset = storage.asset_id.read();
-        storage.cumulative_supply.get(asset).try_read().unwrap_or(0)
     }
 
     /// Gets the post dispatch hook contract ID that the WarpRoute contract is using
@@ -638,15 +635,6 @@ impl MessageRecipient for Contract {
 
         match storage.token_mode.read() {
             WarpRouteTokenMode::SYNTHETIC => {
-                let cumulative_supply = storage.cumulative_supply.get(asset).read();
-
-                require(
-                    cumulative_supply + adjusted_amount <= MAX_SUPPLY,
-                    WarpRouteError::MaxMinted,
-                );
-                storage
-                    .cumulative_supply
-                    .insert(asset, cumulative_supply + adjusted_amount);
                 let _ = _mint(
                     storage
                         .total_assets,
