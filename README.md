@@ -46,6 +46,11 @@ Official Hyperlane protocol interfaces can be found in the `interfaces` director
 
 More detailed information about the contracts can be found in the Hyperlane Protocol [documentation](https://docs.hyperlane.xyz/docs/protocol/protocol-overview).
 
+## Notes
+
+- Due to Fuel not having token approvals, when utilizing WarpRoute contracts, the tokens and the transfer are sent as 2 separate transactions. In order to avoid the risk of being frontrun, a multicall should be used to execute the two transactions atomically.
+- Due to the way decimal conversion is handled on the IGP contract, the biggest precision delta recommened between the two chains is 18 decimals. This is to ensure that the gas price does not overflow in the calculation as it's limited to a `u64`, which is the higest value that is supported by the Fuel SRC20 interface. _Reference at hooks/gas-paymaster/src/main.sw#L546_
+
 ## Setup
 
 The Fuel toolchain and prerequisites are required to build the contracts.
@@ -115,7 +120,23 @@ cargo test
 
 The E2E tests include test cases which are executed on a local `fuel-core` instance and EVM `anvil` instance.
 
-Before running the E2E tests, the must first run the both the `fuel-core` and `anvil` instances and deploy the required Hyperlane contracts.
+Before running the E2E tests, you must first run the both the `fuel-core` and `anvil` instances and deploy the required Hyperlane contracts. This is all handled by the `infra/run.sh` script.
+
+In order to have funds on the local Fuel node which is required for the E2E tests, there should be an entry added to `infra/configs/local-fuel-snapshot/state_config.json`
+
+It can be added like so:
+
+```json
+{
+  "tx_id": "0000000000000000000000000000000000000000000000000000000000000004", // Must be one higher than the previous entry
+  "output_index": 0,
+  "tx_pointer_block_height": 0,
+  "tx_pointer_tx_idx": 0,
+  "owner": "ccae08f2eb25ce643496b0d0857f35dcfd0b30d5841ea10a078b79438c32ae07", // Your wallet public address, no 0x prefix
+  "amount": 1152921504606846976,
+  "asset_id": "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07"
+}
+```
 
 This can be done by running the following script from the `infra` directory:
 
