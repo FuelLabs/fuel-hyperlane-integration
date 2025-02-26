@@ -48,6 +48,7 @@ pub fn _test_message(
     }
 }
 
+#[allow(dead_code)]
 pub fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
     let mut buffer = Vec::new();
 

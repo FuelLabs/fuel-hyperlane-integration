@@ -217,9 +217,7 @@ mod warp_route {
 
         let configurables = MailboxConfigurables::default()
             .with_EXPECTED_OWNER(wallet_bits)
-            .unwrap();
-
-        let configurables = MailboxConfigurables::default()
+            .unwrap()
             .with_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN)
             .unwrap();
 
