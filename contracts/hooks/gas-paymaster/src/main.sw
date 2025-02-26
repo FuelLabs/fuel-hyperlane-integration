@@ -529,19 +529,19 @@ fn test_convert_decimals() {
     let result = convert_decimals(num, from_decimals, to_decimals);
     assert(result == u256::from((0, 0, 0, 100000000000)));
 
-    // Some loss of precision
+    // Rounded up intead of percision loss
     let num = u256::from((0, 0, 0, 9999999));
     let from_decimals = 9;
     let to_decimals = 4;
     let result = convert_decimals(num, from_decimals, to_decimals);
-    assert(result == u256::from((0, 0, 0, 99)));
+    assert(result == u256::from((0, 0, 0, 100)));
 
-    // Total loss of precision
+    // Round up to closest
     let num = u256::from((0, 0, 0, 999));
     let from_decimals = 9;
     let to_decimals = 4;
     let result = convert_decimals(num, from_decimals, to_decimals);
-    assert(result == u256::from((0, 0, 0, 0)));
+    assert(result == u256::from((0, 0, 0, 1)));
 
     // Edge decimal cases
     let num = u256::from(18u64);
@@ -570,8 +570,8 @@ fn test_convert_decimals() {
     assert(u256_to_u64(result).is_none());
 
     // going from very large numbers to low precision is not problematic
-    // 18_446_744_073_709_551_615_999_999_999_999_999_999
-    let num = u256::from((0u64, 0u64, 0x0DE0B6B3A763FFFFu64, 0xFFFFFFFFFFFFFFFFu64));
+    // 18_446_744_073_709_551_614_999_999_999_999_999_999
+    let num = u256::from((0u64, 0u64, 0xDE0B6B3A763FFFFu64, 0x21F494C589BFFFFFu64));
     let from_decimals = 24;
     let to_decimals = 6;
     let result = convert_decimals(num, from_decimals, to_decimals);
