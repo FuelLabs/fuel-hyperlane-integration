@@ -791,7 +791,7 @@ async fn main() {
     // Multisig ISMs validator setup
     // (Threshold is set during contract deployment)
 
-    let evm_pk_vars = vec![
+    let evm_pk_vars = [
         "SEPOLIA_PRIVATE_KEY_1",
         "SEPOLIA_PRIVATE_KEY_2",
         "SEPOLIA_PRIVATE_KEY_3",
@@ -910,16 +910,28 @@ async fn main() {
     // Gas Oracle
     let set_gas_data_res = gas_oracle
         .methods()
-        .set_remote_gas_data_configs(vec![RemoteGasDataConfig {
-            domain: 84532,
-            remote_gas_data: RemoteGasData {
-                domain: 84532,
-                // Numbers from BSC and Optimism testnets - 15000000000
-                token_exchange_rate: 15000000000,
-                gas_price: 37999464941,
-                token_decimals: 18,
+        .set_remote_gas_data_configs(vec![
+            RemoteGasDataConfig {
+                domain: 84532, // For Testnet Demo 
+                remote_gas_data: RemoteGasData {
+                    domain: 84532,
+                    // Numbers from BSC and Optimism testnets - 15000000000
+                    token_exchange_rate: 15000000000,
+                    gas_price: 37999464941,
+                    token_decimals: 18,
+                },
             },
-        }])
+            RemoteGasDataConfig {
+                domain: 9913371, // For local E2E test
+                remote_gas_data: RemoteGasData {
+                    domain: 9913371,
+                    // Numbers from BSC and Optimism testnets - 15000000000
+                    token_exchange_rate: 15000000000,
+                    gas_price: 37999464941,
+                    token_decimals: 18,
+                },
+            },
+        ])
         .call()
         .await;
     assert!(set_gas_data_res.is_ok(), "Failed to set gas data.");

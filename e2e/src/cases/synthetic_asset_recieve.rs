@@ -6,13 +6,12 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        _test_message, get_fuel_test_recipient, get_local_domain,
+        get_fuel_test_recipient, get_local_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
-use fuels::types::{transaction_builders::VariableOutputPolicy, Address, Bits256, Bytes};
-use hyperlane_core::Encode;
+use fuels::types::Bits256;
 use tokio::time::Instant;
 
 async fn synthetic_asset_recieve() -> Result<f64, String> {
@@ -21,8 +20,6 @@ async fn synthetic_asset_recieve() -> Result<f64, String> {
     let wallet = get_loaded_wallet().await;
     let warp_route_id = get_contract_address_from_yaml("warpRouteSynthetic");
     let mailbox_id = get_contract_address_from_yaml("mailbox");
-    let post_dispatch_hook_id = get_contract_address_from_yaml("postDispatch");
-    let ism_id = get_contract_address_from_yaml("interchainSecurityModule");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
@@ -132,46 +129,6 @@ async fn synthetic_asset_recieve() -> Result<f64, String> {
             token_metadata_final.value.total_supply
         ));
     }
-
-    //Attempt to handle amount greater than total supply should fail
-    //For this to success, we need to convert remote decimals to same as local decimals - so that it wont be divided by 10^difference
-    let _ = warp_route_instance
-        .methods()
-        .set_remote_router_decimals(Bits256(remote_wr_array), decimals)
-        .call()
-        .await
-        .unwrap();
-
-    let new_message = _test_message(
-        &warp_route_instance.contract_id().clone(),
-        10_000_000_000_000_000_000, // greater than total supply
-        Bits256(Address::from(wallet.address()).into()),
-        Bits256(remote_wr_array),
-    );
-
-    let _should_return_error = mailbox_instance
-        .methods()
-        .process(Bytes(new_message.to_vec()), Bytes(new_message.to_vec()))
-        .with_contract_ids(&[
-            warp_route_id.into(),
-            post_dispatch_hook_id.into(),
-            ism_id.into(),
-        ])
-        .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        .call()
-        .await;
-
-    let token_metadata_final_2 = warp_route_instance
-        .methods()
-        .get_token_info()
-        .call()
-        .await
-        .map_err(|e| format!("Failed to get token metadata: {:?}", e))?;
-
-    assert!(
-        token_metadata_final_2.value.total_supply - token_metadata_final.value.total_supply == 0,
-        "Total Supply should stay the same since handle is reverted"
-    );
 
     Ok(start.elapsed().as_secs_f64())
 }

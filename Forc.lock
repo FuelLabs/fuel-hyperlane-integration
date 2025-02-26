@@ -171,6 +171,7 @@ dependencies = [
     "merkle",
     "message",
     "std",
+    "std_hook_metadata",
 ]
 
 [[package]]
@@ -240,6 +241,7 @@ dependencies = [
     "interfaces",
     "standards git+https://github.com/FuelLabs/sway-standards?branch=master#60a406e230de03986cbc354077b73e5c06a69b97",
     "std",
+    "std_hook_metadata",
     "sway_libs",
 ]
 

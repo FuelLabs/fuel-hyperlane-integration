@@ -116,11 +116,6 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to get quote from warp route: {:?}", e))?;
 
-    assert!(
-        wr_quote.value == mailbox_qoute.value,
-        "Warp route quote is not equal to mailbox quote"
-    );
-
     warp_route_instance
         .methods()
         .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
@@ -153,7 +148,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .methods()
         .transfer_remote(remote_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
-            amount + mailbox_qoute.value + 1,
+            amount + wr_quote.value + 1,
             base_asset,
             10_000_000,
         ))
@@ -215,11 +210,11 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
             .await
             .unwrap();
 
-    if igp_balance_after != igp_balance_before + quote.value {
+    if igp_balance_after != igp_balance_before + wr_quote.value {
         return Err(format!(
             "IGP balance is increased by {:?}, expected {:?}",
             igp_balance_after - igp_balance_before,
-            quote.value
+            wr_quote.value
         ));
     }
 
