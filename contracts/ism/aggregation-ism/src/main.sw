@@ -15,6 +15,7 @@ storage {
     modules: StorageVec<ContractId> = StorageVec {},
     /// The threshold of approval for the Aggregation ISM.
     threshold: u8 = 0,
+    initialized: bool = false,
 }
 
 impl InterchainSecurityModule for Contract {
@@ -102,44 +103,23 @@ impl AggregationIsmFunctions for Contract {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [Identity] - The address to be set as the owner of the contract.
+    /// * `modules`: [Vec<ContractId>] - The modules to be used for message verification.
+    /// * `threshold`: [u8] - The threshold of approval for the Aggregation ISM.
     ///
     /// ### Reverts
     ///
     /// * If the contract is already initialized.
+    /// * If the caller is not the expected initializer.
     #[storage(read, write)]
-    fn initialize(owner: Identity, modules: Vec<ContractId>, threshold: u8) {
+    fn initialize(modules: Vec<ContractId>, threshold: u8) {
+        _not_initialized();
         _is_expected_caller();
-        initialize_ownership(owner);
+        storage.initialized.write(true);
         storage.modules.store_vec(modules);
         storage.threshold.write(threshold);
     }
 }
 
-// --- Ownable implementation ---
-
-impl Ownable for Contract {
-    #[storage(read)]
-    fn owner() -> State {
-        _owner()
-    }
-    #[storage(read)]
-    fn only_owner() {
-        only_owner();
-    }
-    #[storage(write)]
-    fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
-    }
-    #[storage(read, write)]
-    fn initialize_ownership(new_owner: Identity) {
-        initialize_ownership(new_owner);
-    }
-    #[storage(read, write)]
-    fn renounce_ownership() {
-        renounce_ownership();
-    }
-}
 
 // --- Internal functions ---
 
@@ -154,4 +134,10 @@ fn _modules_and_threshold(_message: Bytes) -> (Vec<ContractId>, u8) {
 fn _is_expected_caller() {
     let sender = msg_sender().unwrap().bits();
     require(sender == EXPECTED_INITIALIZER, AggregationIsmError::UnexpectedInitAddress);
+}
+
+#[storage(read)]
+fn _not_initialized(){
+    let initialized = storage.initialized.read();
+    require(!initialized, AggregationIsmError::AlreadyInitialized);
 }

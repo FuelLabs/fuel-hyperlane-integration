@@ -757,11 +757,7 @@ async fn main() {
     ];
     let init_res = aggregation_ism
         .methods()
-        .initialize(
-            wallet_identity,
-            test_isms_to_aggregate,
-            aggregation_ism_threshold,
-        )
+        .initialize(test_isms_to_aggregate, aggregation_ism_threshold)
         .call()
         .await;
 
@@ -1023,11 +1019,7 @@ async fn main() {
 
     let hooks = vec![post_dispatch_mock_id.clone().into(), igp_id.clone().into()];
 
-    let init_res = aggregation_hook
-        .methods()
-        .initialize(wallet_identity, hooks)
-        .call()
-        .await;
+    let init_res = aggregation_hook.methods().initialize(hooks).call().await;
     assert!(init_res.is_ok(), "Failed to initialize Aggregation Hook.");
     println!("Aggregation Hook initialized.");
 

@@ -5,14 +5,9 @@ abi AggregationHook {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [Identity] - The owner of the contract.
     /// * `hooks`: [Vec<ContractId>] - The hooks to initialize with.
-    ///
-    /// ### Reverts
-    ///
-    /// * If the contract is already initialized.
-    #[storage(write)]
-    fn initialize(owner: Identity, hooks: Vec<ContractId>);
+    #[storage(write, read)]
+    fn initialize(hooks: Vec<ContractId>);
 
     /// Gets the hooks.
     ///
@@ -29,4 +24,5 @@ abi AggregationHook {
 
 pub enum AggregationHookError {
     UnexpectedInitAddress: (),
+    AlreadyInitialized: (),
 }

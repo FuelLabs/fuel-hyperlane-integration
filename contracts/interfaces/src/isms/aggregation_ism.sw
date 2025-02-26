@@ -6,6 +6,7 @@ pub enum AggregationIsmError {
     DidNotMeetThreshold: (),
     UnexpectedInitAddress: (),
     FailedToVerify: (),
+    AlreadyInitialized: (),
 }
 
 
@@ -31,9 +32,8 @@ abi AggregationIsmFunctions {
     ///
     /// ### Arguments
     ///
-    /// * `owner`: [Identity] - The address to be set as the owner of the contract.
     /// * `modules`: [Vec<ContractId>] - The list of modules to be used for message verification.
     /// * `threshold`: [u8] - The threshold of approval for the Aggregation ISM.
     #[storage(read, write)]
-    fn initialize(owner: Identity, modules: Vec<ContractId>, threshold: u8);
+    fn initialize(modules: Vec<ContractId>, threshold: u8);
 }
