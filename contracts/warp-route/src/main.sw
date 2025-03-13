@@ -456,11 +456,11 @@ impl WarpRoute for Contract {
         let asset = asset.unwrap_or(stored_asset);
         let balance = this_balance(asset);
 
-        transfer(beneficiary, asset, balance);
         if stored_asset == asset {
             storage.contract_balance.write(0);
         }
 
+        transfer(beneficiary, asset, balance);
         log(ClaimEvent {
             beneficiary,
             amount: balance,
