@@ -26,7 +26,6 @@ use std::{
     asset::transfer,
     bytes::Bytes,
     call_frames::msg_asset_id,
-    constants::ZERO_B256,
     context::{
         balance_of,
         msg_amount,

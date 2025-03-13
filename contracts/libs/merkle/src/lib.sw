@@ -2,7 +2,6 @@ library;
 
 use std::{
     bytes::Bytes,
-    constants::ZERO_B256,
     hash::{
         Hash,
         keccak256,
@@ -122,7 +121,7 @@ impl StorageKey<StorageMerkleTree> {
         let res = read::<b256>(self.get_branch_storage_key(index), 0);
         match res {
             Some(value) => value,
-            None => ZERO_B256,
+            None => b256::zero(),
         }
     }
 
@@ -202,7 +201,7 @@ impl StorageKey<StorageMerkleTree> {
     pub fn root(self) -> b256 {
         let index = self.get_count();
 
-        let mut current: b256 = ZERO_B256;
+        let mut current: b256 = b256::zero();
         let mut i = 0;
         while i < TREE_DEPTH {
             let ith_bit = (index >> i) & 0x01;

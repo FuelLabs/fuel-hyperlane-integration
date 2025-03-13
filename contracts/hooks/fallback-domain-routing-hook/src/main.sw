@@ -10,7 +10,7 @@ use interfaces::{
 use standards::src5::State;
 use sway_libs::{ownership::*, pausable::*};
 use std::bytes::Bytes;
-use std::{constants::ZERO_B256, context::msg_amount, hash::*, storage::storage_map::*};
+use std::{context::msg_amount, hash::*, storage::storage_map::*};
 use message::*;
 
 configurable {
@@ -19,7 +19,7 @@ configurable {
 
 storage {
     /// The hook to fall back to if no hook is found.
-    fallback_hook: b256 = ZERO_B256,
+    fallback_hook: b256 = b256::zero(),
     /// The hooks for each destination domain.
     hooks: StorageMap<u32, b256> = StorageMap::<u32, b256> {},
 }

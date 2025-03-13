@@ -3,7 +3,6 @@ contract;
 use std::{
     b512::B512,
     bytes::Bytes,
-    constants::ZERO_B256,
     contract_id::ContractId,
     hash::{
         Hash,
@@ -28,7 +27,7 @@ configurable {
     /// The local domain. Defaults to "fuel" in bytes.
     LOCAL_DOMAIN: u32 = 0x6675656cu32, // 1717982312
     /// The mailbox contract ID which the VA is associated with.
-    MAILBOX_ID: ContractId = ContractId::from(ZERO_B256),
+    MAILBOX_ID: ContractId = ContractId::from(b256::zero()),
 }
 
 storage {

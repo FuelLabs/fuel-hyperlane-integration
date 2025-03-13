@@ -5,7 +5,6 @@ use std::{
     auth::msg_sender,
     bytes::Bytes,
     call_frames::msg_asset_id,
-    constants::ZERO_B256,
     context::{
         msg_amount,
         this_balance,
@@ -257,7 +256,7 @@ fn _set_protocol_fee(new_fee: u64) {
 fn _set_beneficiary(beneficiary: Identity) {
     require(
         beneficiary
-            .bits() != ZERO_B256,
+            .bits() != b256::zero(),
         ProtocolFeeError::InvalidBeneficiary,
     );
     storage.beneficiary.write(beneficiary);

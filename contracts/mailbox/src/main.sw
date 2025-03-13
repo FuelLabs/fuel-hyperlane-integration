@@ -15,7 +15,6 @@ use interfaces::{
 };
 use std::{
     bytes::Bytes,
-    constants::ZERO_B256,
     context::msg_amount,
     contract_id::ContractId,
     convert::Into,
@@ -42,13 +41,13 @@ storage {
     /// A map of message IDs to a boolean indicating if the message has been processed.
     delivered: StorageMap<b256, bool> = StorageMap::<b256, bool> {},
     /// The default ISM used for message verification.
-    default_ism: ContractId = ContractId::from(ZERO_B256),
+    default_ism: ContractId = ContractId::from(b256::zero()),
     /// The default post dispatch hook, invoked after a message is dispatched.
-    default_hook: ContractId = ContractId::from(ZERO_B256),
+    default_hook: ContractId = ContractId::from(b256::zero()),
     /// The required post dispatch hook, invoked after a message is dispatched.
-    required_hook: ContractId = ContractId::from(ZERO_B256),
+    required_hook: ContractId = ContractId::from(b256::zero()),
     /// The latest dispatched message ID.
-    latest_dispatched_id: b256 = ZERO_B256,
+    latest_dispatched_id: b256 = b256::zero(),
     /// The nonce used for message IDs.
     nonce: u32 = 0,
 }
@@ -247,7 +246,7 @@ impl Mailbox for Contract {
 
         // ref mut hook in the function params does not work 
         let mut hook = hook;
-        if hook == ContractId::from(ZERO_B256) {
+        if hook == ContractId::from(b256::zero()) {
             hook = storage.default_hook.read();
         }
 
@@ -313,7 +312,7 @@ impl Mailbox for Contract {
         hook: ContractId,
     ) -> u64 {
         let mut hook = hook;
-        if hook == ContractId::from(ZERO_B256) {
+        if hook == ContractId::from(b256::zero()) {
             hook = storage.default_hook.read();
         }
 
@@ -367,7 +366,7 @@ impl Mailbox for Contract {
 
         let msg_recipient = abi(MessageRecipient, recipient);
         let mut ism_id = msg_recipient.interchain_security_module();
-        if (ism_id == ContractId::from(ZERO_B256)) {
+        if (ism_id == ContractId::from(b256::zero())) {
             ism_id = storage.default_ism.read()
         }
 
@@ -407,7 +406,7 @@ impl Mailbox for Contract {
     fn recipient_ism(recipient: ContractId) -> ContractId {
         let recipient = abi(MessageRecipient, recipient.into());
         let ism = recipient.interchain_security_module();
-        if ism == ContractId::from(ZERO_B256) {
+        if ism == ContractId::from(b256::zero()) {
             storage.default_ism.read()
         } else {
             ism

@@ -1,6 +1,6 @@
 contract;
 
-use std::{bytes::Bytes, constants::ZERO_B256, logging::log};
+use std::{bytes::Bytes, logging::log};
 use interfaces::message_recipient::MessageRecipient;
 
 abi TestMessageRecipient {
@@ -12,7 +12,7 @@ abi TestMessageRecipient {
 }
 
 storage {
-    module: ContractId = ContractId::from(ZERO_B256),
+    module: ContractId = ContractId::from(b256::zero()),
     handled: bool = false,
 }
 
