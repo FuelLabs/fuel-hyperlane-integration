@@ -50,10 +50,6 @@ abigen!(
         abi = "contracts/ism/multisig/merkle-root-multisig-ism/out/debug/merkle-root-multisig-ism-abi.json",
     ),
     Contract(
-        name = "MerkleRootMultisigISMTest",
-        abi = "contracts/test/merkle-root-multisig-ism-test/out/debug/merkle-root-multisig-ism-test-abi.json",
-    ),
-    Contract(
         name = "WarpRoute",
         abi = "contracts/warp-route/out/debug/warp-route-abi.json",
     ),
