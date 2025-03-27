@@ -7,5 +7,5 @@ name = "validator-announce"
 [dependencies]
 interfaces = { path = "../interfaces" }
 std_lib_extended = { path = "../libs/std-lib-extended" }
-standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
-sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
+standards = { git = "https://github.com/FuelLabs/sway-standards", tag = "v0.6.3" }
+sway_libs = { git = "https://github.com/fuellabs/sway-libs", tag = "v0.24.2" }
