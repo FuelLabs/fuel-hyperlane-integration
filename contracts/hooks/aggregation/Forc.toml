@@ -7,6 +7,6 @@ name = "aggregation"
 [dependencies]
 interfaces = { path = "../../interfaces" }
 message = { path = "../../libs/message" }
-standards = { git = "https://github.com/FuelLabs/sway-standards", branch = "master" }
+standards = { git = "https://github.com/FuelLabs/sway-standards", tag = "v0.6.3" }
 std_hook_metadata = { path = "../../libs/std-hook-metadata" }
-sway_libs = { git = "https://github.com/fuellabs/sway-libs", branch = "master" }
+sway_libs = { git = "https://github.com/fuellabs/sway-libs", tag = "v0.24.2" }
