@@ -31,4 +31,21 @@ abi FallbackDomainRoutingHook {
     /// * `hooks`: [Vec<HookConfig>] - The hooks to set.
     #[storage(read, write)]
     fn set_hooks(hooks: Vec<HookConfig>);
+
+
+    /// Get contracts fallback hook
+    ///
+    /// ### Returns
+    ///
+    /// * [b256] - The Id of the fallback hook
+    #[storage(read)]
+    fn fallback_hook() -> b256;
+
+    /// Get hook set for a domain
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The Id of the hook set for a domain
+    #[storage(read)]
+    fn hooks(domain: u32) -> Option<b256>;
 }

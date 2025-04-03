@@ -69,6 +69,27 @@ impl FallbackDomainRoutingHook for Contract {
             }
         };
     }
+
+    /// Get contracts fallback hook
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The Id of the fallback hook
+    #[storage(read)]
+    fn fallback_hook() -> b256 {
+        storage.fallback_hook.read()
+    }
+
+    /// Get hook set for a domain
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The Id of the hook set for a domain
+    #[storage(read)]
+    fn hooks(domain: u32) -> Option<b256> {
+        storage.hooks.get(domain).try_read()
+    }
+
 }
 
 impl PostDispatchHook for Contract {
