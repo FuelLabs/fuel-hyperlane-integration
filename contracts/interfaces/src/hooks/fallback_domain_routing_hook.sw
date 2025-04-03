@@ -45,7 +45,7 @@ abi FallbackDomainRoutingHook {
     ///
     /// ### Returns
     ///
-    /// * [ContractId] - The Id of the hook set for a domain
+    /// * [b256] - The Id of the hook set for a domain
     #[storage(read)]
     fn hooks(domain: u32) -> Option<b256>;
 }
