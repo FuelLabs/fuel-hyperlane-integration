@@ -74,7 +74,7 @@ impl FallbackDomainRoutingHook for Contract {
     ///
     /// ### Returns
     ///
-    /// * [ContractId] - The Id of the fallback hook
+    /// * [b256] - The Id of the fallback hook
     #[storage(read)]
     fn fallback_hook() -> b256 {
         storage.fallback_hook.read()
