@@ -91,6 +91,8 @@ storage {
     contract_balance: u64 = 0,
     /// Gas for domains
     destination_gas: StorageMap<u32, u64> = StorageMap {},
+    /// The collateral token contract address of the Warp Route
+    wrapped_token: ContractId = ContractId::zero(),
 }
 
 configurable {
@@ -193,6 +195,7 @@ impl WarpRoute for Contract {
                 );
                 let asset_id = asset_id.unwrap();
                 let asset_contract_id = asset_contract_id.unwrap();
+                storage.wrapped_token.write(ContractId::from(asset_contract_id));
                 let collateral_asset_contract = abi(SRC20, asset_contract_id);
 
                 let name = collateral_asset_contract.name(asset_id).unwrap();
@@ -366,6 +369,16 @@ impl WarpRoute for Contract {
     #[storage(read)]
     fn get_hook() -> ContractId {
         storage.default_hook.read()
+    }
+
+    /// Gets the collateral token contract address of the Warp Route
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The collateral token contract address of the Warp Route
+    #[storage(read)]
+    fn wrapped_token() -> ContractId {
+        storage.wrapped_token.read()
     }
 
     /// Sets the mailbox contract ID that the WarpRoute contract is using for transfers

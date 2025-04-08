@@ -113,6 +113,14 @@ abi WarpRoute {
     #[storage(read)]
     fn get_hook() -> ContractId;
 
+    /// Gets the collateral token contract address of the Warp Route
+    ///
+    /// ### Returns
+    ///
+    /// * [ContractId] - The collateral token contract address of the Warp Route
+    #[storage(read)]
+    fn wrapped_token() -> ContractId;
+
     /// Sets the mailbox contract ID that the WarpRoute contract is using for transfers
     ///
     /// ### Arguments
