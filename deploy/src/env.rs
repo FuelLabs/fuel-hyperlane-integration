@@ -34,7 +34,7 @@ impl DeploymentEnv {
                 let secret_key = SecretKey::from_str(&fuel_pk).unwrap();
                 let local_rpc: &str = "127.0.0.1:4000";
                 let dump_path = format!("{}/local", dump_path);
-                let domain = 13374;
+                let domain = 13373;
                 (secret_key, local_rpc, dump_path, domain)
             }
             "TESTNET" => {

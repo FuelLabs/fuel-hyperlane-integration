@@ -116,12 +116,6 @@ cargo test
 - `yq` must be installed - [Link](https://formulae.brew.sh/formula/yq#default).
 - `jq` must be installed - [Link](https://formulae.brew.sh/formula/jq#default).
 
-#### Running the E2E Tests
-
-The E2E tests include test cases which are executed on a local `fuel-core` instance and EVM `anvil` instance.
-
-Before running the E2E tests, you must first run the both the `fuel-core` and `anvil` instances and deploy the required Hyperlane contracts. This is all handled by the `infra/run.sh` script.
-
 In order to have funds on the local Fuel node which is required for the E2E tests, there should be an entry added to `infra/configs/local-fuel-snapshot/state_config.json`
 
 It can be added like so:
@@ -138,21 +132,17 @@ It can be added like so:
 }
 ```
 
-This can be done by running the following script from the `infra` directory:
+#### Running the E2E Tests
+
+The E2E tests include test cases which are executed on a local `fuel-core` instance and EVM `anvil` instance.
+
+Running the nodes and hyperlane infrastructure can be done by running the following script from the `infra` directory:
 
 ```bash
-bash ./run.sh --env LOCAL --agent <agent_name>
+bash ./run.sh --env LOCAL --agent RELAYER
 ```
 
-The `--agent` argument specifies the name of the Hyperlane agent which be run after the setup and deployments.
-It supports the following values:
-
-- `RELAYER`: Runs the relayer which passed messages between the chains.
-- `VALIDATOR`: Runs the validator which validates the messages for the MultisigISM contracts.
-
-_Note: If multiple agents are run from the script, only the first run will spin up the nodes and deploy the contracts._
-
-To run the E2E tests, move to the `e2e` directory and execute:
+After the relayer is started, the E2E tests can be executed in a separate terminal window by moving to the `e2e` directory and executing:
 
 ```bash
 cargo run
@@ -160,7 +150,11 @@ cargo run
 
 #### Troubleshooting
 
-If you are having issues running the local agents or the E2E tests, please try the follwoing:
+##### NotOwner Error
+
+Make sure the fuel private key in the `.env` file is the same in both the `e2e` and `deploy` directories.
+
+##### MerkleTreeHook invalid address
 
 - During the `hyerlane-cli` deployment, locate the `MerkleTreeHook` contract being deployed on the `anvil` instance and update line `285` of the `infra/run.sh` script with the correct address.
 

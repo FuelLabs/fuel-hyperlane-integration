@@ -218,7 +218,7 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
     hyperlane warp deploy --overrides "$INFRA_PATH/configs" -y --config "$HYP_CLI_WR_NATIVE_CONFIGS"
 
     echo "Deploying FuelVM contracts..."
-    cd "$PROJECT_ROOT/deploy" && RUSTFLAGS="-Awarnings" cargo run -- LOCAL "$LOCAL_FUEL_CONTRACT_DUMP"
+    cd "$PROJECT_ROOT/deploy" && RUSTFLAGS="-Awarnings" cargo run -- LOCAL "test" "$LOCAL_FUEL_CONTRACT_DUMP"
 
     # Write deployments to configs
     echo "Writing deployments to configs..."
@@ -227,7 +227,7 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
     LOCAL_FUEL_CONTRACT_DUMP_FULL="$LOCAL_FUEL_CONTRACT_DUMP/local/contract_addresses.yaml"
 
     # Paths to contract dumps and config file
-    LOCAL_FUEL_KEYS=("interchainGasPaymaster" "interchainSecurityModule" "mailbox" "merkleTreeHook" "validatorAnnounce")
+    LOCAL_FUEL_KEYS=("mailbox" "postDispatch" "testRecipient" "interIdSecurityModule" "merkleTreeHook" "interchainGasPaymaster" "validatorAnnounce" "gasOracle" "aggregationISM" "domainRoutingISM" "fallbackDomainRoutingISM" "messageIdMultisigISM1" "merkleRootMultisigISM1" "messageIdMultisigISM3" "merkleRootMultisigISM3" "warpRouteNative" "warpRouteSynthetic" "warpRouteCollateral" "collateralTokenContract" "testCollateralAsset" "aggregationHook" "pausableHook" "protocolFee")
     LOCAL_ANVIL_KEYS=("domainRoutingIsmFactory" "interchainAccountIsm" "interchainAccountRouter" "mailbox" "proxyAdmin" "staticAggregationHookFactory" "staticAggregationIsmFactory" "staticMerkleRootMultisigIsmFactory" "staticMessageIdMultisigIsmFactory" "testRecipient" "validatorAnnounce")
 
     # Read fuel data

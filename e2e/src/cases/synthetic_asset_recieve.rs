@@ -6,7 +6,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_fuel_test_recipient, get_local_domain,
+        get_fuel_domain, get_fuel_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
     },
 };
@@ -62,7 +62,7 @@ async fn synthetic_asset_recieve() -> Result<f64, String> {
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
     let remote_wr = contracts.warp_route_synthetic;
 
-    let fuel_domain = get_local_domain();
+    let fuel_domain = get_fuel_domain();
     let recipient = get_fuel_test_recipient();
     let fuel_wr_parsed = FixedBytes::from_slice(warp_route_id.as_slice());
 
@@ -129,6 +129,8 @@ async fn synthetic_asset_recieve() -> Result<f64, String> {
             token_metadata_final.value.total_supply
         ));
     }
+
+    println!("✅ synthetic_asset_recieve test passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

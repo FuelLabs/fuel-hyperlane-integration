@@ -2,7 +2,7 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        get_remote_domain, get_remote_test_recipient,
+        get_evm_domain, get_remote_test_recipient,
         local_contracts::*,
         token::{get_contract_balance, get_local_fuel_base_asset},
     },
@@ -20,7 +20,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let base_asset = get_local_fuel_base_asset();
 
-    let remote_domain = get_remote_domain();
+    let evm_domain = get_evm_domain();
     let amount = 1000;
     let test_recipient = get_remote_test_recipient();
 
@@ -40,7 +40,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
-        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .enroll_remote_router(evm_domain, Bits256(remote_wr_array))
         .call()
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
@@ -54,7 +54,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let quote = warp_route_instance
         .methods()
-        .quote_gas_payment(remote_domain)
+        .quote_gas_payment(evm_domain)
         .determine_missing_contracts(Some(5))
         .await
         .unwrap()
@@ -72,7 +72,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount, None, None)
+        .transfer_remote(evm_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + quote.value,
             base_asset,
@@ -105,6 +105,8 @@ async fn native_asset_send() -> Result<f64, String> {
             amount
         ));
     }
+
+    println!("✅ native_asset_send test passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

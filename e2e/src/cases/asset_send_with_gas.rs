@@ -13,7 +13,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_remote_domain, get_remote_test_recipient,
+        get_evm_domain, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{get_contract_balance, get_local_fuel_base_asset},
     },
@@ -34,7 +34,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let post_dispatch = PostDispatchHook::new(post_dispatch_hook_id, wallet.clone());
 
-    let remote_domain = get_remote_domain();
+    let evm_domain = get_evm_domain();
     let remote_wr = load_remote_wr_addresses("CTR").unwrap();
     let base_asset: AssetId = get_local_fuel_base_asset();
     let test_recipient = get_remote_test_recipient();
@@ -64,7 +64,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     let quote = fuel_igp_instance
         .methods()
-        .quote_gas_payment(remote_domain, 5000)
+        .quote_gas_payment(evm_domain, 5000)
         .with_contract_ids(&[gas_oracle_id.into(), igp_id.into()])
         .call()
         .await
@@ -85,7 +85,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     let mailbox_qoute = mailbox_instance
         .methods()
         .quote_dispatch(
-            remote_domain,
+            evm_domain,
             Bits256(remote_wr_array),
             Bytes(vec![]),
             Bytes(vec![]),
@@ -108,7 +108,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     let wr_quote = warp_route_instance
         .methods()
-        .quote_gas_payment(remote_domain)
+        .quote_gas_payment(evm_domain)
         .determine_missing_contracts(Some(6))
         .await
         .unwrap()
@@ -118,7 +118,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
-        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .enroll_remote_router(evm_domain, Bits256(remote_wr_array))
         .call()
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
@@ -146,7 +146,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     //Attempt to send remote message with overpayment should fail
     let gas_overpayment = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount, None, None)
+        .transfer_remote(evm_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + wr_quote.value + 1,
             base_asset,
@@ -171,7 +171,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     let _ = warp_route_instance
         .methods()
-        .transfer_remote(remote_domain, test_recipient, amount, None, None)
+        .transfer_remote(evm_domain, test_recipient, amount, None, None)
         .call_params(CallParameters::new(
             amount + wr_quote.value,
             base_asset,

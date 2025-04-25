@@ -6,7 +6,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_local_domain, get_remote_domain,
+        get_evm_domain, get_fuel_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{get_balance, get_contract_balance, send_gas_to_contract_2},
         TEST_RECIPIENT,
@@ -30,7 +30,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let mailbox_instance = Mailbox::new(fuel_mailbox_id, wallet.clone());
 
-    let remote_domain = get_remote_domain();
+    let evm_domain = get_evm_domain();
     let test_recipient = Bits256::from_hex_str(TEST_RECIPIENT).unwrap();
     let remote_wr = load_remote_wr_addresses("NTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
@@ -60,7 +60,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
-        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .enroll_remote_router(evm_domain, Bits256(remote_wr_array))
         .call()
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
@@ -80,7 +80,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
     let remote_wr = contracts.warp_route_synthetic;
 
-    let fuel_domain = get_local_domain();
+    let fuel_domain = get_fuel_domain();
     let recipient = FixedBytes::from_slice(wallet.address().hash.as_slice());
     let fuel_wr_parsed = FixedBytes::from_slice(warp_route_id.as_slice());
 
@@ -171,7 +171,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
     let _ = warp_route_instance
         .methods()
         .transfer_remote(
-            remote_domain,
+            evm_domain,
             test_recipient,
             remote_adjusted_amount,
             None,
@@ -203,6 +203,8 @@ async fn synthetic_asset_send() -> Result<f64, String> {
             warp_balance_after
         ));
     }
+
+    println!("✅ synthetic_asset_send test passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

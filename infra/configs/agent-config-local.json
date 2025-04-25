@@ -63,13 +63,13 @@
         "estimateBlockTime": 1,
         "reorgPeriod": 0
       },
-      "chainId": 13374,
+      "chainId": 13373,
       "deployer": {
         "name": "Abacus Works",
         "url": "https://www.hyperlane.xyz"
       },
       "displayName": "Fuel Local",
-      "domainId": 13374,
+      "domainId": 13373,
       "gasCurrencyCoinGeckoId": "fuel-2",
       "name": "fueltest1",
       "nativeToken": {

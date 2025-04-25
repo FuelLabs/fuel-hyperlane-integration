@@ -40,9 +40,9 @@ pub fn _test_message(
     HyperlaneMessage {
         version: 3u8,
         nonce: thread_rng().gen_range(0..1000000) as u32,
-        origin: get_remote_domain(),
+        origin: get_evm_domain(),
         sender: H256::from(sender.0),
-        destination: get_local_domain(),
+        destination: get_fuel_domain(),
         recipient: H256::from_slice(recipient.hash().as_slice()),
         body: message_body.into(),
     }
@@ -62,7 +62,7 @@ pub fn build_message_body(recipient: Bits256, amount: u64) -> Bytes {
     Bytes(buffer)
 }
 
-pub fn get_remote_domain() -> u32 {
+pub fn get_evm_domain() -> u32 {
     get_value_from_agent_config_json("test1", "domainId")
         .unwrap()
         .as_u64()
@@ -70,12 +70,12 @@ pub fn get_remote_domain() -> u32 {
         .unwrap_or(9913371)
 }
 
-pub fn get_local_domain() -> u32 {
+pub fn get_fuel_domain() -> u32 {
     get_value_from_agent_config_json("fueltest1", "domainId")
         .unwrap()
         .as_u64()
         .map(|v| v as u32)
-        .unwrap_or(13374)
+        .unwrap_or(13373)
 }
 
 pub fn get_msg_body() -> Vec<u8> {

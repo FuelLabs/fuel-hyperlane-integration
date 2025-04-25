@@ -6,7 +6,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_fuel_test_recipient, get_local_domain, get_remote_domain,
+        get_evm_domain, get_fuel_domain, get_fuel_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
         token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
     },
@@ -20,7 +20,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
     let base_asset = get_local_fuel_base_asset();
-    let remote_domain = get_remote_domain();
+    let evm_domain = get_evm_domain();
     let amount = 10_000_000_000_000;
 
     let warp_route_id = get_contract_address_from_yaml("warpRouteNative");
@@ -55,7 +55,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
 
     warp_route_instance
         .methods()
-        .enroll_remote_router(remote_domain, Bits256(remote_wr_array))
+        .enroll_remote_router(evm_domain, Bits256(remote_wr_array))
         .call()
         .await
         .map_err(|e| format!("Failed to enroll remote router: {:?}", e))?;
@@ -68,7 +68,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
         .unwrap();
 
     let recipient = get_fuel_test_recipient();
-    let fuel_domain = get_local_domain();
+    let fuel_domain = get_fuel_domain();
 
     let remote_wallet = get_evm_wallet().await;
     let contracts = SepoliaContracts::initialize(remote_wallet).await;
@@ -130,6 +130,8 @@ async fn native_asset_recieve() -> Result<f64, String> {
             contract_balance - contract_final_balance
         ));
     }
+
+    println!("✅ native_asset_recieve test passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

@@ -6,7 +6,7 @@ use crate::{
     evm::{get_evm_wallet, monitor_fuel_for_delivery, SepoliaContracts},
     setup::{abis::Mailbox, get_loaded_wallet},
     utils::{
-        get_fuel_test_recipient, get_local_domain, get_remote_msg_body,
+        get_fuel_domain, get_fuel_test_recipient, get_remote_msg_body,
         local_contracts::get_contract_address_from_json,
     },
 };
@@ -24,7 +24,7 @@ async fn message_recieve() -> Result<f64, String> {
     let remote_mailbox = contracts.mailbox;
 
     let recipient = get_fuel_test_recipient();
-    let fuel_domain = get_local_domain();
+    let fuel_domain = get_fuel_domain();
     let body = get_remote_msg_body();
 
     let quote_dispatch = remote_mailbox
@@ -52,6 +52,8 @@ async fn message_recieve() -> Result<f64, String> {
     let res = monitor_fuel_for_delivery(fuel_mailbox_instance, msg_id).await;
 
     assert!(res, "Failed to recieve message from remote");
+
+    println!("✅ message_recieve test passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

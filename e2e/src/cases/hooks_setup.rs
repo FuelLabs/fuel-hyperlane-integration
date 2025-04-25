@@ -12,7 +12,7 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        create_mock_metadata, get_msg_body, get_remote_domain, get_remote_test_recipient,
+        create_mock_metadata, get_evm_domain, get_msg_body, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
         token::{get_contract_balance, get_local_fuel_base_asset},
     },
@@ -24,7 +24,7 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
 
     let remote_recipient = get_remote_test_recipient();
     let base_asset = get_local_fuel_base_asset();
-    let remote_domain = get_remote_domain();
+    let evm_domain = get_evm_domain();
     let msg_body = get_msg_body();
 
     let fuel_mailbox_id = get_contract_address_from_json("fueltest1", "mailbox");
@@ -87,7 +87,7 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
     let quote = fuel_mailbox_instance
         .methods()
         .quote_dispatch(
-            remote_domain,
+            evm_domain,
             remote_recipient,
             Bytes(msg_body.clone()),
             metadata.clone(),
@@ -101,7 +101,7 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
     let send_message_response = fuel_mailbox_instance
         .methods()
         .dispatch(
-            remote_domain,
+            evm_domain,
             remote_recipient,
             Bytes(msg_body.clone()),
             metadata,
@@ -173,6 +173,8 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
             contract_balance_protocol_fee_final - contract_balance_protocol_fee
         ));
     }
+
+    println!("✅ send_message_with_aggregation_and_protocol_fee_hook passed");
 
     Ok(start.elapsed().as_secs_f64())
 }

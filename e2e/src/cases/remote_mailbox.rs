@@ -26,6 +26,8 @@ async fn remote_mailbox_test() -> Result<f64, String> {
         ));
     }
 
+    println!("✅ remote_mailbox test passed");
+
     Ok(start.elapsed().as_secs_f64())
 }
 
