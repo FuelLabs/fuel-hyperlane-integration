@@ -12,6 +12,7 @@ The repository is structured as follows:
 - `demo`: Contains the testnet E2E cases for all the Hyperlane contracts.
 - `infra`: Contains the configuration files and scripts for running the Hyperlane Protocol infrastructure.
 - `test-utils`: Contains utility functions for testing the Hyperlane Protocol.
+- `scripts`: Contains sway scripts that are used to interact with the contracts.
 
 ### Contracts
 
@@ -48,7 +49,7 @@ More detailed information about the contracts can be found in the Hyperlane Prot
 
 ## Notes
 
-- Due to Fuel not having token approvals, when utilizing WarpRoute contracts, the tokens and the transfer are sent as 2 separate transactions. In order to avoid the risk of being frontrun, a multicall should be used to execute the two transactions atomically.
+- Due to Fuel not having token approvals, when utilizing WarpRoute contracts, the tokens and the transfer are sent as 2 separate transactions. In order to avoid the risk of being frontrun, the `scripts/wr_multicall.sw` script should be used to combine and execute the two transactions atomically.
 - Due to the way decimal conversion is handled on the IGP contract, the biggest precision delta recommened between the two chains is 18 decimals. This is to ensure that the gas price does not overflow in the calculation as it's limited to a `u64`, which is the higest value that is supported by the Fuel SRC20 interface. _Reference at hooks/gas-paymaster/src/main.sw#L546_
 
 ## Setup
