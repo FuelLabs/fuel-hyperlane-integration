@@ -23,6 +23,7 @@ members = [
   "contracts/validator-announce",
   "contracts/mailbox",
   "contracts/warp-route",
+  "infra/fuel-node",
 ]
 
 

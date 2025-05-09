@@ -2,7 +2,7 @@ use tokio::time::Instant;
 
 use fuels::{
     programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Bytes},
+    types::{transaction_builders::VariableOutputPolicy, AssetId, Bytes},
 };
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     utils::{
         create_mock_metadata, get_evm_domain, get_msg_body, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
-        token::{get_contract_balance, get_local_fuel_base_asset},
+        token::get_contract_balance,
     },
 };
 
@@ -24,7 +24,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
     let wallet = get_loaded_wallet().await;
 
     let remote_recipient = get_remote_test_recipient();
-    let base_asset = get_local_fuel_base_asset();
+    let base_asset = AssetId::BASE;
     let evm_domain = get_evm_domain();
     let msg_body = get_msg_body();
 
@@ -54,7 +54,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
         .map_err(|e| format!("Failed to get quote: {:?}", e))?;
 
     let contract_balance = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         fuel_igp_instance.contract_id(),
         base_asset,
     )
@@ -88,7 +88,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
         .with_contracts(&[&fuel_igp_instance, &fuel_gas_oracle_instance])
         .with_contract_ids(&[post_dispatch_hook_id.into(), ism_id.into()])
         .with_variable_output_policy(VariableOutputPolicy::EstimateMinimum)
-        .determine_missing_contracts(Some(10))
+        .determine_missing_contracts()
         .await
         .unwrap()
         .call()
@@ -115,7 +115,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
     //         .unwrap();
 
     let contract_balance_final = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         fuel_igp_instance.contract_id(),
         base_asset,
     )
@@ -147,7 +147,7 @@ async fn gas_overpayment_and_claim() -> Result<f64, String> {
         .map_err(|e| format!("Failed to claim gas: {:?}", e))?;
 
     let contract_balance_final_after_claim = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         fuel_igp_instance.contract_id(),
         base_asset,
     )

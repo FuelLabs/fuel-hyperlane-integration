@@ -2,14 +2,12 @@ use crate::{
     cases::TestCase,
     setup::{abis::WarpRoute, get_loaded_wallet},
     utils::{
-        get_evm_domain, get_remote_test_recipient,
-        local_contracts::*,
-        token::{get_contract_balance, get_local_fuel_base_asset},
+        get_evm_domain, get_remote_test_recipient, local_contracts::*, token::get_contract_balance,
     },
 };
 use fuels::{
     programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Bits256},
+    types::{transaction_builders::VariableOutputPolicy, AssetId, Bits256},
 };
 use tokio::time::Instant;
 
@@ -18,7 +16,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
 
-    let base_asset = get_local_fuel_base_asset();
+    let base_asset = AssetId::BASE;
 
     let evm_domain = get_evm_domain();
     let amount = 1000;
@@ -55,7 +53,7 @@ async fn native_asset_send() -> Result<f64, String> {
     let quote = warp_route_instance
         .methods()
         .quote_gas_payment(evm_domain)
-        .determine_missing_contracts(Some(5))
+        .determine_missing_contracts()
         .await
         .unwrap()
         .call()
@@ -63,7 +61,7 @@ async fn native_asset_send() -> Result<f64, String> {
         .map_err(|e| format!("Failed to get quote from warp route: {:?}", e))?;
 
     let warp_balance_before = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
@@ -91,7 +89,7 @@ async fn native_asset_send() -> Result<f64, String> {
         .map_err(|e| format!("Failed to transfer remote message: {:?}", e))?;
 
     let warp_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )

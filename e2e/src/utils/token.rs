@@ -1,7 +1,4 @@
 use fuels::prelude::*;
-use serde_json::Value;
-use std::fs;
-use std::str::FromStr;
 
 #[allow(dead_code)]
 pub struct TokenMetadata {
@@ -13,19 +10,6 @@ pub struct TokenMetadata {
 
 pub fn get_native_asset() -> AssetId {
     AssetId::default()
-}
-
-pub fn get_local_fuel_base_asset() -> AssetId {
-    let file_path = "../infra/configs/local-fuel-snapshot/chain_config.json";
-    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
-
-    let json: Value = serde_json::from_str(&contents).expect("JSON was not well-formatted");
-
-    let base_asset_id = json["consensus_parameters"]["V2"]["base_asset_id"]
-        .as_str()
-        .expect("base_asset_id should be a string");
-
-    AssetId::from_str(base_asset_id).unwrap()
 }
 
 pub async fn get_balance(
@@ -47,14 +31,14 @@ pub async fn get_contract_balance(
 }
 
 #[allow(dead_code)]
-pub async fn send_gas_to_contract(from: WalletUnlocked, to: &Bech32ContractId, amount: u64) {
+pub async fn send_gas_to_contract(from: Wallet, to: &Bech32ContractId, amount: u64) {
     let _ = from
         .force_transfer_to_contract(to, amount, get_native_asset(), TxPolicies::default())
         .await;
 }
 
 pub async fn send_gas_to_contract_2(
-    from: WalletUnlocked,
+    from: Wallet,
     to: &Bech32ContractId,
     amount: u64,
     asset: AssetId,

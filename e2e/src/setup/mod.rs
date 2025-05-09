@@ -3,7 +3,7 @@ pub mod config;
 
 use config::{get_e2e_env, get_loaded_private_key, get_node_url, EnvE2E};
 use dotenv::dotenv;
-use fuels::prelude::*;
+use fuels::{accounts::signers::private_key::PrivateKeySigner, prelude::*};
 use once_cell::sync::Lazy;
 use tokio::{process::Child, sync::Mutex};
 
@@ -53,7 +53,7 @@ pub async fn cleanup(fuel_node: Option<Child>) {
 }
 
 static PROVIDER: Lazy<Mutex<Option<Provider>>> = Lazy::new(|| Mutex::new(None));
-static WALLET: Lazy<Mutex<Option<WalletUnlocked>>> = Lazy::new(|| Mutex::new(None));
+static WALLET: Lazy<Mutex<Option<Wallet>>> = Lazy::new(|| Mutex::new(None));
 
 pub async fn get_provider() -> Provider {
     let mut provider_guard = PROVIDER.lock().await;
@@ -68,7 +68,7 @@ pub async fn get_provider() -> Provider {
 pub async fn launch_local_node() {
     let _ = get_loaded_wallet().await;
 }
-pub async fn get_loaded_wallet() -> WalletUnlocked {
+pub async fn get_loaded_wallet() -> Wallet {
     let mut wallet_guard = WALLET.lock().await;
 
     if wallet_guard.is_none() {
@@ -96,7 +96,8 @@ pub async fn get_loaded_wallet() -> WalletUnlocked {
             _ => {
                 let provider = get_provider().await;
                 let private_key = get_loaded_private_key();
-                let wallet = WalletUnlocked::new_from_private_key(private_key, Some(provider));
+                let signer = PrivateKeySigner::new(private_key);
+                let wallet = Wallet::new(signer, provider);
                 *wallet_guard = Some(wallet);
             }
         };

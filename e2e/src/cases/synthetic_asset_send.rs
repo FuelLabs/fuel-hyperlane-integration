@@ -13,7 +13,10 @@ use crate::{
     },
 };
 use alloy::primitives::{FixedBytes, U256};
-use fuels::types::{transaction_builders::VariableOutputPolicy, Bits256};
+use fuels::{
+    accounts::ViewOnlyAccount,
+    types::{transaction_builders::VariableOutputPolicy, Bits256},
+};
 use tokio::time::Instant;
 
 async fn synthetic_asset_send() -> Result<f64, String> {
@@ -48,10 +51,9 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     let asset_id = token_info.value.asset_id;
 
-    let wallet_balance_before_mint =
-        get_balance(wallet.provider().unwrap(), wallet.address(), asset_id)
-            .await
-            .unwrap();
+    let wallet_balance_before_mint = get_balance(wallet.provider(), wallet.address(), asset_id)
+        .await
+        .unwrap();
 
     // ------------------------------------------------------------------------------------------------
     //MOCK TOKEN MINTING
@@ -130,7 +132,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     let remote_adjusted_amount = amount / 10u64.pow((18 - local_decimals).into());
 
-    let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), asset_id)
+    let wallet_balance = get_balance(wallet.provider(), wallet.address(), asset_id)
         .await
         .unwrap();
 
@@ -190,7 +192,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
         .map_err(|e| format!("Failed to transfer remote message: {:?}", e))?;
 
     let warp_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         asset_id,
     )

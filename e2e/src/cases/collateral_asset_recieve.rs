@@ -47,13 +47,10 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     )
     .await;
 
-    let contract_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        warp_route_instance.contract_id(),
-        asset,
-    )
-    .await
-    .unwrap();
+    let contract_balance =
+        get_contract_balance(wallet.provider(), warp_route_instance.contract_id(), asset)
+            .await
+            .unwrap();
 
     let remote_wr_address = load_remote_wr_addresses("NTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr_address.strip_prefix("0x").unwrap()).unwrap();
@@ -123,13 +120,10 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     let amount_18dec_to_local = amount / 10u64.pow(18 - 9);
 
-    let contract_final_balance = get_contract_balance(
-        wallet.provider().unwrap(),
-        warp_route_instance.contract_id(),
-        asset,
-    )
-    .await
-    .unwrap();
+    let contract_final_balance =
+        get_contract_balance(wallet.provider(), warp_route_instance.contract_id(), asset)
+            .await
+            .unwrap();
 
     if contract_balance - contract_final_balance != amount_18dec_to_local {
         return Err(format!(

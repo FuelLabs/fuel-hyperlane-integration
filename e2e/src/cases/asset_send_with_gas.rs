@@ -1,4 +1,3 @@
-use test_utils::get_revert_reason;
 use tokio::time::Instant;
 
 use fuels::{
@@ -13,9 +12,9 @@ use crate::{
         get_loaded_wallet,
     },
     utils::{
-        get_evm_domain, get_remote_test_recipient,
+        get_evm_domain, get_remote_test_recipient, get_revert_reason,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_contract_balance, get_local_fuel_base_asset},
+        token::get_contract_balance,
     },
 };
 
@@ -36,7 +35,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
 
     let evm_domain = get_evm_domain();
     let remote_wr = load_remote_wr_addresses("CTR").unwrap();
-    let base_asset: AssetId = get_local_fuel_base_asset();
+    let base_asset: AssetId = AssetId::BASE;
     let test_recipient = get_remote_test_recipient();
 
     let amount = 1000;
@@ -109,7 +108,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
     let wr_quote = warp_route_instance
         .methods()
         .quote_gas_payment(evm_domain)
-        .determine_missing_contracts(Some(6))
+        .determine_missing_contracts()
         .await
         .unwrap()
         .call()
@@ -131,17 +130,16 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .map_err(|e| format!("Failed to set remote router decimals: {:?}", e))?;
 
     let warp_balance_before = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
     .await
     .unwrap();
 
-    let igp_balance_before =
-        get_contract_balance(wallet.provider().unwrap(), &igp_id.into(), base_asset)
-            .await
-            .unwrap();
+    let igp_balance_before = get_contract_balance(wallet.provider(), &igp_id.into(), base_asset)
+        .await
+        .unwrap();
 
     //Attempt to send remote message with overpayment should fail
     let gas_overpayment = warp_route_instance
@@ -190,7 +188,7 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         .map_err(|e| format!("Failed to transfer remote message: {:?}", e))?;
 
     let warp_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
@@ -205,10 +203,9 @@ async fn asset_send_claim_gas() -> Result<f64, String> {
         ));
     }
 
-    let igp_balance_after =
-        get_contract_balance(wallet.provider().unwrap(), &igp_id.into(), base_asset)
-            .await
-            .unwrap();
+    let igp_balance_after = get_contract_balance(wallet.provider(), &igp_id.into(), base_asset)
+        .await
+        .unwrap();
 
     if igp_balance_after != igp_balance_before + wr_quote.value {
         return Err(format!(

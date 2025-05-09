@@ -115,24 +115,15 @@ cargo test
 - The `anvil` node must be installed - [Link](https://book.getfoundry.sh/getting-started/installation).
 - `yq` must be installed - [Link](https://formulae.brew.sh/formula/yq#default).
 - `jq` must be installed - [Link](https://formulae.brew.sh/formula/jq#default).
-
-In order to have funds on the local Fuel node which is required for the E2E tests, there should be an entry added to `infra/configs/local-fuel-snapshot/state_config.json`
-
-It can be added like so:
-
-```json
-{
-  "tx_id": "0000000000000000000000000000000000000000000000000000000000000004", // Must be one higher than the previous entry
-  "output_index": 0,
-  "tx_pointer_block_height": 0,
-  "tx_pointer_tx_idx": 0,
-  "owner": "ccae08f2eb25ce643496b0d0857f35dcfd0b30d5841ea10a078b79438c32ae07", // Your wallet public address, no 0x prefix
-  "amount": 1152921504606846976,
-  "asset_id": "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07"
-}
-```
+- `bash` version should be `5.0.0` or higher.
 
 #### Running the E2E Tests
+
+When setting the `.env` private keys for fuel, it's recommended to use the following key
+
+- `0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c`
+
+This key is specific to the local fuel-core instance and comes pre loaded with the base asset used for gas.
 
 The E2E tests include test cases which are executed on a local `fuel-core` instance and EVM `anvil` instance.
 

@@ -1,0 +1,8 @@
+[package]
+name = "fuel-node"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fuels = "0.72.0"
+tokio = { workspace = true }

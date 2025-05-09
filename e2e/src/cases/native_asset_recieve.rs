@@ -8,18 +8,18 @@ use crate::{
     utils::{
         get_evm_domain, get_fuel_domain, get_fuel_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
+        token::{get_contract_balance, send_gas_to_contract_2},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
-use fuels::types::Bits256;
+use fuels::types::{AssetId, Bits256};
 use tokio::time::Instant;
 
 async fn native_asset_recieve() -> Result<f64, String> {
     let start = Instant::now();
 
     let wallet = get_loaded_wallet().await;
-    let base_asset = get_local_fuel_base_asset();
+    let base_asset = AssetId::BASE;
     let evm_domain = get_evm_domain();
     let amount = 10_000_000_000_000;
 
@@ -40,7 +40,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
     .await;
 
     let contract_balance = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
@@ -116,7 +116,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
     let amount_18dec_to_local = amount / 10u64.pow(18 - 9);
 
     let contract_final_balance = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
