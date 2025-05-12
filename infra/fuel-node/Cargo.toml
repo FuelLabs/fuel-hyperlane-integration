@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 fuels = "0.72.0"
+fuel-core-chain-config = "0.43.2"
 tokio = { workspace = true }

@@ -8,7 +8,7 @@ use crate::{
     utils::{
         get_evm_domain, get_fuel_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_balance, get_contract_balance, send_gas_to_contract_2},
+        token::{get_balance, get_contract_balance, send_asset_to_contract},
         TEST_RECIPIENT,
     },
 };
@@ -162,7 +162,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     // ------------------------------------------------------------------------------------------------
 
-    let _ = send_gas_to_contract_2(
+    let _ = send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         remote_adjusted_amount,

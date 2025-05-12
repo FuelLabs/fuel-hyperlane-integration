@@ -4,13 +4,13 @@ mod setup;
 mod utils;
 
 use cases::{pull_test_cases, FailedTestCase};
-use setup::setup;
+use dotenv::dotenv;
 use tokio::{sync::mpsc, time::Instant};
 use utils::summary;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    setup().await;
+    dotenv().ok();
     println!("\nRunning E2E tests\n");
     let start = Instant::now();
 
@@ -41,5 +41,4 @@ async fn main() {
     }
 
     summary(test_amount, failed_test_cases, start);
-    // cleanup(fuel_node).await;
 }

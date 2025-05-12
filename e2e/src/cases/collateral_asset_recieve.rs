@@ -2,13 +2,13 @@ use crate::{
     cases::TestCase,
     evm::{get_evm_wallet, monitor_fuel_for_delivery, SepoliaContracts},
     setup::{
-        abis::{Mailbox, MsgRecipient, WarpRoute},
+        abis::{Mailbox, WarpRoute},
         get_loaded_wallet,
     },
     utils::{
         get_evm_domain, get_fuel_domain, get_fuel_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_contract_balance, send_gas_to_contract_2},
+        token::{get_contract_balance, send_asset_to_contract},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
@@ -24,13 +24,11 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     let warp_route_id = get_contract_address_from_yaml("warpRouteCollateral");
     let mailbox_id = get_contract_address_from_yaml("mailbox");
-    let msg_recipient = get_contract_address_from_yaml("testRecipient");
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
-    let _msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
 
-    let asset = warp_route_instance
+    let wr_asset_id = warp_route_instance
         .methods()
         .get_token_info()
         .call()
@@ -39,18 +37,21 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
         .value
         .asset_id;
 
-    let _ = send_gas_to_contract_2(
+    send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         amount,
-        asset,
+        wr_asset_id,
     )
     .await;
 
-    let contract_balance =
-        get_contract_balance(wallet.provider(), warp_route_instance.contract_id(), asset)
-            .await
-            .unwrap();
+    let contract_balance = get_contract_balance(
+        wallet.provider(),
+        warp_route_instance.contract_id(),
+        wr_asset_id,
+    )
+    .await
+    .unwrap();
 
     let remote_wr_address = load_remote_wr_addresses("NTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr_address.strip_prefix("0x").unwrap()).unwrap();
@@ -120,10 +121,13 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
 
     let amount_18dec_to_local = amount / 10u64.pow(18 - 9);
 
-    let contract_final_balance =
-        get_contract_balance(wallet.provider(), warp_route_instance.contract_id(), asset)
-            .await
-            .unwrap();
+    let contract_final_balance = get_contract_balance(
+        wallet.provider(),
+        warp_route_instance.contract_id(),
+        wr_asset_id,
+    )
+    .await
+    .unwrap();
 
     if contract_balance - contract_final_balance != amount_18dec_to_local {
         return Err(format!(

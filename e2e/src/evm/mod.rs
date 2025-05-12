@@ -192,6 +192,7 @@ pub async fn monitor_fuel_for_delivery(
     message_id: FixedBytes<32>,
 ) -> bool {
     let message_id = Bits256(message_id.0);
+    let mut notified = false;
 
     loop {
         let delivered_res = mailbox_instance
@@ -203,10 +204,11 @@ pub async fn monitor_fuel_for_delivery(
 
         if delivered_res.value {
             return true;
-        } else {
+        } else if !notified {
             println!("Waiting for message delivery");
+            notified = true;
         }
-        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
 }
 

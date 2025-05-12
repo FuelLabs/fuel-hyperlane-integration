@@ -4,7 +4,7 @@ use crate::{
     utils::{
         get_evm_domain, get_remote_test_recipient,
         local_contracts::*,
-        token::{get_contract_balance, send_gas_to_contract_2},
+        token::{get_contract_balance, send_asset_to_contract},
     },
 };
 use fuels::{
@@ -87,7 +87,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
     .await
     .unwrap();
 
-    let _ = send_gas_to_contract_2(
+    let _ = send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         amount,

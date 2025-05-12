@@ -502,7 +502,14 @@ pub async fn deploy_mainnet_ism_setup(
     domain_validators: HashMap<u32, Vec<String>>,
 ) -> Bech32ContractId {
     // Stage 1
-    let pausable_ism_id = deploy_pausable_ism(wallet_bits, wallet).await; // TODO need to initialize owner
+    let pausable_ism_id = deploy_pausable_ism(wallet_bits, wallet).await;
+    let pausable_ism = PausableISM::new(pausable_ism_id.clone(), wallet.clone());
+    pausable_ism
+        .methods()
+        .initialize_ownership(Identity::Address(wallet.address().into()))
+        .call()
+        .await
+        .unwrap();
     let domain_routing_ism_id = deploy_domain_routing_ism(wallet_bits, wallet).await;
 
     let top_aggregation_ism_id = deploy_aggregation_ism(wallet_bits, wallet).await;

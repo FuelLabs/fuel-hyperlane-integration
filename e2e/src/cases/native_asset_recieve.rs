@@ -8,7 +8,7 @@ use crate::{
     utils::{
         get_evm_domain, get_fuel_domain, get_fuel_test_recipient,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_contract_balance, send_gas_to_contract_2},
+        token::{get_contract_balance, send_asset_to_contract},
     },
 };
 use alloy::primitives::{FixedBytes, U256};
@@ -31,7 +31,7 @@ async fn native_asset_recieve() -> Result<f64, String> {
     let mailbox_instance = Mailbox::new(mailbox_id, wallet.clone());
     let _msg_recipient_instance = MsgRecipient::new(msg_recipient, wallet.clone());
 
-    let _ = send_gas_to_contract_2(
+    let _ = send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         amount,
