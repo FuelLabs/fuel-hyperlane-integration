@@ -9,7 +9,10 @@ use crate::{
         local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json},
     },
 };
-use fuels::types::{Bits256, Identity};
+use fuels::{
+    accounts::ViewOnlyAccount,
+    types::{Bits256, Identity},
+};
 use tokio::time::Instant;
 
 async fn set_gas_configs() -> Result<f64, String> {

@@ -8,12 +8,15 @@ use crate::{
     utils::{
         get_evm_domain, get_fuel_domain,
         local_contracts::{get_contract_address_from_yaml, load_remote_wr_addresses},
-        token::{get_balance, get_contract_balance, send_gas_to_contract_2},
+        token::{get_balance, get_contract_balance, send_asset_to_contract},
         TEST_RECIPIENT,
     },
 };
 use alloy::primitives::{FixedBytes, U256};
-use fuels::types::{transaction_builders::VariableOutputPolicy, Bits256};
+use fuels::{
+    accounts::ViewOnlyAccount,
+    types::{transaction_builders::VariableOutputPolicy, Bits256},
+};
 use tokio::time::Instant;
 
 async fn synthetic_asset_send() -> Result<f64, String> {
@@ -48,10 +51,9 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     let asset_id = token_info.value.asset_id;
 
-    let wallet_balance_before_mint =
-        get_balance(wallet.provider().unwrap(), wallet.address(), asset_id)
-            .await
-            .unwrap();
+    let wallet_balance_before_mint = get_balance(wallet.provider(), wallet.address(), asset_id)
+        .await
+        .unwrap();
 
     // ------------------------------------------------------------------------------------------------
     //MOCK TOKEN MINTING
@@ -130,7 +132,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     let remote_adjusted_amount = amount / 10u64.pow((18 - local_decimals).into());
 
-    let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), asset_id)
+    let wallet_balance = get_balance(wallet.provider(), wallet.address(), asset_id)
         .await
         .unwrap();
 
@@ -160,7 +162,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
 
     // ------------------------------------------------------------------------------------------------
 
-    let _ = send_gas_to_contract_2(
+    let _ = send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         remote_adjusted_amount,
@@ -190,7 +192,7 @@ async fn synthetic_asset_send() -> Result<f64, String> {
         .map_err(|e| format!("Failed to transfer remote message: {:?}", e))?;
 
     let warp_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         asset_id,
     )

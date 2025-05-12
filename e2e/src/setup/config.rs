@@ -5,8 +5,6 @@ use std::{env, str::FromStr};
 #[derive(Debug)]
 pub enum EnvE2E {
     Local,
-    Testnet,
-    Mainnet,
     LocalMocked,
 }
 
@@ -14,8 +12,6 @@ impl From<String> for EnvE2E {
     fn from(env: String) -> Self {
         match env.as_str() {
             "local" => EnvE2E::Local,
-            "testnet" => EnvE2E::Testnet,
-            "mainnet" => EnvE2E::Mainnet,
             "local_mocked" => EnvE2E::LocalMocked,
             _ => EnvE2E::Local,
         }
@@ -38,13 +34,6 @@ pub fn get_node_url() -> String {
             println!("Failed to get `LOCAL_NODE_URL`, defaulting to `127.0.0.1:4000`");
             "127.0.0.1:4000".to_string()
         }),
-        EnvE2E::Testnet => env::var("TESTNET_NODE_URL").unwrap_or_else(|_| {
-            println!("Failed to get `TESTNET_NODE_URL`, defaulting to `testnet.fuel.network`");
-            "testnet.fuel.network".to_string()
-        }),
-        EnvE2E::Mainnet => {
-            panic!("Mainnet not supported yet");
-        }
         EnvE2E::LocalMocked => {
             println!("LocalMocked not supported yet");
             "127.0.0.1:4000".to_string()
@@ -55,8 +44,8 @@ pub fn get_node_url() -> String {
 pub fn get_loaded_private_key() -> SecretKey {
     dotenv().ok();
     let private_key = env::var("LOADED_FUEL_PRIVATE_KEY").unwrap_or_else(|_| {
-        println!("Failed to get `PRIVATE_KEY`, defaulting to `0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711`");
-        "0x560651e6d8824272b34a229a492293091d0f8f735c4534cdf76addc57774b711".to_string()
+        println!("Failed to get `PRIVATE_KEY`, defaulting to `0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c`");
+        "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c".to_string()
     });
     SecretKey::from_str(&private_key).unwrap()
 }

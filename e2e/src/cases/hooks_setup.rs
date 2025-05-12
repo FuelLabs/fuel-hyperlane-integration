@@ -2,7 +2,7 @@ use tokio::time::Instant;
 
 use fuels::{
     programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Bytes},
+    types::{transaction_builders::VariableOutputPolicy, AssetId, Bytes},
 };
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     utils::{
         create_mock_metadata, get_evm_domain, get_msg_body, get_remote_test_recipient,
         local_contracts::{get_contract_address_from_json, get_contract_address_from_yaml},
-        token::{get_contract_balance, get_local_fuel_base_asset},
+        token::get_contract_balance,
     },
 };
 
@@ -23,7 +23,7 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
     let wallet = get_loaded_wallet().await;
 
     let remote_recipient = get_remote_test_recipient();
-    let base_asset = get_local_fuel_base_asset();
+    let base_asset = AssetId::BASE;
     let evm_domain = get_evm_domain();
     let msg_body = get_msg_body();
 
@@ -39,27 +39,20 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
     let fuel_gas_oracle_instance = GasOracle::new(gas_oracle_id, wallet.clone());
     let protocol_fee_hook_instance = ProtocolFee::new(protocol_fee_hook_id, wallet.clone());
 
-    // let wallet_balance = get_balance(wallet.provider().unwrap(), wallet.address(), base_asset)
-    //     .await
-    //     .unwrap();
-
     let metadata = create_mock_metadata(&wallet);
 
     let contract_balance_igp = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         fuel_igp_instance.contract_id(),
         base_asset,
     )
     .await
     .unwrap();
 
-    let contract_balance_protocol_fee = get_contract_balance(
-        wallet.provider().unwrap(),
-        &protocol_fee_hook_id.into(),
-        base_asset,
-    )
-    .await
-    .unwrap();
+    let contract_balance_protocol_fee =
+        get_contract_balance(wallet.provider(), &protocol_fee_hook_id.into(), base_asset)
+            .await
+            .unwrap();
 
     let protocol_fee_quote = protocol_fee_hook_instance
         .methods()
@@ -93,7 +86,9 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
             metadata.clone(),
             aggregation_hook_id,
         )
-        .with_contract_ids(&involved_contracts)
+        .determine_missing_contracts()
+        .await
+        .unwrap()
         .call()
         .await
         .unwrap();
@@ -135,20 +130,17 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
     //         .unwrap();
 
     let contract_balance_igp_final = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         fuel_igp_instance.contract_id(),
         base_asset,
     )
     .await
     .unwrap();
 
-    let contract_balance_protocol_fee_final = get_contract_balance(
-        wallet.provider().unwrap(),
-        &protocol_fee_hook_id.into(),
-        base_asset,
-    )
-    .await
-    .unwrap();
+    let contract_balance_protocol_fee_final =
+        get_contract_balance(wallet.provider(), &protocol_fee_hook_id.into(), base_asset)
+            .await
+            .unwrap();
 
     // if wallet_balance - wallet_balance_final != quote.value {
     //     return Err(format!(
@@ -182,6 +174,6 @@ async fn send_message_with_aggregation_and_protocol_fee_hook() -> Result<f64, St
 pub fn test() -> TestCase {
     TestCase::new(
         "send_message_with_aggregation_and_protocol_fee_hook",
-        || async move { send_message_with_aggregation_and_protocol_fee_hook().await },
+        send_message_with_aggregation_and_protocol_fee_hook,
     )
 }

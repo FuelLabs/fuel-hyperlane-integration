@@ -4,12 +4,12 @@ use crate::{
     utils::{
         get_evm_domain, get_remote_test_recipient,
         local_contracts::*,
-        token::{get_contract_balance, get_local_fuel_base_asset, send_gas_to_contract_2},
+        token::{get_contract_balance, send_asset_to_contract},
     },
 };
 use fuels::{
     programs::calls::CallParameters,
-    types::{transaction_builders::VariableOutputPolicy, Bits256},
+    types::{transaction_builders::VariableOutputPolicy, AssetId, Bits256},
 };
 use tokio::time::Instant;
 
@@ -18,7 +18,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
 
     let wallet = get_loaded_wallet().await;
 
-    let base_asset = get_local_fuel_base_asset();
+    let base_asset = AssetId::BASE;
 
     let evm_domain = get_evm_domain();
     let amount = 1000;
@@ -55,7 +55,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
     let quote = warp_route_instance
         .methods()
         .quote_gas_payment(evm_domain)
-        .determine_missing_contracts(Some(5))
+        .determine_missing_contracts()
         .await
         .unwrap()
         .call()
@@ -72,7 +72,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .asset_id;
 
     let warp_base_balance_before = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
@@ -80,14 +80,14 @@ async fn collateral_asset_send() -> Result<f64, String> {
     .unwrap();
 
     let collateral_token_balance_before = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         collateral_token_asset_id,
     )
     .await
     .unwrap();
 
-    let _ = send_gas_to_contract_2(
+    let _ = send_asset_to_contract(
         wallet.clone(),
         warp_route_instance.contract_id(),
         amount,
@@ -112,7 +112,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .map_err(|e| format!("Failed to transfer remote message: {:?}", e))?;
 
     let warp_base_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         base_asset,
     )
@@ -120,7 +120,7 @@ async fn collateral_asset_send() -> Result<f64, String> {
     .unwrap();
 
     let collateral_token_balance_after = get_contract_balance(
-        wallet.provider().unwrap(),
+        wallet.provider(),
         warp_route_instance.contract_id(),
         collateral_token_asset_id,
     )

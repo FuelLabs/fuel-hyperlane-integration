@@ -28,7 +28,7 @@ use crate::{
     setup::abis::Mailbox,
     utils::local_contracts::{get_value_from_agent_config_json, load_remote_wr_addresses},
 };
-use fuels::{accounts::wallet::WalletUnlocked, programs::calls::Execution, types::Bits256};
+use fuels::{accounts::wallet::Wallet, programs::calls::Execution, types::Bits256};
 
 sol!(
     #[allow(missing_docs)]
@@ -188,25 +188,27 @@ pub async fn get_evm_wallet() -> EthereumWallet {
 }
 
 pub async fn monitor_fuel_for_delivery(
-    mailbox_instance: Mailbox<WalletUnlocked>,
+    mailbox_instance: Mailbox<Wallet>,
     message_id: FixedBytes<32>,
 ) -> bool {
     let message_id = Bits256(message_id.0);
+    let mut notified = false;
 
     loop {
         let delivered_res = mailbox_instance
             .methods()
             .delivered(message_id)
-            .simulate(Execution::StateReadOnly)
+            .simulate(Execution::state_read_only())
             .await
             .unwrap();
 
         if delivered_res.value {
             return true;
-        } else {
+        } else if !notified {
             println!("Waiting for message delivery");
+            notified = true;
         }
-        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
 }
 

@@ -2,58 +2,14 @@ pub mod abis;
 pub mod config;
 
 use config::{get_e2e_env, get_loaded_private_key, get_node_url, EnvE2E};
-use dotenv::dotenv;
-use fuels::prelude::*;
+use fuels::{accounts::signers::private_key::PrivateKeySigner, prelude::*};
 use once_cell::sync::Lazy;
-use tokio::{process::Child, sync::Mutex};
+use tokio::sync::Mutex;
 
 use crate::utils::token::get_native_asset;
 
-pub async fn setup() -> Option<Child> {
-    dotenv().ok();
-
-    let env = get_e2e_env();
-    if let EnvE2E::Local = env {
-        launch_local_node().await;
-        // initialize_contract_registry().await;
-    }
-    // let env = get_e2e_env();
-    // println!("Setting up {:?} E2E environment", env);
-
-    // let fuel_node = match env {
-    //     EnvE2E::Local => {
-    //         let mut child = Command::new("fuel-core")
-    //             .arg("run")
-    //             .arg("--db-type")
-    //             .arg("in-memory")
-    //             .stdout(Stdio::piped())
-    //             .spawn()
-    //             .expect("Failed to start fuel-core process");
-
-    //         let stdout = child.stdout.take().expect("Failed to get stdout");
-
-    //         Some(child)
-    //     }
-    //     _ => None,
-    // };
-
-    // fuel_node
-
-    None
-}
-
-#[allow(dead_code)]
-pub async fn cleanup(fuel_node: Option<Child>) {
-    if let Some(mut fuel_node) = fuel_node {
-        fuel_node
-            .kill()
-            .await
-            .expect("Failed to kill fuel-core process");
-    }
-}
-
 static PROVIDER: Lazy<Mutex<Option<Provider>>> = Lazy::new(|| Mutex::new(None));
-static WALLET: Lazy<Mutex<Option<WalletUnlocked>>> = Lazy::new(|| Mutex::new(None));
+static WALLET: Lazy<Mutex<Option<Wallet>>> = Lazy::new(|| Mutex::new(None));
 
 pub async fn get_provider() -> Provider {
     let mut provider_guard = PROVIDER.lock().await;
@@ -65,10 +21,7 @@ pub async fn get_provider() -> Provider {
     provider_guard.clone().unwrap()
 }
 
-pub async fn launch_local_node() {
-    let _ = get_loaded_wallet().await;
-}
-pub async fn get_loaded_wallet() -> WalletUnlocked {
+pub async fn get_loaded_wallet() -> Wallet {
     let mut wallet_guard = WALLET.lock().await;
 
     if wallet_guard.is_none() {
@@ -96,7 +49,8 @@ pub async fn get_loaded_wallet() -> WalletUnlocked {
             _ => {
                 let provider = get_provider().await;
                 let private_key = get_loaded_private_key();
-                let wallet = WalletUnlocked::new_from_private_key(private_key, Some(provider));
+                let signer = PrivateKeySigner::new(private_key);
+                let wallet = Wallet::new(signer, provider);
                 *wallet_guard = Some(wallet);
             }
         };

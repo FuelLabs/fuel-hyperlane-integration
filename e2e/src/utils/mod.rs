@@ -5,8 +5,12 @@ use crate::cases::FailedTestCase;
 
 use alloy::primitives::{Bytes as AlloyBytes, FixedBytes};
 use fuels::{
-    accounts::wallet::WalletUnlocked,
-    types::{bech32::Bech32ContractId, Bits256, Bytes, U256},
+    accounts::{wallet::Wallet, ViewOnlyAccount},
+    types::{
+        bech32::Bech32ContractId,
+        errors::{transaction::Reason, Error},
+        Bits256, Bytes, U256,
+    },
 };
 use hyperlane_core::{HyperlaneMessage, H256};
 use local_contracts::{get_contract_address_from_yaml, get_value_from_agent_config_json};
@@ -45,6 +49,17 @@ pub fn _test_message(
         destination: get_fuel_domain(),
         recipient: H256::from_slice(recipient.hash().as_slice()),
         body: message_body.into(),
+    }
+}
+
+pub fn get_revert_reason(call_error: Error) -> String {
+    if let Error::Transaction(Reason::Failure { reason, .. }) = call_error {
+        reason
+    } else {
+        panic!(
+            "Error is not a RevertTransactionError. Error: {:?}",
+            call_error
+        );
     }
 }
 
@@ -111,7 +126,7 @@ pub fn get_fuel_test_recipient() -> FixedBytes<32> {
 // msg_value:      [2:34]    // Left as 0
 // gas_limit:      [34:66]   // Left as 0
 // refund_address: [66:98]   // Set to wallet address
-pub fn create_mock_metadata(wallet: &WalletUnlocked) -> Bytes {
+pub fn create_mock_metadata(wallet: &Wallet) -> Bytes {
     let mut metadata = vec![0u8; MIN_METADATA_LENGTH as usize];
 
     metadata[0] = 0;
