@@ -111,19 +111,6 @@ async fn collateral_asset_send() -> Result<f64, String> {
         .await
         .map_err(|e| format!("Failed to transfer tokens to contract: {:?}", e))?;
 
-    // remote_contracts
-    //     .collateral_asset
-    //     .approve(
-    //         *evm_wr_instance.address(),
-    //         U256::from(wallet_balance_before),
-    //     )
-    //     .send()
-    //     .await
-    //     .unwrap()
-    //     .watch()
-    //     .await
-    //     .map_err(|e| format!("Failed to transfer tokens to warp route: {:?}", e))?;
-
     let test_recipient_addr = get_remote_test_recipient_address();
     let remote_balance_before = evm_wr_instance
         .balanceOf(test_recipient_addr)

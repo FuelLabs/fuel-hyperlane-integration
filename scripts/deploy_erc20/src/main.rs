@@ -34,8 +34,7 @@ async fn main() -> Result<()> {
     let chain_id_str = args.get(7).unwrap_or(&"31337".to_string()).clone();
 
     let token_decimals = token_decimals_str.parse::<u8>()?;
-    let token_supply_raw = token_supply_str.parse::<u64>()?;
-    let token_supply = U256::from(token_supply_raw) * U256::exp10(token_decimals as usize);
+    let token_supply = U256::from_dec_str(&token_supply_str)? * U256::exp10(token_decimals as usize);
 
     let provider = Provider::<Http>::try_from(rpc_url)?;
 
