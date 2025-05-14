@@ -1,0 +1,12 @@
+[package]
+name = "deploy_erc20"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ethers = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+eyre = "0.6.8"

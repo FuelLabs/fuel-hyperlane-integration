@@ -24,6 +24,7 @@ members = [
   "contracts/mailbox",
   "contracts/warp-route",
   "infra/fuel-node",
+  "scripts/deploy_erc20",
 ]
 
 

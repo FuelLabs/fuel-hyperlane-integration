@@ -202,6 +202,21 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
     wait_for_log "$ANVIL_OUTPUT" "Listening on 127.0.0.1:8545"
     wait_for_log "$FUEL_CORE_OUTPUT" "Fuel node started on port 4000, sleeping for 1 hour"
 
+    TOKEN_NAME=$(yq e ".test1.name" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_SYMBOL=$(yq e ".test1.symbol" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_SUPPLY=$(yq e ".test1.totalSupply" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_DECIMALS=$(yq e ".test1.decimals" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+
+    # Deploy ERC20 token using the Rust script
+    echo "Deploying ERC20 token for collateral..."
+    cd "$PROJECT_ROOT/scripts/deploy_erc20"
+    ERC20_ADDRESS=$(cargo run -- "http://localhost:8545" "$FUNDED_ANVIL_PRIVATE_KEY" "$TOKEN_NAME" "$TOKEN_SYMBOL" "$TOKEN_SUPPLY" "$TOKEN_DECIMALS" "31337" | tail -n 1)
+    cd "$INFRA_PATH"
+
+    # Update token address in warp-route-collateral.yaml
+    echo "Setting ERC20 token address ($ERC20_ADDRESS) in collateral warp route config"
+    yq e ".test1.token = \"$ERC20_ADDRESS\"" -i "$HYP_CLI_WR_COLLATERAL_CONFIGS"
+
     # Deploy Hyperlane Core and contracts
     echo "Deploying Hyperlane Core..."
     ANVIL_DEPLOYMENT_DUMP="$INFRA_PATH/configs/chains/test1/addresses.yaml"

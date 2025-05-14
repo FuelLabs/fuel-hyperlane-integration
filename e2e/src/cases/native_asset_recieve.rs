@@ -94,13 +94,13 @@ async fn native_asset_recieve() -> Result<f64, String> {
 
     let _ = remote_wr
         .transferRemote_1(fuel_domain, recipient, U256::from(amount))
-        .value(quote_dispatch + U256::from(amount))
+        .value(quote_dispatch)
         .send()
         .await
         .unwrap()
         .watch()
         .await
-        .map_err(|e| format!("Failed enroll router: {:?}", e))?;
+        .map_err(|e| format!("Failed to transfer remote: {:?}", e))?;
 
     let remote_mailbox = contracts.mailbox;
     let msg_id = remote_mailbox.latestDispatchedId().call().await.unwrap()._0;
@@ -113,8 +113,6 @@ async fn native_asset_recieve() -> Result<f64, String> {
 
     assert!(res, "Failed to recieve message from remote");
 
-    let amount_18dec_to_local = amount / 10u64.pow(18 - 9);
-
     let contract_final_balance = get_contract_balance(
         wallet.provider(),
         warp_route_instance.contract_id(),
@@ -123,10 +121,10 @@ async fn native_asset_recieve() -> Result<f64, String> {
     .await
     .unwrap();
 
-    if contract_balance - contract_final_balance != amount_18dec_to_local {
+    if contract_balance - contract_final_balance != amount {
         return Err(format!(
             "Final contract balance mismatch. Expected: {}, Got: {}",
-            amount_18dec_to_local,
+            amount,
             contract_balance - contract_final_balance
         ));
     }

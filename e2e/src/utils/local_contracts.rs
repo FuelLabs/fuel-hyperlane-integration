@@ -15,7 +15,7 @@ pub fn load_yaml_addresses() -> HashMap<String, String> {
     values
 }
 
-pub fn load_remote_wr_addresses(wr_type: &str) -> Option<String> {
+pub fn load_remote_wr(wr_type: &str) -> serde_yaml::Value {
     let path = format!(
         "../infra/configs/deployments/warp_routes/{}/test1-config.yaml",
         wr_type
@@ -30,11 +30,25 @@ pub fn load_remote_wr_addresses(wr_type: &str) -> Option<String> {
         .and_then(|v| v.as_sequence())
         .expect("Expected 'tokens' to be a sequence");
 
-    let first_token = tokens.first().expect("No tokens found in sequence");
+    tokens.first().expect("No tokens found in sequence").clone()
+}
+
+pub fn load_remote_wr_addresses(wr_type: &str) -> Option<String> {
+    let first_token = load_remote_wr(wr_type);
     let address = first_token
         .get("addressOrDenom")
         .and_then(|a| a.as_str())
         .expect("Missing 'addressOrDenom' in first token");
+
+    Some(address.to_string())
+}
+
+pub fn load_remote_wr_token_address(wr_type: &str) -> Option<String> {
+    let first_token = load_remote_wr(wr_type);
+    let address = first_token
+        .get("collateralAddressOrDenom")
+        .and_then(|a| a.as_str())
+        .expect("Missing 'collateralAddressOrDenom' in first token");
 
     Some(address.to_string())
 }

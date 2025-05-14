@@ -1,6 +1,6 @@
 use alloy::{
     network::{Ethereum, EthereumWallet},
-    primitives::FixedBytes,
+    primitives::{Address, FixedBytes},
     providers::ProviderBuilder,
     signers::{
         k256::{ecdsa::SigningKey, SecretKey as SepoliaPrivateKey},
@@ -13,11 +13,15 @@ use alloy_provider::{
     fillers::{
         BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
     },
-    Identity, RootProvider,
+    Identity, Provider, RootProvider,
 };
+use alloy_rpc_types::{BlockNumberOrTag, Filter};
+use futures_util::StreamExt;
+use sepolia_warp_route_native::SepoliaWarpRouteNative::SepoliaWarpRouteNativeInstance;
 use serde::Deserialize;
 use std::fs;
 use std::{collections::HashMap, env};
+use SepoliaCollateralERC20::SepoliaCollateralERC20Instance;
 
 use sepolia_warp_route_collateral::SepoliaWarpRouteCollateral::SepoliaWarpRouteCollateralInstance;
 use sepolia_warp_route_synthetic::SepoliaWarpRouteSynthetic::SepoliaWarpRouteSyntheticInstance;
@@ -26,7 +30,9 @@ use SepoliaRecipient::SepoliaRecipientInstance;
 
 use crate::{
     setup::abis::Mailbox,
-    utils::local_contracts::{get_value_from_agent_config_json, load_remote_wr_addresses},
+    utils::local_contracts::{
+        get_value_from_agent_config_json, load_remote_wr_addresses, load_remote_wr_token_address,
+    },
 };
 use fuels::{accounts::wallet::Wallet, programs::calls::Execution, types::Bits256};
 
@@ -35,6 +41,13 @@ sol!(
     #[sol(rpc)]
     SepoliaRecipient,
     "src/evm/abis/Recipient.json"
+);
+
+sol!(
+    #[allow(missing_docs)]
+    #[sol(rpc)]
+    SepoliaCollateralERC20,
+    "src/evm/abis/ERC20Test.json"
 );
 
 sol!(
@@ -62,6 +75,17 @@ mod sepolia_warp_route_collateral {
         #[sol(rpc)]
         SepoliaWarpRouteCollateral,
         "src/evm/abis/HypERC20Collateral.json",
+    );
+}
+
+mod sepolia_warp_route_native {
+    use alloy::sol;
+
+    sol!(
+        #[allow(missing_docs)]
+        #[sol(rpc)]
+        SepoliaWarpRouteNative,
+        "src/evm/abis/HypNative.json",
     );
 }
 
@@ -139,6 +163,42 @@ pub struct SepoliaContracts {
             Ethereum,
         >,
     >,
+    pub warp_route_native: SepoliaWarpRouteNativeInstance<
+        BoxTransport,
+        FillProvider<
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
+            RootProvider<BoxTransport>,
+            BoxTransport,
+            Ethereum,
+        >,
+    >,
+    pub collateral_asset: SepoliaCollateralERC20Instance<
+        BoxTransport,
+        FillProvider<
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
+            RootProvider<BoxTransport>,
+            BoxTransport,
+            Ethereum,
+        >,
+    >,
 }
 
 #[allow(dead_code)]
@@ -187,6 +247,20 @@ pub async fn get_evm_wallet() -> EthereumWallet {
     EthereumWallet::from(signer)
 }
 
+pub async fn get_evm_provider(wallet: EthereumWallet) -> EvmProvider {
+    let metadata = get_evm_metadata_from_yaml();
+    let rpc_url = metadata.rpcUrls[0]
+        .get("http")
+        .expect("URL not found")
+        .to_string();
+    ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(wallet.clone())
+        .on_builtin(&rpc_url)
+        .await
+        .unwrap()
+}
+
 pub async fn monitor_fuel_for_delivery(
     mailbox_instance: Mailbox<Wallet>,
     message_id: FixedBytes<32>,
@@ -212,20 +286,27 @@ pub async fn monitor_fuel_for_delivery(
     }
 }
 
+pub async fn monitor_evm_for_delivery(wr_address: Address) {
+    let provider = ProviderBuilder::new()
+        .on_builtin("ws://localhost:8545")
+        .await
+        .unwrap();
+
+    let filter = Filter::new()
+        .address(wr_address.to_owned())
+        .event("ReceivedTransferRemote(uint32,bytes32,uint256)")
+        .from_block(BlockNumberOrTag::Latest);
+
+    let sub = provider.subscribe_logs(&filter).await.unwrap();
+    let mut stream = sub.into_stream();
+
+    println!("Waiting for EVM contract to receive assets...");
+    stream.next().await;
+}
+
 impl SepoliaContracts {
     pub async fn initialize(wallet: EthereumWallet) -> Self {
-        let metadata = get_evm_metadata_from_yaml();
-        let rpc_url = metadata.rpcUrls[0]
-            .get("http")
-            .expect("URL not found")
-            .to_string(); // Extract the URL string
-
-        let evm_provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .wallet(wallet.clone())
-            .on_builtin(&rpc_url)
-            .await
-            .unwrap();
+        let evm_provider = get_evm_provider(wallet.clone()).await;
 
         let mailbox_address_value = get_value_from_agent_config_json("test1", "mailbox").unwrap();
         let mailbox_address_str: &str = mailbox_address_value
@@ -248,8 +329,16 @@ impl SepoliaContracts {
             evm_provider.clone(),
         );
 
-        let collateral_wr = load_remote_wr_addresses("NTR").unwrap();
+        let collateral_wr = load_remote_wr_addresses("CTR").unwrap();
         let synthetic_wr = load_remote_wr_addresses("NTR").unwrap();
+        let native_wr = load_remote_wr_addresses("NTR").unwrap();
+
+        let collateral_token = load_remote_wr_token_address("CTR").unwrap();
+        let collateral_token_address: Address =
+            collateral_token.parse().expect("Invalid address format");
+
+        let collateral_asset =
+            SepoliaCollateralERC20::new(collateral_token_address, evm_provider.clone());
 
         let warp_route_collateral = SepoliaWarpRouteCollateralInstance::new(
             collateral_wr.parse().expect("Invalid address format"),
@@ -261,11 +350,18 @@ impl SepoliaContracts {
             evm_provider.clone(),
         );
 
+        let warp_route_native = SepoliaWarpRouteNativeInstance::new(
+            native_wr.parse().expect("Invalid address format"),
+            evm_provider.clone(),
+        );
+
         SepoliaContracts {
             mailbox,
             recipient,
             warp_route_synthetic,
             warp_route_collateral,
+            warp_route_native,
+            collateral_asset,
         }
     }
 }

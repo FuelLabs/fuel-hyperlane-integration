@@ -53,7 +53,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     .await
     .unwrap();
 
-    let remote_wr_address = load_remote_wr_addresses("NTR").unwrap();
+    let remote_wr_address = load_remote_wr_addresses("CTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr_address.strip_prefix("0x").unwrap()).unwrap();
 
     let mut remote_wr_array = [0u8; 32];
@@ -77,9 +77,11 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
     let fuel_domain = get_fuel_domain();
 
     let remote_wallet = get_evm_wallet().await;
-    let contracts = SepoliaContracts::initialize(remote_wallet).await;
+    let contracts = SepoliaContracts::initialize(remote_wallet.clone()).await;
 
     let remote_wr = contracts.warp_route_collateral;
+    let collateral_asset_evm = contracts.collateral_asset;
+
     let fuel_wr_parsed = FixedBytes::from_slice(warp_route_id.as_slice());
 
     let _ = remote_wr
@@ -98,15 +100,31 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
         .unwrap()
         ._0;
 
-    let _ = remote_wr
-        .transferRemote_1(fuel_domain, recipient, U256::from(amount))
-        .value(quote_dispatch + U256::from(amount))
+    let remote_balance_before = remote_wr
+        .balanceOf(remote_wallet.default_signer().address())
+        .call()
+        .await
+        .unwrap()
+        ._0;
+
+    collateral_asset_evm
+        .approve(*remote_wr.address(), remote_balance_before)
         .send()
         .await
         .unwrap()
         .watch()
         .await
-        .map_err(|e| format!("Failed enroll router: {:?}", e))?;
+        .map_err(|e| format!("Failed to approve tokens: {:?}", e))?;
+
+    let _ = remote_wr
+        .transferRemote_1(fuel_domain, recipient, U256::from(amount))
+        .value(quote_dispatch)
+        .send()
+        .await
+        .unwrap()
+        .watch()
+        .await
+        .map_err(|e| format!("Failed to transfer remote: {:?}", e))?;
 
     let remote_mailbox = contracts.mailbox;
     let msg_id = remote_mailbox.latestDispatchedId().call().await.unwrap()._0;
@@ -134,6 +152,22 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
             "Final contract balance mismatch. Expected: {}, Got: {}",
             amount_18dec_to_local,
             contract_balance - contract_final_balance
+        ));
+    }
+
+    let remote_balance_after = collateral_asset_evm
+        .balanceOf(remote_wallet.default_signer().address())
+        .call()
+        .await
+        .unwrap()
+        ._0;
+
+    let expected_diff = U256::from(amount);
+    if remote_balance_before < remote_balance_after {
+        return Err(format!(
+            "Remote balance didn't decrease as expected. Diff: {}, Expected: {}",
+            remote_balance_after - remote_balance_before,
+            expected_diff
         ));
     }
 

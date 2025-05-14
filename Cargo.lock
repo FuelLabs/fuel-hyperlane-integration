@@ -2933,7 +2933,7 @@ dependencies = [
  "alloy-rpc-types 0.4.2",
  "alloy-transport-ipc 0.4.2",
  "dotenv",
- "fuels 0.72.0",
+ "fuels 0.66.9",
  "futures-util",
  "hex",
  "hyperlane-core",
@@ -2956,6 +2956,18 @@ dependencies = [
  "hyperlane-core",
  "rand",
  "serde",
+ "serde_yaml",
+ "tokio",
+]
+
+[[package]]
+name = "deploy_erc20"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "eyre",
+ "serde",
+ "serde_json",
  "serde_yaml",
  "tokio",
 ]
@@ -4706,6 +4718,7 @@ dependencies = [
 name = "fuel-node"
 version = "0.1.0"
 dependencies = [
+ "fuel-core-chain-config 0.43.2",
  "fuels 0.72.0",
  "tokio",
 ]
