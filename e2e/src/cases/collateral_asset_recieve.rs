@@ -163,7 +163,7 @@ async fn collateral_asset_recieve() -> Result<f64, String> {
         ._0;
 
     let expected_diff = U256::from(amount);
-    if remote_balance_before >= remote_balance_after {
+    if remote_balance_before <= remote_balance_after {
         return Err(format!(
             "Remote balance didn't increase as expected. Diff: {}, Expected: {}",
             remote_balance_after - remote_balance_before,
