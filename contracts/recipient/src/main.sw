@@ -76,13 +76,14 @@ impl MessageRecipient for Contract {
 impl TestMessageRecipient for Contract {
     #[storage(write)]
     fn foo_bar(amount: u64, message: String) {
-        log(ReceivedCallEvent {caller: msg_sender().unwrap(),  amount, message });
+        log(ReceivedCallEvent { caller: msg_sender().unwrap(),  amount, message });
         storage.last_caller.write(msg_sender().unwrap());
         storage.last_call_message.write_slice(message);
     }
 
     #[storage(write)]
     fn set_interchain_security_module(ism: ContractId) {
+        only_owner();
         storage.interchain_security_module.write(ism);
     }
 
