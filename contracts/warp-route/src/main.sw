@@ -847,6 +847,7 @@ fn _get_router(domain: u32) -> b256 {
 
 #[storage(write)]
 fn _set_destination_gas(domain: u32, gas: u64) {
+    only_owner();
     storage.destination_gas.insert(domain, gas);
 }
 
