@@ -33,4 +33,5 @@ members = [
   "contracts/ism/libs/aggregation-ism-metadata",
   "contracts/libs/checkpoint",
   "contracts/gas-oracle",
+  "contracts/recipient",
 ]
