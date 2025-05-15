@@ -132,7 +132,7 @@ FUEL_CORE_PID=""
 if [ "$ENVIRONMENT" == "LOCAL" ]; then
     # Paths
     FUEL_LOCAL_SNAPSHOT="$INFRA_PATH/configs/local-fuel-snapshot"
-    FUNDED_ANVIL_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    FUNDED_ANVIL_PRIVATE_KEY="$SEPOLIA_SIGNER_KEY"
     export HYP_KEY="$FUNDED_ANVIL_PRIVATE_KEY"
     ANVIL_OUTPUT="$OUTPUT_PATH/nodes/anvil_output.log"
     FUEL_CORE_OUTPUT="$OUTPUT_PATH/nodes/fuelcore_output.log"

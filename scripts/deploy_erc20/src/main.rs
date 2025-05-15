@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
         .clone();
     let private_key = args
         .get(2)
-        .unwrap_or(&"ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".to_string())
+        .ok_or_else(|| eyre::eyre!("Private key must be provided as the second argument"))?
         .clone();
     let token_name = args
         .get(3)
