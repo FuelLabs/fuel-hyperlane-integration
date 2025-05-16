@@ -61,6 +61,7 @@ pub fn pull_test_cases() -> Vec<TestCase> {
     vec![
         set_gas_configs::test(),
         message_send_with_gas::test(),
+        collateral_asset_recieve::test(),
         remote_mailbox::test(),
         collateral_asset_send::test(),
         native_asset_send::test(),
@@ -69,7 +70,6 @@ pub fn pull_test_cases() -> Vec<TestCase> {
         asset_send_with_gas::test(),
         message_recieve::test(),
         synthetic_asset_recieve::test(),
-        collateral_asset_recieve::test(),
         native_asset_recieve::test(),
         hooks_setup::test(),
     ]

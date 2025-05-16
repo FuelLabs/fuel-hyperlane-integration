@@ -132,7 +132,7 @@ FUEL_CORE_PID=""
 if [ "$ENVIRONMENT" == "LOCAL" ]; then
     # Paths
     FUEL_LOCAL_SNAPSHOT="$INFRA_PATH/configs/local-fuel-snapshot"
-    FUNDED_ANVIL_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    FUNDED_ANVIL_PRIVATE_KEY="$SEPOLIA_SIGNER_KEY"
     export HYP_KEY="$FUNDED_ANVIL_PRIVATE_KEY"
     ANVIL_OUTPUT="$OUTPUT_PATH/nodes/anvil_output.log"
     FUEL_CORE_OUTPUT="$OUTPUT_PATH/nodes/fuelcore_output.log"
@@ -201,6 +201,21 @@ if [ "$ENVIRONMENT" == "LOCAL" ]; then
     echo "Waiting for nodes to be ready..."
     wait_for_log "$ANVIL_OUTPUT" "Listening on 127.0.0.1:8545"
     wait_for_log "$FUEL_CORE_OUTPUT" "Fuel node started on port 4000, sleeping for 1 hour"
+
+    TOKEN_NAME=$(yq e ".test1.name" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_SYMBOL=$(yq e ".test1.symbol" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_SUPPLY=$(yq e ".test1.totalSupply" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+    TOKEN_DECIMALS=$(yq e ".test1.decimals" "$HYP_CLI_WR_COLLATERAL_CONFIGS")
+
+    # Deploy ERC20 token using the Rust script
+    echo "Deploying ERC20 token for collateral..."
+    cd "$PROJECT_ROOT/scripts/deploy_erc20"
+    ERC20_ADDRESS=$(cargo run -- "http://localhost:8545" "$FUNDED_ANVIL_PRIVATE_KEY" "$TOKEN_NAME" "$TOKEN_SYMBOL" "$TOKEN_SUPPLY" "$TOKEN_DECIMALS" "31337" | tail -n 1)
+    cd "$INFRA_PATH"
+
+    # Update token address in warp-route-collateral.yaml
+    echo "Setting ERC20 token address ($ERC20_ADDRESS) in collateral warp route config"
+    yq e ".test1.token = \"$ERC20_ADDRESS\"" -i "$HYP_CLI_WR_COLLATERAL_CONFIGS"
 
     # Deploy Hyperlane Core and contracts
     echo "Deploying Hyperlane Core..."

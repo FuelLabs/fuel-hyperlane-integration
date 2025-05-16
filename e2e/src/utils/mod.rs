@@ -105,14 +105,17 @@ pub fn get_remote_msg_body() -> AlloyBytes {
     AlloyBytes::copy_from_slice(body_text.as_bytes())
 }
 
-pub fn get_remote_test_recipient() -> Bits256 {
+pub fn get_remote_test_recipient_address() -> alloy::primitives::Address {
     let recipient_address = get_value_from_agent_config_json("test1", "testRecipient").unwrap();
     let recipient_str = recipient_address.as_str().unwrap();
-    let recipient_str = recipient_str.strip_prefix("0x").unwrap();
+    recipient_str.parse().expect("Invalid address format")
+}
+
+pub fn get_remote_test_recipient() -> Bits256 {
+    let recipient_address = get_remote_test_recipient_address();
+    let recipient_bytes = recipient_address.to_vec();
 
     let mut address_array = [0u8; 32];
-    let recipient_bytes = hex::decode(recipient_str).expect("Invalid hex string");
-
     address_array[12..].copy_from_slice(&recipient_bytes);
     Bits256(address_array)
 }

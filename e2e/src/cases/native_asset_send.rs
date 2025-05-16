@@ -30,7 +30,7 @@ async fn native_asset_send() -> Result<f64, String> {
 
     let warp_route_instance = WarpRoute::new(warp_route_id, wallet.clone());
 
-    let remote_wr = load_remote_wr_addresses("CTR").unwrap();
+    let remote_wr = load_remote_wr_addresses("NTR").unwrap();
     let remote_wr_hex = hex::decode(remote_wr.strip_prefix("0x").unwrap()).unwrap();
 
     let mut remote_wr_array = [0u8; 32];
