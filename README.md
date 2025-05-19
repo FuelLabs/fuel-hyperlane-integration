@@ -102,6 +102,8 @@ forc test
 
 ### Rust Unit Tests
 
+First make sure you are on the latest nightly version for `rustup`.
+
 To run the Rust unit tests, execute:
 
 ```bash
