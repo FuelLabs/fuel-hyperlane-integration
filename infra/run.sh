@@ -120,7 +120,7 @@ echo "All required environment variables are set."
 # Check if monorepo exists, clone if not
 if [ ! -d "$MONOREPO_PATH" ]; then
     echo "Monorepo not found. Cloning..."
-    git clone --branch feat/fuel-integration --single-branch https://github.com/fuel-infrastructure/hyperlane-monorepo "$MONOREPO_PATH"
+    git clone --branch feat/fuel-integration --single-branch https://github.com/FuelLabs/hyperlane-monorepo "$MONOREPO_PATH"
 else
     echo "Monorepo found."
 fi
