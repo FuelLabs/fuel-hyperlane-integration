@@ -10,7 +10,7 @@
 # Setup
 
 ```bash
-npm install -g @hyperdao/hyperlane-cli
+npm install -g @fuel-infrastructure/fuel-hyperlane-cli
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 brew install yq
